@@ -1,6 +1,14 @@
 # Changelog
 
-This file summarizes the Pocket MC Desktop release line from `v1.0.0` to `v1.6.4`.
+This file summarizes the Pocket MC Desktop release line from `v1.0.0` to `v1.6.5`.
+
+## v1.6.5 - Cross-Play & PocketMine Player Management Fixes
+
+This patch release resolves critical player management issues for cross-play (Floodgate) and PocketMine environments, ensuring that bans and operator commands work reliably across all player types.
+
+### 🛠️ Fixes & Enhancements
+* **Cross-Play Ban & Op Reliability**: Fixed an issue where Java Edition servers would fail to ban or op Bedrock players connected via Floodgate. PocketMC now correctly formats player names without quotes for Java servers, preventing "Player does not exist" errors when interacting with Bedrock players (e.g., `.PlayerName`).
+* **PocketMine Ban Parsing**: Fixed a bug where PocketMine's `banned-players.txt` was not being read correctly due to its pipe-delimited format. The player list UI now accurately displays banned PocketMine players and allows for successful unbanning.
 
 ## v1.6.4 - Player Management, Console Intelligence & Bedrock Profiles
 
