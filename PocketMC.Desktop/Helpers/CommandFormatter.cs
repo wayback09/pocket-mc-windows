@@ -7,13 +7,29 @@ public static class CommandFormatter
     public static string FormatPlayerName(string name, string? serverType)
     {
         string trimmed = name.Trim();
-        if (IsBedrock(serverType))
+        if (IsBedrock(serverType) || NeedsQuoting(trimmed))
         {
-            return $"\"{trimmed.Replace("\"", "\\\"", StringComparison.Ordinal)}\"";
+            return Quote(trimmed);
         }
 
         return trimmed;
     }
+
+    private static bool NeedsQuoting(string name)
+    {
+        foreach (char character in name)
+        {
+            if (!char.IsLetterOrDigit(character) && character != '_')
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static string Quote(string value) =>
+        $"\"{value.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("\"", "\\\"", StringComparison.Ordinal)}\"";
 
     public static string SanitizeReason(string? reason)
     {

@@ -12,3 +12,4 @@ Releases/
 .cache/
 PocketMC.PlayitPartnerProxy/
 agent_schema.ts
+.agent/

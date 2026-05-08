@@ -32,6 +32,45 @@ public sealed class PlayerListParserTests
     }
 
     [Fact]
+    public void ParseLine_ParsesBedrockMultilineHeaderAndPlainNameContinuation()
+    {
+        PlayerListParseResult? header = _parser.ParseLine(
+            "[2026-04-28 18:10:38:971 INFO] There are 1/10 players online:",
+            "Bedrock (BDS)");
+
+        Assert.NotNull(header);
+        Assert.Equal(1, header!.OnlinePlayerCount);
+        Assert.Equal(10, header.MaxPlayers);
+        Assert.False(header.IsComplete);
+        Assert.Equal(PlayerListContinuationStyle.BedrockPlainNames, header.ContinuationStyle);
+
+        Assert.True(_parser.TryParseContinuationLine("SahajItaliya", header.ContinuationStyle, out string name));
+        Assert.Equal("SahajItaliya", name);
+    }
+
+    [Fact]
+    public void ParseLine_ParsesBedrockZeroPlayerHeaderAsComplete()
+    {
+        PlayerListParseResult? result = _parser.ParseLine(
+            "[2026-04-28 18:10:38:971 INFO] There are 0/10 players online:",
+            "Bedrock (BDS)");
+
+        Assert.NotNull(result);
+        Assert.Equal(0, result!.OnlinePlayerCount);
+        Assert.True(result.IsComplete);
+        Assert.Empty(result.OnlinePlayerNames);
+    }
+
+    [Fact]
+    public void TryParseContinuationLine_StopsBedrockPlainNamesAtTimestampedLogLine()
+    {
+        Assert.False(_parser.TryParseContinuationLine(
+            "[2026-04-28 18:10:49:015 INFO] There are 1/10 players online:",
+            PlayerListContinuationStyle.BedrockPlainNames,
+            out _));
+    }
+
+    [Fact]
     public void ParseLine_ParsesPocketMineList()
     {
         PlayerListParseResult? result = _parser.ParseLine(
@@ -41,6 +80,39 @@ public sealed class PlayerListParserTests
         Assert.NotNull(result);
         Assert.Equal(1, result!.OnlinePlayerCount);
         Assert.Equal(new[] { "Alex With Spaces" }, result.OnlinePlayerNames);
+    }
+
+    [Fact]
+    public void ParseLine_StripsPocketMineCommandOutputPrefixFromPlayerName()
+    {
+        PlayerListParseResult? result = _parser.ParseLine(
+            "Online players (1/20): Command output | SahajItaliya",
+            "Pocketmine (PHP)");
+
+        Assert.NotNull(result);
+        Assert.Equal(1, result!.OnlinePlayerCount);
+        Assert.Equal(new[] { "SahajItaliya" }, result.OnlinePlayerNames);
+    }
+
+    [Theory]
+    [InlineData("Command output | SahajItaliya", "SahajItaliya")]
+    [InlineData("Command output   |   SahajItaliya", "SahajItaliya")]
+    [InlineData("Command output | Command output | SahajItaliya", "SahajItaliya")]
+    [InlineData("SahajItaliya", "SahajItaliya")]
+    public void NormalizePlayerName_StripsPocketMineCommandOutputWrapper(string rawName, string expected)
+    {
+        Assert.Equal(expected, PlayerListParser.NormalizePlayerName(rawName));
+    }
+
+    [Fact]
+    public void TryParseContinuationLine_StripsCommandOutputWrapperFromNames()
+    {
+        Assert.True(_parser.TryParseContinuationLine(
+            "Command output | SahajItaliya",
+            PlayerListContinuationStyle.BedrockPlainNames,
+            out string name));
+
+        Assert.Equal("SahajItaliya", name);
     }
 
     [Fact]

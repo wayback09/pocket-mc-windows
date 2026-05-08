@@ -80,14 +80,30 @@ public sealed class ServerStateFileService
 
             if (CommandFormatter.IsPocketMine(instance.ServerType))
             {
-                List<string> names = await ReadPlainNameFileAsync(Path.Combine(serverRoot, "banned.txt"));
-                return names.Select(name => new BannedPlayerEntry
+                var entries = new List<BannedPlayerEntry>();
+                var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+                foreach (string path in new[] { Path.Combine(serverRoot, "banned-players.txt"), Path.Combine(serverRoot, "banned.txt") })
                 {
-                    Name = name,
-                    Reason = string.Empty,
-                    Created = string.Empty,
-                    Expires = "forever"
-                }).ToList();
+                    foreach (string line in await ReadPlainNameFileAsync(path))
+                    {
+                        var parts = line.Split('|');
+                        string name = parts[0].Trim();
+                        
+                        if (!string.IsNullOrWhiteSpace(name) && seen.Add(name))
+                        {
+                            entries.Add(new BannedPlayerEntry
+                            {
+                                Name = name,
+                                Created = parts.Length > 1 ? parts[1].Trim() : string.Empty,
+                                Expires = parts.Length > 3 ? parts[3].Trim() : "forever",
+                                Reason = parts.Length > 4 ? parts[4].Trim() : string.Empty
+                            });
+                        }
+                    }
+                }
+                
+                return entries;
             }
 
             return await ReadJavaBansAsync(Path.Combine(serverRoot, "banned-players.json"));
@@ -174,6 +190,7 @@ public sealed class ServerStateFileService
         if (CommandFormatter.IsPocketMine(instance.ServerType))
         {
             yield return "ops.txt";
+            yield return "banned-players.txt";
             yield return "banned.txt";
             yield return "banned-ips.txt";
             yield break;
@@ -299,6 +316,25 @@ public sealed class ServerStateFileService
             .Select(line => line.Trim())
             .Where(line => !string.IsNullOrWhiteSpace(line) && !line.StartsWith("#", StringComparison.Ordinal))
             .ToList();
+    }
+
+    private static async Task<List<string>> ReadPlainNameFilesAsync(params string[] paths)
+    {
+        var names = new List<string>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (string path in paths)
+        {
+            foreach (string name in await ReadPlainNameFileAsync(path))
+            {
+                if (seen.Add(name))
+                {
+                    names.Add(name);
+                }
+            }
+        }
+
+        return names;
     }
 
     private static string TryGetString(JsonElement element, string propertyName)

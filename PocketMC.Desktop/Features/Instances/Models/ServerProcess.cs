@@ -43,6 +43,7 @@ public class ServerProcess : IDisposable
     private List<string> _onlinePlayerNames = new();
     private List<string> _pendingMultilinePlayerNames = new();
     private int? _pendingMultilinePlayerCount;
+    private PlayerListContinuationStyle _pendingMultilineStyle = PlayerListContinuationStyle.None;
     private string _serverType = "Vanilla";
 
     public Guid InstanceId { get; }
@@ -275,7 +276,7 @@ public class ServerProcess : IDisposable
     {
         if (_pendingMultilinePlayerCount.HasValue)
         {
-            if (_playerListParser.TryParseContinuationLine(line, out string playerName))
+            if (_playerListParser.TryParseContinuationLine(line, _pendingMultilineStyle, out string playerName))
             {
                 _pendingMultilinePlayerNames.Add(playerName);
                 if (_pendingMultilinePlayerNames.Count >= _pendingMultilinePlayerCount.Value)
@@ -283,13 +284,20 @@ public class ServerProcess : IDisposable
                     CommitOnlinePlayers(_pendingMultilinePlayerNames);
                     _pendingMultilinePlayerCount = null;
                     _pendingMultilinePlayerNames = new List<string>();
+                    _pendingMultilineStyle = PlayerListContinuationStyle.None;
                 }
 
                 return;
             }
 
+            if (_pendingMultilineStyle == PlayerListContinuationStyle.BedrockPlainNames)
+            {
+                CommitOnlinePlayers(_pendingMultilinePlayerNames);
+            }
+
             _pendingMultilinePlayerCount = null;
             _pendingMultilinePlayerNames = new List<string>();
+            _pendingMultilineStyle = PlayerListContinuationStyle.None;
         }
 
         PlayerListParseResult? parseResult = _playerListParser.ParseLine(line, _serverType);
@@ -304,6 +312,7 @@ public class ServerProcess : IDisposable
             {
                 _pendingMultilinePlayerCount = parseResult.OnlinePlayerCount;
                 _pendingMultilinePlayerNames = new List<string>();
+                _pendingMultilineStyle = parseResult.ContinuationStyle;
             }
 
             return;
@@ -322,7 +331,9 @@ public class ServerProcess : IDisposable
     {
         List<string> snapshot = playerNames
             .Where(name => !string.IsNullOrWhiteSpace(name))
-            .Select(name => name.Trim())
+            .Select(PlayerListParser.NormalizePlayerName)
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
 
         DateTime updatedAt = DateTime.UtcNow;

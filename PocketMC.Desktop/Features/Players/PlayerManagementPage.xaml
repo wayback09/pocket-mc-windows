@@ -107,6 +107,18 @@
                               BorderThickness="0"
                               Visibility="{Binding HasOnlinePlayers, Converter={StaticResource BoolToVis}}"
                               ScrollViewer.VerticalScrollBarVisibility="Auto">
+                        <ListView.ItemContainerStyle>
+                            <Style TargetType="ListViewItem">
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="ListViewItem">
+                                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"/>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </ListView.ItemContainerStyle>
                         <ListView.ItemTemplate>
                             <DataTemplate>
                                 <Border CornerRadius="6"
@@ -150,23 +162,29 @@
                                         <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                                             <ToggleButton IsChecked="{Binding IsOp, Mode=OneWay}"
                                                           Command="{Binding ToggleOpCommand}"
-                                                          IsEnabled="{Binding CanSendCommands}"
+                                                          IsEnabled="{Binding CanToggleOp}"
                                                           ToolTip="{Binding OfflineTooltip}"
                                                           Padding="10,4"
                                                           MinWidth="52"/>
                                             <ui:ProgressRing Width="18"
                                                              Height="18"
                                                              IsIndeterminate="True"
-                                                             Visibility="{Binding IsOpUpdating, Converter={StaticResource BoolToVis}}"
+                                                             Visibility="{Binding IsOpBusy, Converter={StaticResource BoolToVis}}"
                                                              Margin="8,0,0,0"/>
                                         </StackPanel>
 
-                                        <ComboBox Grid.Column="2"
-                                                  ItemsSource="{Binding GameModes}"
-                                                  SelectedItem="{Binding SelectedGameMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                  IsEnabled="{Binding CanSendCommands}"
-                                                  ToolTip="{Binding GamemodeTooltip}"
-                                                  MinWidth="140"/>
+                                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                            <ComboBox ItemsSource="{Binding GameModes}"
+                                                      SelectedItem="{Binding SelectedGameMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                      IsEnabled="{Binding CanChangeGamemode}"
+                                                      ToolTip="{Binding GamemodeTooltip}"
+                                                      MinWidth="140"/>
+                                            <ui:ProgressRing Width="18"
+                                                             Height="18"
+                                                             IsIndeterminate="True"
+                                                             Visibility="{Binding IsGamemodeLoading, Converter={StaticResource BoolToVis}}"
+                                                             Margin="8,0,0,0"/>
+                                        </StackPanel>
 
                                         <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
                                             <ui:Button Content="Kick"
@@ -285,6 +303,18 @@
                               BorderThickness="0"
                               Visibility="{Binding HasBannedPlayers, Converter={StaticResource BoolToVis}}"
                               ScrollViewer.VerticalScrollBarVisibility="Auto">
+                        <ListView.ItemContainerStyle>
+                            <Style TargetType="ListViewItem">
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="ListViewItem">
+                                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"/>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </ListView.ItemContainerStyle>
                         <ListView.ItemTemplate>
                             <DataTemplate>
                                 <Border CornerRadius="6"

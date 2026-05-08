@@ -13,11 +13,14 @@ public sealed class PlayerViewModel : ViewModelBase
     private readonly Func<PlayerViewModel, string, string, Task<bool>> _submitReasonAsync;
     private bool _isOp;
     private bool _isBanned;
+    private bool _isOpLoading;
     private bool _isOpUpdating;
+    private bool _isGamemodeLoading;
     private bool _isServerOnline;
     private bool _isRecentlyUpdated;
     private bool _isReasonPromptVisible;
     private string _selectedGameMode = "survival";
+    private string _confirmedGameMode = "survival";
     private string _pendingReason = string.Empty;
     private string _pendingReasonAction = string.Empty;
 
@@ -32,7 +35,7 @@ public sealed class PlayerViewModel : ViewModelBase
         _changeGamemodeAsync = changeGamemodeAsync;
         _submitReasonAsync = submitReasonAsync;
 
-        ToggleOpCommand = new AsyncRelayCommand(_ => ToggleOpAsync(), _ => CanSendCommands && !IsOpUpdating);
+        ToggleOpCommand = new AsyncRelayCommand(_ => ToggleOpAsync(), _ => CanToggleOp);
         KickCommand = new RelayCommand(_ => ShowReasonPrompt("Kick"), _ => CanSendCommands);
         BanCommand = new RelayCommand(_ => ShowReasonPrompt("Ban"), _ => CanSendCommands && !IsBanned);
         ConfirmReasonCommand = new AsyncRelayCommand(_ => ConfirmReasonAsync(), _ => CanSendCommands && IsReasonPromptVisible);
@@ -51,6 +54,20 @@ public sealed class PlayerViewModel : ViewModelBase
     {
         get => _isOp;
         private set => SetProperty(ref _isOp, value);
+    }
+
+    public bool IsOpLoading
+    {
+        get => _isOpLoading;
+        set
+        {
+            if (SetProperty(ref _isOpLoading, value))
+            {
+                OnPropertyChanged(nameof(IsOpBusy));
+                OnPropertyChanged(nameof(CanToggleOp));
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
     }
 
     public bool IsBanned
@@ -73,11 +90,15 @@ public sealed class PlayerViewModel : ViewModelBase
         {
             if (SetProperty(ref _isOpUpdating, value))
             {
+                OnPropertyChanged(nameof(IsOpBusy));
+                OnPropertyChanged(nameof(CanToggleOp));
                 OnPropertyChanged(nameof(CanSendCommands));
                 CommandManager.InvalidateRequerySuggested();
             }
         }
     }
+
+    public bool IsOpBusy => IsOpLoading || IsOpUpdating;
 
     public bool IsServerOnline
     {
@@ -87,6 +108,8 @@ public sealed class PlayerViewModel : ViewModelBase
             if (SetProperty(ref _isServerOnline, value))
             {
                 OnPropertyChanged(nameof(CanSendCommands));
+                OnPropertyChanged(nameof(CanToggleOp));
+                OnPropertyChanged(nameof(CanChangeGamemode));
                 OnPropertyChanged(nameof(OfflineTooltip));
                 CommandManager.InvalidateRequerySuggested();
             }
@@ -94,6 +117,8 @@ public sealed class PlayerViewModel : ViewModelBase
     }
 
     public bool CanSendCommands => IsServerOnline;
+    public bool CanToggleOp => CanSendCommands && !IsOpBusy;
+    public bool CanChangeGamemode => CanSendCommands && !IsGamemodeLoading;
 
     public bool IsRecentlyUpdated
     {
@@ -106,14 +131,34 @@ public sealed class PlayerViewModel : ViewModelBase
         get => _selectedGameMode;
         set
         {
-            if (string.IsNullOrWhiteSpace(value) || !SetProperty(ref _selectedGameMode, value))
+            string? normalizedMode = NormalizeGameMode(value);
+            if (normalizedMode == null || !SetProperty(ref _selectedGameMode, normalizedMode))
             {
                 return;
             }
 
-            if (CanSendCommands)
+            if (CanChangeGamemode)
             {
-                _ = _changeGamemodeAsync(this, value);
+                _ = _changeGamemodeAsync(this, normalizedMode);
+            }
+        }
+    }
+
+    public string ConfirmedGameMode
+    {
+        get => _confirmedGameMode;
+        private set => SetProperty(ref _confirmedGameMode, value);
+    }
+
+    public bool IsGamemodeLoading
+    {
+        get => _isGamemodeLoading;
+        set
+        {
+            if (SetProperty(ref _isGamemodeLoading, value))
+            {
+                OnPropertyChanged(nameof(CanChangeGamemode));
+                CommandManager.InvalidateRequerySuggested();
             }
         }
     }
@@ -154,6 +199,7 @@ public sealed class PlayerViewModel : ViewModelBase
     public void SetOpFromState(bool isOp)
     {
         IsOp = isOp;
+        IsOpLoading = false;
         IsOpUpdating = false;
     }
 
@@ -164,13 +210,37 @@ public sealed class PlayerViewModel : ViewModelBase
 
     public void SetGameModeSilently(string mode)
     {
-        if (string.IsNullOrWhiteSpace(mode))
+        string? normalizedMode = NormalizeGameMode(mode);
+        if (normalizedMode == null)
         {
             return;
         }
 
-        _selectedGameMode = mode;
+        _selectedGameMode = normalizedMode;
         OnPropertyChanged(nameof(SelectedGameMode));
+    }
+
+    public void SetGameModeFromServer(string mode)
+    {
+        string? normalizedMode = NormalizeGameMode(mode);
+        if (normalizedMode == null)
+        {
+            return;
+        }
+
+        ConfirmedGameMode = normalizedMode;
+        SetGameModeSilently(normalizedMode);
+        IsGamemodeLoading = false;
+    }
+
+    public void ConfirmGameModeChange(string mode)
+    {
+        SetGameModeFromServer(mode);
+    }
+
+    public void RevertGameModeFromPendingChange(string previousMode)
+    {
+        SetGameModeFromServer(previousMode);
     }
 
     public async Task FlashSuccessAsync()
@@ -214,6 +284,19 @@ public sealed class PlayerViewModel : ViewModelBase
         IsReasonPromptVisible = false;
         PendingReasonAction = string.Empty;
         PendingReason = string.Empty;
+    }
+
+    private static string? NormalizeGameMode(string? mode)
+    {
+        if (string.IsNullOrWhiteSpace(mode))
+        {
+            return null;
+        }
+
+        string normalizedMode = mode.Trim().ToLowerInvariant();
+        return normalizedMode is "survival" or "creative" or "adventure" or "spectator"
+            ? normalizedMode
+            : null;
     }
 }
 
