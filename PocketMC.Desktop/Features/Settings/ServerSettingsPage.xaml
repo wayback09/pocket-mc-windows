@@ -361,37 +361,41 @@
                                 <StackPanel>
                                     <ui:Card Padding="24" Margin="0,0,0,16"
                                              Visibility="{Binding IsJavaSettings, Converter={StaticResource VisibleIfTrue}}">
-                                        <WrapPanel>
-                                            <StackPanel Width="280" Margin="10,0,10,20">
-                                                <TextBlock Text="Default Gamemode:" Style="{StaticResource SettingsSubtext}"/>
-                                                <ComboBox ItemsSource="{Binding World.Gamemodes}" SelectedItem="{Binding World.Gamemode, Mode=TwoWay}" HorizontalAlignment="Stretch"/>
-                                            </StackPanel>
-                                            <StackPanel Width="280" Margin="10,0,10,20">
-                                                <TextBlock Text="World Difficulty:" Style="{StaticResource SettingsSubtext}"/>
-                                                <ComboBox ItemsSource="{Binding World.Difficulties}" SelectedItem="{Binding World.Difficulty, Mode=TwoWay}" HorizontalAlignment="Stretch"/>
-                                            </StackPanel>
-                                            <StackPanel Width="280" Margin="10,0,10,20">
-                                                <TextBlock Text="Maximum Players:" Style="{StaticResource SettingsSubtext}"/>
-                                                <ui:TextBox Text="{Binding World.MaxPlayers, UpdateSourceTrigger=PropertyChanged}" />
-                                            </StackPanel>
-                                            <StackPanel Width="280" Margin="10,0,10,20">
-                                                <TextBlock Text="Spawn Protection Radius:" Style="{StaticResource SettingsSubtext}"/>
-                                                <ui:TextBox Text="{Binding World.SpawnProtection, UpdateSourceTrigger=PropertyChanged}" />
-                                            </StackPanel>
+                                        <StackPanel>
+                                            <WrapPanel>
+                                                <StackPanel Width="280" Margin="10,0,10,20">
+                                                    <TextBlock Text="Default Gamemode:" Style="{StaticResource SettingsSubtext}"/>
+                                                    <ComboBox ItemsSource="{Binding World.Gamemodes}" SelectedItem="{Binding World.Gamemode, Mode=TwoWay}" HorizontalAlignment="Stretch"/>
+                                                </StackPanel>
+                                                <StackPanel Width="280" Margin="10,0,10,20">
+                                                    <TextBlock Text="World Difficulty:" Style="{StaticResource SettingsSubtext}"/>
+                                                    <ComboBox ItemsSource="{Binding World.Difficulties}" SelectedItem="{Binding World.Difficulty, Mode=TwoWay}" HorizontalAlignment="Stretch"/>
+                                                </StackPanel>
+                                                <StackPanel Width="280" Margin="10,0,10,20">
+                                                    <TextBlock Text="Maximum Players:" Style="{StaticResource SettingsSubtext}"/>
+                                                    <ui:TextBox Text="{Binding World.MaxPlayers, UpdateSourceTrigger=PropertyChanged}" />
+                                                </StackPanel>
+                                                <StackPanel Width="280" Margin="10,0,10,20">
+                                                    <TextBlock Text="Spawn Protection Radius:" Style="{StaticResource SettingsSubtext}"/>
+                                                    <ui:TextBox Text="{Binding World.SpawnProtection, UpdateSourceTrigger=PropertyChanged}" />
+                                                </StackPanel>
+                                            </WrapPanel>
 
-                                            <Separator Width="800" Margin="0,10,0,20" Background="#313244"/>
+                                            <Separator Margin="0,10,0,20" Background="#313244"/>
 
-                                            <StackPanel Width="400" Margin="10">
-                                                <ui:ToggleSwitch IsChecked="{Binding World.OnlineMode}" Content="Online Mode (Identity Auth)" />
-                                                <ui:ToggleSwitch IsChecked="{Binding World.Pvp}" Content="Enable PvP Damage" />
-                                                <ui:ToggleSwitch IsChecked="{Binding World.WhiteList}" Content="Enable Whitelist" />
-                                            </StackPanel>
-                                            <StackPanel Width="400" Margin="10">
-                                                <ui:ToggleSwitch IsChecked="{Binding World.AllowCommandBlock}" Content="Enable Command Blocks" />
-                                                <ui:ToggleSwitch IsChecked="{Binding World.AllowFlight}" Content="Allow Cheat Flight" />
-                                                <ui:ToggleSwitch IsChecked="{Binding World.AllowNether}" Content="Allow Dimension: Nether" />
-                                            </StackPanel>
-                                        </WrapPanel>
+                                            <WrapPanel>
+                                                <StackPanel Width="400" Margin="10">
+                                                    <ui:ToggleSwitch IsChecked="{Binding World.OnlineMode}" Content="Online Mode (Identity Auth)" />
+                                                    <ui:ToggleSwitch IsChecked="{Binding World.Pvp}" Content="Enable PvP Damage" />
+                                                    <ui:ToggleSwitch IsChecked="{Binding World.WhiteList}" Content="Enable Whitelist" />
+                                                </StackPanel>
+                                                <StackPanel Width="400" Margin="10">
+                                                    <ui:ToggleSwitch IsChecked="{Binding World.AllowCommandBlock}" Content="Enable Command Blocks" />
+                                                    <ui:ToggleSwitch IsChecked="{Binding World.AllowFlight}" Content="Allow Cheat Flight" />
+                                                    <ui:ToggleSwitch IsChecked="{Binding World.AllowNether}" Content="Allow Dimension: Nether" />
+                                                </StackPanel>
+                                            </WrapPanel>
+                                        </StackPanel>
                                     </ui:Card>
 
                                     <ui:Card Padding="24" Margin="0,0,0,16"
