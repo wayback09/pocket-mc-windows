@@ -1,6 +1,21 @@
 # Changelog
 
-This file summarizes the Pocket MC Desktop release line from `v1.0.0` to `v1.6.5`.
+This file summarizes the Pocket MC Desktop release line from `v1.0.0` to `v1.6.6`.
+
+## v1.6.6 - Server Settings Polish & Bedrock Integration
+
+This release brings significant refinement to the server settings experience, properly adapting UI workflows (such as world imports and marketplace integrations) to natively support Bedrock and PocketMine server engines without visual glitches or incorrect capabilities.
+
+### ✨ New Features & Enhancements
+* **Vanilla Addons Empty State**: Added a clear empty state warning in the Addons tab for Vanilla servers, explaining that Vanilla does not support plugins/mods and guiding users to change their server engine.
+* **Player Management Refresh**: The refresh button in the Player Management panel now actively re-fetches live OP status and gamemodes for players across all server engine types.
+* **Unified Bedrock Configurations**: Cleaned up the server settings configurations for Bedrock and PocketMine instances. Removed the interactive dummy server card preview (which is primarily Java-focused) and replaced it with a dedicated, reliable MOTD/Server Name text field. Hidden the Java-exclusive "Browse Maps" button for these engines.
+
+### 🛠️ Fixes
+* **Engine-Aware World Imports**: Improved the world import functionality to be fully engine-aware for Bedrock and PocketMine servers, seamlessly supporting `.mcworld` exports alongside standard ZIP archives.
+* **PocketMine Addon Marketplace**: Fixed a UI glitch in PocketMine's Addons section where the Plugin Marketplace button was erroneously disabled and the Local File import button incorrectly opened the Poggit web browser.
+* **Gameplay Rules UI Rendering**: Resolved a rendering glitch involving an overlapping separator line in the Gameplay Rules tab of the server settings.
+* **Test Suite Stabilization**: Fixed test regressions caused by recent updates to player name quoting logic for Java servers.
 
 ## v1.6.5 - Cross-Play & PocketMine Player Management Fixes
 
