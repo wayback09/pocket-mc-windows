@@ -3,6 +3,7 @@
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
       xmlns:markdig="clr-namespace:Markdig.Wpf;assembly=Markdig.Wpf"
+      xmlns:infra="clr-namespace:PocketMC.Desktop.Infrastructure"
       Title="Server Console"
       PreviewKeyDown="Page_PreviewKeyDown">
 
@@ -202,7 +203,8 @@
                                                     Background="Transparent"
                                                     Foreground="#D1D5DB"
                                                     Margin="0"
-                                                    Padding="0">
+                                                    Padding="0"
+                                                    Pipeline="{x:Static infra:MarkdownConfig.Pipeline}">
                                 <markdig:MarkdownViewer.Resources>
                                     <!-- === AI Panel Markdown Styles (optimized for 420px panel) === -->
 

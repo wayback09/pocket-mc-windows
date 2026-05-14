@@ -778,8 +778,8 @@ Logs:
                     _metadata.Name,
                     provider,
                     apiKey,
-                    _serverProcess.StartTime ?? DateTime.Now.AddHours(-1),
-                    DateTime.Now);
+                    _serverProcess.StartTime ?? DateTime.UtcNow.AddHours(-1),
+                    DateTime.UtcNow);
 
                 if (result.Success && result.Summary != null)
                     TxtAiResponse.Markdown = result.Summary.Content;

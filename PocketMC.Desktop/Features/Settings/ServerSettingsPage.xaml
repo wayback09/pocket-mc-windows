@@ -5,6 +5,7 @@
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
       xmlns:markdig="clr-namespace:Markdig.Wpf;assembly=Markdig.Wpf"
+      xmlns:infra="clr-namespace:PocketMC.Desktop.Infrastructure"
       mc:Ignorable="d"
       d:DesignHeight="1200" d:DesignWidth="950"
       Title="Server Settings"
@@ -893,6 +894,7 @@
                                                    Command="{Binding Summaries.CloseSummaryCommand}" Margin="0,0,0,12"/>
                                         <ui:Card Padding="24">
                                             <markdig:MarkdownViewer Markdown="{Binding Summaries.SummaryContent, Mode=OneWay}"
+                                                                    Pipeline="{x:Static infra:MarkdownConfig.Pipeline}"
                                                                     Background="Transparent"
                                                                     Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                                                                     Margin="0">

@@ -75,11 +75,18 @@ public class SettingsSummariesVM : ViewModelBase
         var summaries = _storageService.ListSummaries(_serverDir);
         foreach (var s in summaries)
         {
+            // Compute real duration to correct old JSON files that had timezone calculation bugs.
+            var realDuration = s.SessionEnd.ToUniversalTime() - s.SessionStart.ToUniversalTime();
+
+            // If the calculation results in negative time (due to unspecified kinds from old manual edits),
+            // fallback to the stored duration, otherwise use the real duration.
+            var displayDuration = realDuration.TotalSeconds < 0 ? s.Duration : realDuration;
+
             Summaries.Add(new SessionSummaryItem
             {
                 FileName = s.FileName,
                 SessionDate = s.SessionEnd.ToLocalTime().ToString("MMM dd, yyyy  HH:mm"),
-                Duration = FormatDuration(s.Duration),
+                Duration = FormatDuration(displayDuration),
                 Provider = s.AiProvider,
                 Preview = TruncatePreview(s.Content)
             });
@@ -100,7 +107,10 @@ public class SettingsSummariesVM : ViewModelBase
             return;
         }
 
-        SummaryContent = summary.Content;
+        var realDuration = summary.SessionEnd.ToUniversalTime() - summary.SessionStart.ToUniversalTime();
+        var displayDuration = realDuration.TotalSeconds < 0 ? summary.Duration : realDuration;
+
+        SummaryContent = $"**Total Online Time:** {FormatDuration(displayDuration)}\n\n{summary.Content}";
         IsViewingSummary = true;
     }
 
