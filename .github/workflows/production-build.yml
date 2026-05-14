@@ -125,7 +125,7 @@ jobs:
         if: steps.compare.outputs.skip == 'false'
         run: >
           vpk pack --packId ${{ env.APP_ID }} --packVersion ${{ env.VERSION }}
-          --packDir publish --mainExe PocketMC.Desktop.exe --framework net8.0
+          --packDir publish --mainExe PocketMC.Desktop.exe --framework net8.0,net8.0-aspnetcore
           --runtime ${{ env.RUNTIME }} --outputDir Releases
 
       # 📦 Upload only if packaged
