@@ -66,6 +66,7 @@ public class InstanceCardViewModel : INotifyPropertyChanged
     public string ServerType => _metadata.ServerType;
     public int MaxPlayers => _metadata.MaxPlayers;
     public bool HasTunnelAddress => !string.IsNullOrEmpty(_tunnelAddress);
+    public bool HasBedrockTunnelAddress => !string.IsNullOrEmpty(_bedrockTunnelAddress);
     public bool HasPortIssue => !string.IsNullOrWhiteSpace(_portIssueText);
     public Visibility PortIssueVisibility => HasPortIssue ? Visibility.Visible : Visibility.Collapsed;
     public string? PortIssueText => _portIssueText;
@@ -90,6 +91,17 @@ public class InstanceCardViewModel : INotifyPropertyChanged
 
     /// <summary>True when we should show the skeleton loader (resolving + no address yet).</summary>
     public bool ShowTunnelSkeleton => _isTunnelResolving && !HasTunnelAddress;
+
+    /// <summary>Number of skeleton placeholder rows to show, based on the expected IP
+    /// layout for this server type. LAN IP is excluded since it appears instantly.
+    ///   Java (no Geyser):  1 row  — hostname only
+    ///   Native Bedrock/PM: 2 rows — hostname + numeric
+    ///   Java + Geyser:     3 rows — Java hostname + Bedrock hostname + Bedrock numeric
+    /// </summary>
+    public int SkeletonRowCount =>
+        IsBedrockServer ? 2 :
+        HasGeyser       ? 3 :
+                          1;
 
     public void SetTunnelResolving(bool resolving)
     {
@@ -228,6 +240,7 @@ public class InstanceCardViewModel : INotifyPropertyChanged
         {
             if (SetProperty(ref _bedrockTunnelAddress, value))
             {
+                OnPropertyChanged(nameof(HasBedrockTunnelAddress));
                 OnPropertyChanged(nameof(BedrockIpDisplayText));
             }
         }
