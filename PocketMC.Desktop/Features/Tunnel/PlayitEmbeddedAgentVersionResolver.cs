@@ -23,12 +23,11 @@ public static class PlayitEmbeddedAgentVersionResolver
             }
         }
 
-        Version fallback = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0);
         return new PlayitPartnerAgentVersion
         {
-            VersionMajor = fallback.Major,
-            VersionMinor = Math.Max(0, fallback.Minor),
-            VersionPatch = Math.Max(0, fallback.Build)
+            VersionMajor = 0,
+            VersionMinor = 15,
+            VersionPatch = 26
         };
     }
 }
