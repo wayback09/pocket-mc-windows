@@ -56,6 +56,25 @@ namespace PocketMC.Desktop.Features.Settings
                             }
                         }
                     }
+
+                    if (settings.CloudTokens != null)
+                    {
+                        foreach (var key in new System.Collections.Generic.List<string>(settings.CloudTokens.Keys))
+                        {
+                            var tokenSet = settings.CloudTokens[key];
+                            if (tokenSet != null)
+                            {
+                                if (!string.IsNullOrEmpty(tokenSet.AccessToken))
+                                {
+                                    tokenSet.AccessToken = DataProtector.Unprotect(tokenSet.AccessToken);
+                                }
+                                if (!string.IsNullOrEmpty(tokenSet.RefreshToken))
+                                {
+                                    tokenSet.RefreshToken = DataProtector.Unprotect(tokenSet.RefreshToken);
+                                }
+                            }
+                        }
+                    }
                 }
                 return Normalize(settings);
             }
@@ -79,6 +98,24 @@ namespace PocketMC.Desktop.Features.Settings
             var originalPlayitSecret = normalizedSettings.PlayitPartnerConnection?.AgentSecretKey;
             var originalAiApiKeys = new System.Collections.Generic.Dictionary<string, string>(normalizedSettings.AiApiKeys, StringComparer.OrdinalIgnoreCase);
 
+            var originalCloudTokens = new System.Collections.Generic.Dictionary<string, CloudOAuthTokenSet>(StringComparer.OrdinalIgnoreCase);
+            if (normalizedSettings.CloudTokens != null)
+            {
+                foreach (var kvp in normalizedSettings.CloudTokens)
+                {
+                    originalCloudTokens[kvp.Key] = new CloudOAuthTokenSet
+                    {
+                        Provider = kvp.Value.Provider,
+                        AccessToken = kvp.Value.AccessToken,
+                        RefreshToken = kvp.Value.RefreshToken,
+                        ExpiresAtUtc = kvp.Value.ExpiresAtUtc,
+                        Scope = kvp.Value.Scope,
+                        TokenType = kvp.Value.TokenType,
+                        AccountId = kvp.Value.AccountId
+                    };
+                }
+            }
+
             try
             {
                 if (!string.IsNullOrEmpty(normalizedSettings.CurseForgeApiKey))
@@ -101,6 +138,25 @@ namespace PocketMC.Desktop.Features.Settings
                 }
 
                 var content = JsonSerializer.Serialize(normalizedSettings, new JsonSerializerOptions { WriteIndented = true });
+                if (normalizedSettings.CloudTokens != null)
+                {
+                    foreach (var kvp in normalizedSettings.CloudTokens)
+                    {
+                        var tokenSet = kvp.Value;
+                        if (tokenSet != null)
+                        {
+                            if (!string.IsNullOrEmpty(tokenSet.AccessToken))
+                            {
+                                tokenSet.AccessToken = DataProtector.Protect(tokenSet.AccessToken);
+                            }
+                            if (!string.IsNullOrEmpty(tokenSet.RefreshToken))
+                            {
+                                tokenSet.RefreshToken = DataProtector.Protect(tokenSet.RefreshToken);
+                            }
+                        }
+                    }
+                }
+
                 FileUtils.AtomicWriteAllText(_settingsFilePath, content);
             }
             finally
@@ -115,6 +171,14 @@ namespace PocketMC.Desktop.Features.Settings
                 foreach (var kvp in originalAiApiKeys)
                 {
                     normalizedSettings.AiApiKeys[kvp.Key] = kvp.Value;
+                }
+                if (normalizedSettings.CloudTokens != null)
+                {
+                    normalizedSettings.CloudTokens.Clear();
+                    foreach (var kvp in originalCloudTokens)
+                    {
+                        normalizedSettings.CloudTokens[kvp.Key] = kvp.Value;
+                    }
                 }
             }
         }

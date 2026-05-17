@@ -42,6 +42,8 @@ namespace PocketMC.Desktop.Features.Setup
         private bool _isInitializing = true;
         private readonly MouseWheelEventHandler _previewMouseWheelHandler;
         private bool _isForwardingMouseWheel;
+        
+        public CloudBackupSettingsViewModel CloudBackups { get; }
 
         public AppSettingsPage(
             ApplicationState applicationState, 
@@ -50,7 +52,8 @@ namespace PocketMC.Desktop.Features.Setup
             AiApiClient aiApiClient,
             UpdateService updateService,
             PocketMC.Desktop.Features.Diagnostics.DiagnosticReportingService diagnosticService,
-            PocketMC.Desktop.Features.Diagnostics.DependencyHealthMonitor healthMonitor)
+            PocketMC.Desktop.Features.Diagnostics.DependencyHealthMonitor healthMonitor,
+            CloudBackupSettingsViewModel cloudBackups)
         {
             InitializeComponent();
             _previewMouseWheelHandler = OnPagePreviewMouseWheel;
@@ -61,6 +64,7 @@ namespace PocketMC.Desktop.Features.Setup
             _updateService = updateService;
             _diagnosticService = diagnosticService;
             _healthMonitor = healthMonitor;
+            CloudBackups = cloudBackups;
 
             Loaded += AppSettingsPage_Loaded;
             Unloaded += AppSettingsPage_Unloaded;

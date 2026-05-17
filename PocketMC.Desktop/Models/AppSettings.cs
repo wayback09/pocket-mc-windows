@@ -42,5 +42,9 @@ namespace PocketMC.Desktop.Models
 
         // User Intent Flags
         public System.Collections.Generic.HashSet<int> UserRemovedJavaVersions { get; set; } = new();
+
+        // Cloud Backups
+        public CloudBackupSettings CloudBackups { get; set; } = new();
+        public System.Collections.Generic.Dictionary<string, CloudOAuthTokenSet> CloudTokens { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     }
 }

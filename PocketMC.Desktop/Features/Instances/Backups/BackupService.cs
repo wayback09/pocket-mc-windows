@@ -16,14 +16,17 @@ using PocketMC.Desktop.Infrastructure.FileSystem;
 using PocketMC.Desktop.Features.Instances.Services;
 using PocketMC.Desktop.Features.Instances.Models;
 using PocketMC.Desktop.Features.Settings;
-using PocketMC.Desktop.Core.Presentation;
+using PocketMC.Desktop.Features.CloudBackups;
 
 namespace PocketMC.Desktop.Features.Instances.Backups;
 
-/// <summary>
-/// Handles world backup creation with safe save-lock handshake for live servers,
-/// locked-file tolerance, and automatic retention pruning.
-/// </summary>
+public class LocalBackupResult
+{
+    public bool Success { get; set; }
+    public string ZipPath { get; set; } = string.Empty;
+    public Exception? Error { get; set; }
+}
+
 public class BackupService
 {
     private static readonly Regex SaveCompletedRegex = new(
@@ -33,31 +36,59 @@ public class BackupService
     private readonly ServerProcessManager _serverProcessManager;
     private readonly ServerConfigurationService _configService;
     private readonly SettingsManager _settingsManager;
+    private readonly CloudBackupService _cloudBackupService;
     private readonly ILogger<BackupService> _logger;
 
     public BackupService(
         ServerProcessManager serverProcessManager, 
         ServerConfigurationService configService,
         SettingsManager settingsManager,
+        CloudBackupService cloudBackupService,
         ILogger<BackupService> logger)
     {
         _serverProcessManager = serverProcessManager;
         _configService = configService;
         _settingsManager = settingsManager;
+        _cloudBackupService = cloudBackupService;
         _logger = logger;
     }
 
-    // Files the JVM holds exclusively — always skip these
     private static readonly HashSet<string> SkipFiles = new(StringComparer.OrdinalIgnoreCase)
     {
         "session.lock"
     };
 
-    /// <summary>
-    /// Creates a timestamped world backup ZIP, using safe I/O synchronization
-    /// if the server is currently running. Tolerates locked files gracefully.
-    /// </summary>
-    public async Task RunBackupAsync(InstanceMetadata metadata, string serverDir, Action<string>? onProgress = null)
+    public async Task RunBackupAsync(InstanceMetadata metadata, string serverDir, bool isManualBackup = true, Action<string>? onProgress = null)
+    {
+        var localResult = await CreateLocalBackupAsync(metadata, serverDir, onProgress);
+        
+        if (!localResult.Success || string.IsNullOrEmpty(localResult.ZipPath))
+        {
+            if (localResult.Error != null) throw localResult.Error;
+            return;
+        }
+
+        // External replication
+        await ReplicateToExternalDirectoryAsync(metadata, localResult.ZipPath, onProgress);
+
+        // Cloud replication
+        await _cloudBackupService.UploadBackupToEnabledProvidersAsync(
+            metadata.Id, 
+            metadata.Name, 
+            localResult.ZipPath, 
+            isManualBackup, 
+            onProgress);
+
+        // Update metadata
+        metadata.LastBackupTime = DateTime.UtcNow;
+        SaveMetadata(metadata, serverDir);
+
+        // Prune old backups
+        var backupDir = Path.Combine(serverDir, "backups");
+        PruneOldBackups(backupDir, metadata.MaxBackupsToKeep);
+    }
+
+    private async Task<LocalBackupResult> CreateLocalBackupAsync(InstanceMetadata metadata, string serverDir, Action<string>? onProgress)
     {
         string worldFolderName = "world";
         if (metadata.ServerType?.StartsWith("Pocketmine", StringComparison.OrdinalIgnoreCase) == true)
@@ -79,7 +110,7 @@ public class BackupService
         var worldDir = Path.Combine(serverDir, worldFolderName);
         if (!Directory.Exists(worldDir))
         {
-            throw new DirectoryNotFoundException($"World folder '{worldFolderName}' not found in server directory.");
+            return new LocalBackupResult { Success = false, Error = new DirectoryNotFoundException($"World folder '{worldFolderName}' not found in server directory.") };
         }
 
         var backupDir = Path.Combine(serverDir, "backups");
@@ -96,14 +127,12 @@ public class BackupService
         {
             if (isRunning && process != null)
             {
-                // Try RCON first as it's more reliable for state detection
                 bool syncSuccess = await TrySyncSaveViaRconAsync(serverDir, onProgress);
 
                 if (!syncSuccess)
                 {
                     _logger.LogInformation("RCON sync not available or failed; falling back to console ingestion for server {ServerName}.", metadata.Name);
                     
-                    // Fallback to console handshake
                     onProgress?.Invoke("Disabling auto-save (Console)...");
                     await process.WriteInputAsync("save-off");
                     await Task.Delay(500);
@@ -116,32 +145,20 @@ public class BackupService
 
                     if (!saved)
                     {
-                        _logger.LogWarning(
-                            "Server {ServerName} did not emit a recognized save confirmation. Proceeding after a short settle delay.",
-                            metadata.Name);
+                        _logger.LogWarning("Server {ServerName} did not emit a recognized save confirmation. Proceeding after a short settle delay.", metadata.Name);
                         await Task.Delay(TimeSpan.FromSeconds(2));
                     }
                 }
             }
 
-            // Compress world folder with locked-file tolerance
             onProgress?.Invoke("Compressing world...");
             await Task.Run(() => CreateZipWithLockedFileSkip(worldDir, zipPath, skippedFiles));
 
-            // Verify we actually wrote something meaningful
             var zipInfo = new FileInfo(zipPath);
             if (!zipInfo.Exists || zipInfo.Length == 0)
             {
-                try
-                {
-                    File.Delete(zipPath);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Failed to delete empty backup archive {ZipPath}.", zipPath);
-                }
-
-                throw new IOException("Backup produced an empty ZIP file.");
+                if (File.Exists(zipPath)) File.Delete(zipPath);
+                return new LocalBackupResult { Success = false, Error = new IOException("Backup produced an empty ZIP file.") };
             }
 
             if (skippedFiles.Count > 0)
@@ -149,94 +166,67 @@ public class BackupService
             else
                 onProgress?.Invoke("Backup complete!");
 
-            // External Disaster Recovery: replicate payload to configured off-site path
-            var appSettings = _settingsManager.Load();
-            if (!string.IsNullOrWhiteSpace(appSettings.ExternalBackupDirectory) && Directory.Exists(appSettings.ExternalBackupDirectory))
-            {
-                onProgress?.Invoke("Replicating to external storage...");
-                try
-                {
-                    string externalTarget = Path.Combine(appSettings.ExternalBackupDirectory, metadata.Name, "backups");
-                    Directory.CreateDirectory(externalTarget);
-                    
-                    string destinationPath = Path.Combine(externalTarget, $"world-{timestamp}.zip");
-                    await Task.Run(() => File.Copy(zipPath, destinationPath, true));
-                    _logger.LogInformation("Successfully replicated backup to external location: {Destination}", destinationPath);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Failed to replicate backup to external directory {Dir}", appSettings.ExternalBackupDirectory);
-                    onProgress?.Invoke("Warning: External replication failed (Check logs)");
-                }
-            }
+            return new LocalBackupResult { Success = true, ZipPath = zipPath };
         }
         catch (Exception ex)
         {
-            // Clean up partial/failed ZIP so 0-byte ghosts don't appear in the list
-            try
+            if (File.Exists(zipPath))
             {
-                if (File.Exists(zipPath))
-                {
-                    File.Delete(zipPath);
-                }
+                try { File.Delete(zipPath); } catch { }
             }
-            catch (Exception cleanupEx)
-            {
-                _logger.LogWarning(cleanupEx, "Failed to clean up partial backup archive {ZipPath}.", zipPath);
-            }
-
             _logger.LogError(ex, "Backup failed for server {ServerName}.", metadata.Name);
-            throw;
+            return new LocalBackupResult { Success = false, Error = ex };
         }
         finally
         {
-            // Always re-enable auto-save if server was running
             if (isRunning && process != null)
             {
                 try
                 {
-                    // Try RCON first
-                    if (!_configService.TryGetProperty(serverDir, "enable-rcon", out var rconEnabled) || rconEnabled != "true")
-                    {
-                        await process.WriteInputAsync("save-on");
-                    }
-                    else
-                    {
-                        // We could use RCON here too, but save-on is safe via console
-                        await process.WriteInputAsync("save-on");
-                    }
+                    await process.WriteInputAsync("save-on");
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, "Failed to re-enable auto-save after backing up server {ServerName}.", metadata.Name);
+                    _logger.LogWarning(ex, "Failed to re-enable auto-save.");
                 }
             }
         }
+    }
 
-        // Update metadata
-        metadata.LastBackupTime = DateTime.UtcNow;
-        SaveMetadata(metadata, serverDir);
-
-        // Prune old backups
-        PruneOldBackups(backupDir, metadata.MaxBackupsToKeep);
+    private async Task ReplicateToExternalDirectoryAsync(InstanceMetadata metadata, string zipPath, Action<string>? onProgress)
+    {
+        var appSettings = _settingsManager.Load();
+        if (!string.IsNullOrWhiteSpace(appSettings.ExternalBackupDirectory) && Directory.Exists(appSettings.ExternalBackupDirectory))
+        {
+            onProgress?.Invoke("Replicating to external storage...");
+            try
+            {
+                string timestamp = Path.GetFileNameWithoutExtension(zipPath).Replace("world-", "");
+                string externalTarget = Path.Combine(appSettings.ExternalBackupDirectory, metadata.Name, "backups");
+                Directory.CreateDirectory(externalTarget);
+                
+                string destinationPath = Path.Combine(externalTarget, $"world-{timestamp}.zip");
+                await Task.Run(() => File.Copy(zipPath, destinationPath, true));
+                _logger.LogInformation("Successfully replicated backup to external location: {Destination}", destinationPath);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to replicate backup to external directory");
+                onProgress?.Invoke("Warning: External replication failed (Check logs)");
+            }
+        }
     }
 
     private async Task<bool> TrySyncSaveViaRconAsync(string serverDir, Action<string>? onProgress)
     {
         try
         {
-            if (!_configService.TryGetProperty(serverDir, "enable-rcon", out var rconEnabled) || rconEnabled != "true")
-            {
-                return false;
-            }
+            if (!_configService.TryGetProperty(serverDir, "enable-rcon", out var rconEnabled) || rconEnabled != "true") return false;
 
             _configService.TryGetProperty(serverDir, "rcon.port", out var portStr);
             _configService.TryGetProperty(serverDir, "rcon.password", out var password);
 
-            if (string.IsNullOrEmpty(password) || !int.TryParse(portStr ?? "25575", out int port))
-            {
-                return false;
-            }
+            if (string.IsNullOrEmpty(password) || !int.TryParse(portStr ?? "25575", out int port)) return false;
 
             onProgress?.Invoke("Connecting to RCON...");
             using var rcon = new RconClient("127.0.0.1", port, password);
@@ -248,7 +238,6 @@ public class BackupService
             onProgress?.Invoke("Syncing via RCON: save-all");
             var response = await rcon.ExecuteCommandAsync("save-all");
             
-            _logger.LogInformation("RCON save-all response: {Response}", response);
             return true;
         }
         catch (Exception ex)
@@ -258,11 +247,6 @@ public class BackupService
         }
     }
 
-    /// <summary>
-    /// Builds a ZIP manually, opening each file with FileShare.ReadWrite
-    /// so JVM-locked region files can still be read, and skipping any
-    /// file that is exclusively locked (like session.lock).
-    /// </summary>
     private void CreateZipWithLockedFileSkip(string sourceDir, string zipPath, List<string> skippedFiles)
     {
         using var archive = ZipFile.Open(zipPath, ZipArchiveMode.Create);
@@ -273,7 +257,6 @@ public class BackupService
             string relativePath = Path.GetRelativePath(sourceDir, filePath);
             string fileName = Path.GetFileName(filePath);
 
-            // Always skip known locked files
             if (SkipFiles.Contains(fileName))
             {
                 skippedFiles.Add(relativePath);
@@ -284,13 +267,11 @@ public class BackupService
             {
                 var entry = archive.CreateEntry(relativePath, CompressionLevel.Fastest);
                 using var entryStream = entry.Open();
-                // FileShare.ReadWrite allows reading files the JVM has open
                 using var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                 fileStream.CopyTo(entryStream);
             }
             catch (IOException)
             {
-                // File is exclusively locked — skip it rather than fail the whole backup
                 skippedFiles.Add(relativePath);
             }
             catch (UnauthorizedAccessException)
@@ -300,10 +281,6 @@ public class BackupService
         }
     }
 
-    /// <summary>
-    /// Restores a backup by replacing the world folder with the backup contents.
-    /// Server MUST be stopped before calling this.
-    /// </summary>
     public async Task RestoreBackupAsync(InstanceMetadata metadata, string backupZipPath, string serverDir, Action<string>? onProgress = null)
     {
         string worldFolderName = "world";
@@ -332,15 +309,11 @@ public class BackupService
         }
 
         onProgress?.Invoke("Extracting backup...");
-        // SEC-02: Use SafeZipExtractor to prevent zip-slip path traversal
         await SafeZipExtractor.ExtractAsync(backupZipPath, worldDir);
 
         onProgress?.Invoke("World restored successfully!");
     }
 
-    /// <summary>
-    /// Deletes oldest backups that exceed the retention limit.
-    /// </summary>
     private void PruneOldBackups(string backupDirectory, int maxToKeep)
     {
         var files = new DirectoryInfo(backupDirectory)

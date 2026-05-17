@@ -1,6 +1,25 @@
 # Changelog
 
-This file summarizes the Pocket MC Desktop release line from `v1.0.0` to `v1.6.9`.
+This file summarizes the Pocket MC Desktop release line from `v1.0.0` to `v1.7.0`.
+
+## v1.7.0 - Robust Cloud Backups, Secure OAuth Proxy & One-Click Restore
+
+This major release introduces native cloud backups and one-click cloud restorations for **Google Drive**, **Dropbox**, and **OneDrive**, backed by a secure hybrid proxy architecture that shields API secrets from the open-source client.
+
+### ☁️ Cloud Backups & One-Click Restore
+* **One-Click Cloud Restoration**: Restoring server worlds from the cloud is now fully integrated. Click the new "Restore" button next to any remote backup to download, extract, and automatically apply files directly to your server.
+* **Write-Safety Guards**: To prevent write conflicts and world data corruption, the cloud restore action is strictly gated. The UI automatically disables the Restore button while the Minecraft server is actively running.
+* **Direct Provider Integration**: Fully integrated compiled API clients (`Dropbox.Api`, `Google.Apis.Drive.v3`, and `Microsoft.Identity.Client` via MSAL.NET) for direct, robust communication with cloud servers without local file-sync utilities.
+* **DPAPI Token Protection**: All user access and refresh tokens are securely encrypted using Windows Data Protection API (DPAPI) at rest and locked to your local Windows user profile.
+
+### 🔒 Secure Hybrid OAuth Architecture
+* **Google OAuth Helper Proxy**: Built and deployed a stateless ASP.NET Core helper proxy backend to handle Google Drive OAuth token exchanges and refresh requests. This securely shields the Google client secret from the open-source repository while offering 100% transparency.
+* **PKCE Public Client Flow**: Integrated native PKCE (Proof Key for Code Exchange) auth flows for Dropbox and OneDrive, communicating directly from the desktop application to the providers with zero middle-man involvement.
+* **Verbose Diagnostic Handlers**: Rebuilt the cloud provider exception handlers to catch and report full HTTP response bodies from OAuth servers, simplifying troubleshooting for developer setup validation (e.g., Google's testing-state consent constraints).
+
+### 📖 Enhanced Project Documentation
+* **Comprehensive Documentation Port**: Added a brand-new guide detailing the Playit.gg Tunnel Integration (**docs/playit-tunnels.md**) with Mermaid sequencing and error diagnosis.
+* **Upgraded Backup Guides**: Redesigned **docs/cloud-backups.md** to fully document the secure token proxy architecture, restore steps, and Google/Dropbox/OneDrive developer console setup configurations.
 
 ## v1.6.9 - Playit.gg Connectivity & Versioning Resilience
 

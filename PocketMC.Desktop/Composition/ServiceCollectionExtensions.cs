@@ -101,6 +101,17 @@ namespace PocketMC.Desktop.Composition
             services.AddSingleton<BackupService>();
             services.AddSingleton<BackupSchedulerService>();
 
+            services.AddSingleton<PocketMC.Desktop.Features.CloudBackups.CloudBackupUploadHistoryStore>();
+            services.AddSingleton<PocketMC.Desktop.Features.CloudBackups.CloudBackupService>();
+            services.AddHttpClient("OneDrive");
+            services.AddHttpClient("GoogleDriveProxy", client =>
+            {
+                SetDefaultUserAgent(client);
+            });
+            services.AddSingleton<PocketMC.Desktop.Features.CloudBackups.ICloudBackupProvider, PocketMC.Desktop.Features.CloudBackups.Providers.OneDriveBackupProvider>();
+            services.AddSingleton<PocketMC.Desktop.Features.CloudBackups.ICloudBackupProvider, PocketMC.Desktop.Features.CloudBackups.Providers.DropboxBackupProvider>();
+            services.AddSingleton<PocketMC.Desktop.Features.CloudBackups.ICloudBackupProvider, PocketMC.Desktop.Features.CloudBackups.Providers.GoogleDriveBackupProvider>();
+
             services.AddSingleton<InstancePathService>();
             services.AddSingleton<InstanceRegistry>();
             services.AddSingleton<InstanceManager>();
@@ -192,6 +203,7 @@ namespace PocketMC.Desktop.Composition
             services.AddTransient<DashboardActionsVM>();
             services.AddTransient<DashboardViewModel>();
             services.AddTransient<ServerSettingsViewModel>();
+            services.AddTransient<CloudBackupSettingsViewModel>();
 
             services.AddTransient<DashboardPage>();
             services.AddTransient<NewInstancePage>();

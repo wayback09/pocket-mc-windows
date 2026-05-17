@@ -20,6 +20,7 @@ using PocketMC.Desktop.Features.Mods;
 using PocketMC.Desktop.Features.Instances.Backups;
 using PocketMC.Desktop.Features.Intelligence;
 using PocketMC.Desktop.Features.Networking;
+using PocketMC.Desktop.Features.CloudBackups;
 
 namespace PocketMC.Desktop.Features.Settings
 {
@@ -49,6 +50,7 @@ namespace PocketMC.Desktop.Features.Settings
         public SettingsAddonsVM Addons { get; }
         public SettingsAdvancedVM Advanced { get; }
         public SettingsSummariesVM Summaries { get; }
+        public ServerCloudBackupViewModel CloudBackups { get; }
 
         private bool _isAiSummarizationAvailable;
         public bool IsAiSummarizationAvailable { get => _isAiSummarizationAvailable; set => SetProperty(ref _isAiSummarizationAvailable, value); }
@@ -136,6 +138,17 @@ namespace PocketMC.Desktop.Features.Settings
 
             var summaryStorage = (SummaryStorageService)serviceProvider.GetService(typeof(SummaryStorageService))!;
             Summaries = new SettingsSummariesVM(ServerDir, summaryStorage, dialogService);
+
+            var cloudProviders = serviceProvider.GetService(typeof(IEnumerable<ICloudBackupProvider>)) as IEnumerable<ICloudBackupProvider>;
+            var settingsManager = (SettingsManager)serviceProvider.GetService(typeof(SettingsManager))!;
+            CloudBackups = new ServerCloudBackupViewModel(
+                settingsManager, 
+                cloudProviders ?? Array.Empty<ICloudBackupProvider>(), 
+                dialogService, 
+                metadata,
+                backupService,
+                () => ServerDir,
+                () => IsRunning);
 
             SaveCommand = new RelayCommand(_ => SaveConfigurations(), _ => !IsTransientState);
             CancelCommand = new RelayCommand(async _ => await CancelAsync());

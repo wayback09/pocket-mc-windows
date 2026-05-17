@@ -8,6 +8,11 @@
       d:DesignHeight="600" d:DesignWidth="800"
       Title="Settings">
 
+    <Page.Resources>
+        <BooleanToVisibilityConverter x:Key="VisibleIfTrue"/>
+        <presentation:InverseBooleanToVisibilityConverter x:Key="InvertedVisibilityConverter" xmlns:presentation="clr-namespace:PocketMC.Desktop.Core.Presentation"/>
+    </Page.Resources>
+
     <Grid VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -205,6 +210,61 @@
                                              Checked="ToggleAutoSummarize_Changed" 
                                              Unchecked="ToggleAutoSummarize_Changed"/>
                         </Grid>
+                    </StackPanel>
+                </ui:CardExpander>
+
+                <ui:CardExpander IsExpanded="False" Icon="{ui:SymbolIcon Cloud24}" Margin="0,0,0,12">
+                    <ui:CardExpander.Header>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="Cloud Backups" FontSize="16" FontWeight="SemiBold"/>
+                                <TextBlock Text="Native cloud backup integration for disaster recovery." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
+                            </StackPanel>
+                        </Grid>
+                    </ui:CardExpander.Header>
+
+                    <StackPanel Margin="16,8,16,16" DataContext="{Binding CloudBackups, RelativeSource={RelativeSource AncestorType=Page}}">
+                        <!-- Toggles -->
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Enable Cloud Backups" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock Text="Master toggle to allow instances to upload backups to configured providers." TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,24,0"/>
+                            </StackPanel>
+                            <ui:ToggleSwitch Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding EnableCloudBackups, Mode=TwoWay}"/>
+                        </Grid>
+
+                        <Separator Margin="0,16" Opacity="0.15"/>
+
+                        <ItemsControl ItemsSource="{Binding ProviderViewModels}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="0,0,0,16">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <ui:SymbolIcon Symbol="Cloud24" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="24"/>
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding ProviderType}" FontSize="14" FontWeight="Medium"/>
+                                            <TextBlock Text="{Binding AccountInfo}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,4,0,0"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                            <ui:ProgressRing IsIndeterminate="True" Width="16" Height="16" Margin="0,0,12,0" Visibility="{Binding IsBusy, Converter={StaticResource VisibleIfTrue}}"/>
+                                            <ui:Button Content="Connect" Command="{Binding ConnectCommand}" Appearance="Primary" Margin="0,0,8,0" Visibility="{Binding IsConnected, Converter={StaticResource InvertedVisibilityConverter}}" />
+                                            <ui:Button Content="Disconnect" Command="{Binding DisconnectCommand}" Appearance="Danger" Visibility="{Binding IsConnected, Converter={StaticResource VisibleIfTrue}}" />
+                                        </StackPanel>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
                     </StackPanel>
                 </ui:CardExpander>
 

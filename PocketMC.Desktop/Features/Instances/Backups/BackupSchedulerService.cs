@@ -73,7 +73,7 @@ public class BackupSchedulerService : IDisposable
 
                     if (DateTime.UtcNow >= nextDue)
                     {
-                        await _backupService.RunBackupAsync(meta, instancePath);
+                        await _backupService.RunBackupAsync(meta, instancePath, isManualBackup: false);
                     }
                 }
                 catch (Exception ex)
