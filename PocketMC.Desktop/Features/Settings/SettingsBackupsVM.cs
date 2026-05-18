@@ -35,9 +35,39 @@ namespace PocketMC.Desktop.Features.Settings
         private bool _isBackingUp;
         public bool IsBackingUp { get => _isBackingUp; set => SetProperty(ref _isBackingUp, value); }
 
+        // --- Health Warning Properties ---
+
+        private bool _hasHealthWarning;
+        public bool HasHealthWarning { get => _hasHealthWarning; set => SetProperty(ref _hasHealthWarning, value); }
+
+        private string _healthWarningText = string.Empty;
+        public string HealthWarningText { get => _healthWarningText; set => SetProperty(ref _healthWarningText, value); }
+
+        private string _healthWarningIcon = "Warning24";
+        public string HealthWarningIcon { get => _healthWarningIcon; set => SetProperty(ref _healthWarningIcon, value); }
+
+        private bool _hasHealthCritical;
+        public bool HasHealthCritical { get => _hasHealthCritical; set => SetProperty(ref _hasHealthCritical, value); }
+
+        // --- Backup Stats ---
+
+        private string _totalBackupsSizeText = string.Empty;
+        public string TotalBackupsSizeText { get => _totalBackupsSizeText; set => SetProperty(ref _totalBackupsSizeText, value); }
+
+        private string _lastBackupTimeText = "Never";
+        public string LastBackupTimeText { get => _lastBackupTimeText; set => SetProperty(ref _lastBackupTimeText, value); }
+
+        private string _diskSpaceText = string.Empty;
+        public string DiskSpaceText { get => _diskSpaceText; set => SetProperty(ref _diskSpaceText, value); }
+
+        private bool _showDiskWarning;
+        public bool ShowDiskWarning { get => _showDiskWarning; set => SetProperty(ref _showDiskWarning, value); }
+
         public ICommand CreateBackupCommand { get; }
         public ICommand RestoreBackupCommand { get; }
         public ICommand DeleteBackupCommand { get; }
+        public ICommand SaveLabelCommand { get; }
+        public ICommand VerifyIntegrityCommand { get; }
 
         public SettingsBackupsVM(
             InstanceMetadata metadata,
@@ -62,18 +92,148 @@ namespace PocketMC.Desktop.Features.Settings
             CreateBackupCommand = new RelayCommand(async _ => await CreateBackupAsync());
             RestoreBackupCommand = new RelayCommand(async p => await RestoreBackupAsync(p as string), _ => !_isRunningCheck());
             DeleteBackupCommand = new RelayCommand(async p => await DeleteBackupAsync(p as string));
+            SaveLabelCommand = new RelayCommand(async p => await SaveLabelAsync(p as BackupItemViewModel));
+            VerifyIntegrityCommand = new RelayCommand(async p => await VerifyIntegrityAsync(p as BackupItemViewModel));
         }
 
         public void LoadBackups()
         {
             BackupList.Clear();
             var dir = Path.Combine(_serverDir, "backups");
-            if (!Directory.Exists(dir)) return;
+            if (!Directory.Exists(dir)) 
+            {
+                RefreshHealthWarnings();
+                return;
+            }
+
+            var manifest = BackupManifest.Load(_serverDir);
+
             foreach (var zip in Directory.GetFiles(dir, "*.zip").OrderByDescending(f => File.GetCreationTime(f)))
             {
                 var fi = new FileInfo(zip);
-                BackupList.Add(new BackupItemViewModel { Name = fi.Name, FullPath = zip, SizeMb = fi.Length / (1024.0 * 1024.0), CreatedAt = fi.CreationTime });
+                var metaEntry = manifest.Entries.FirstOrDefault(e =>
+                    string.Equals(e.FileName, fi.Name, StringComparison.OrdinalIgnoreCase));
+
+                var vm = new BackupItemViewModel
+                {
+                    Name = fi.Name,
+                    FullPath = zip,
+                    SizeMb = fi.Length / (1024.0 * 1024.0),
+                    CreatedAt = fi.CreationTime
+                };
+
+                if (metaEntry != null)
+                {
+                    vm.Version = metaEntry.Version;
+                    vm.TriggerText = metaEntry.Trigger == BackupTrigger.Manual ? "Manual" : "Scheduled";
+                    vm.Label = metaEntry.Label ?? string.Empty;
+                    vm.ServerVersion = metaEntry.MinecraftVersion;
+                    vm.ServerType = metaEntry.ServerType;
+                    vm.HasChecksum = metaEntry.Sha256Checksum != null;
+                    vm.IntegrityVerified = metaEntry.IntegrityVerified;
+
+                    if (metaEntry.SizeDeltaBytes.HasValue)
+                    {
+                        double deltaMb = metaEntry.SizeDeltaBytes.Value / (1024.0 * 1024.0);
+                        vm.SizeDeltaText = metaEntry.SizeDeltaBytes.Value >= 0
+                            ? $"+{deltaMb:F1} MB"
+                            : $"{deltaMb:F1} MB";
+                    }
+                }
+
+                BackupList.Add(vm);
             }
+
+            RefreshHealthWarnings();
+        }
+
+        private void RefreshHealthWarnings()
+        {
+            var warnings = new System.Collections.Generic.List<string>();
+            bool critical = false;
+
+            // 1. Check for recent backup failure
+            var manifest = BackupManifest.Load(_serverDir);
+            if (manifest.LastFailedBackupUtc.HasValue)
+            {
+                var ago = DateTime.UtcNow - manifest.LastFailedBackupUtc.Value;
+                string timeAgo = ago.TotalHours < 1 ? $"{(int)ago.TotalMinutes}m ago" 
+                    : ago.TotalDays < 1 ? $"{(int)ago.TotalHours}h ago" 
+                    : $"{(int)ago.TotalDays}d ago";
+                warnings.Add($"Last backup failed ({timeAgo}): {manifest.LastFailureReason ?? "Unknown error"}");
+                critical = true;
+            }
+
+            // 2. Check disk space
+            try
+            {
+                var driveInfo = new DriveInfo(Path.GetPathRoot(_serverDir) ?? "C");
+                double freeGb = driveInfo.AvailableFreeSpace / (1024.0 * 1024.0 * 1024.0);
+                double totalGb = driveInfo.TotalSize / (1024.0 * 1024.0 * 1024.0);
+                double usedPercent = ((totalGb - freeGb) / totalGb) * 100;
+
+                DiskSpaceText = $"{freeGb:F1} GB free of {totalGb:F0} GB";
+                ShowDiskWarning = freeGb < 2.0;
+
+                if (freeGb < 1.0)
+                {
+                    warnings.Add($"Critical: Only {freeGb:F1} GB disk space remaining. Backups may fail.");
+                    critical = true;
+                }
+                else if (freeGb < 2.0)
+                {
+                    warnings.Add($"Low disk space: {freeGb:F1} GB remaining. Consider freeing space.");
+                }
+            }
+            catch { /* Ignore drive info errors */ }
+
+            // 3. Check for overdue scheduled backup
+            if (_metadata.BackupIntervalHours > 0 && _metadata.LastBackupTime.HasValue)
+            {
+                var nextDue = _metadata.LastBackupTime.Value.AddHours(_metadata.BackupIntervalHours);
+                if (DateTime.UtcNow > nextDue.AddHours(1)) // 1 hour grace period
+                {
+                    var overdue = DateTime.UtcNow - nextDue;
+                    string overdueText = overdue.TotalHours < 1 ? $"{(int)overdue.TotalMinutes}m" 
+                        : overdue.TotalDays < 1 ? $"{(int)overdue.TotalHours}h" 
+                        : $"{(int)overdue.TotalDays}d";
+                    warnings.Add($"Scheduled backup is overdue by {overdueText}.");
+                }
+            }
+
+            // 4. No backups exist warning
+            if (BackupList.Count == 0 && _metadata.BackupIntervalHours > 0)
+            {
+                warnings.Add("No backups found. Consider creating your first backup now.");
+            }
+
+            // 5. Total size display
+            double totalSizeMb = BackupList.Sum(b => b.SizeMb);
+            TotalBackupsSizeText = totalSizeMb >= 1024
+                ? $"{totalSizeMb / 1024.0:F1} GB across {BackupList.Count} backup(s)"
+                : $"{totalSizeMb:F1} MB across {BackupList.Count} backup(s)";
+
+            // 6. Last backup time
+            if (_metadata.LastBackupTime.HasValue)
+            {
+                var ago = DateTime.UtcNow - _metadata.LastBackupTime.Value;
+                if (ago.TotalMinutes < 1)
+                    LastBackupTimeText = "Just now";
+                else if (ago.TotalHours < 1)
+                    LastBackupTimeText = $"{(int)ago.TotalMinutes} minutes ago";
+                else if (ago.TotalDays < 1)
+                    LastBackupTimeText = $"{(int)ago.TotalHours} hours ago";
+                else
+                    LastBackupTimeText = $"{(int)ago.TotalDays} days ago ({_metadata.LastBackupTime.Value.ToLocalTime():g})";
+            }
+            else
+            {
+                LastBackupTimeText = "Never";
+            }
+
+            HasHealthWarning = warnings.Count > 0;
+            HasHealthCritical = critical;
+            HealthWarningText = string.Join("\n", warnings);
         }
 
         private async Task CreateBackupAsync()
@@ -99,17 +259,115 @@ namespace PocketMC.Desktop.Features.Settings
         {
             if (path != null && await _dialogService.ShowDialogAsync("Confirm", "Delete this backup permanently?", DialogType.Question) == DialogResult.Yes)
             {
-                try { File.Delete(path); LoadBackups(); }
+                try 
+                { 
+                    var fileName = Path.GetFileName(path);
+                    File.Delete(path);
+
+                    // Remove from manifest
+                    var manifest = BackupManifest.Load(_serverDir);
+                    manifest.Entries.RemoveAll(e =>
+                        string.Equals(e.FileName, fileName, StringComparison.OrdinalIgnoreCase));
+                    manifest.Save(_serverDir);
+
+                    LoadBackups(); 
+                }
                 catch (Exception ex) { _dialogService.ShowMessage("Error", ex.Message, DialogType.Error); }
+            }
+        }
+
+        private async Task SaveLabelAsync(BackupItemViewModel? item)
+        {
+            if (item == null) return;
+            try
+            {
+                await Task.Run(() =>
+                {
+                    var manifest = BackupManifest.Load(_serverDir);
+                    var entry = manifest.Entries.FirstOrDefault(e =>
+                        string.Equals(e.FileName, item.Name, StringComparison.OrdinalIgnoreCase));
+                    if (entry != null)
+                    {
+                        entry.Label = string.IsNullOrWhiteSpace(item.Label) ? null : item.Label.Trim();
+                        manifest.Save(_serverDir);
+                    }
+                });
+                _dialogService.ShowMessage("Saved", "Backup label updated.");
+            }
+            catch (Exception ex)
+            {
+                _dialogService.ShowMessage("Error", $"Failed to save label: {ex.Message}", DialogType.Error);
+            }
+        }
+
+        private async Task VerifyIntegrityAsync(BackupItemViewModel? item)
+        {
+            if (item == null) return;
+            try
+            {
+                item.IntegrityStatusText = "Verifying...";
+                var result = await Task.Run(() => _backupService.VerifyBackupIntegrity(_serverDir, item.Name));
+
+                if (result == null)
+                {
+                    item.IntegrityStatusText = "⚠ No checksum available";
+                    item.IntegrityVerified = false;
+                }
+                else if (result == true)
+                {
+                    item.IntegrityStatusText = "✓ Integrity verified";
+                    item.IntegrityVerified = true;
+                }
+                else
+                {
+                    item.IntegrityStatusText = "✗ CORRUPT — checksum mismatch!";
+                    item.IntegrityVerified = false;
+                    _dialogService.ShowMessage("Integrity Check Failed", 
+                        $"Backup \"{item.Name}\" may be corrupted. The SHA-256 checksum does not match the original. This backup may not restore correctly.", 
+                        DialogType.Warning);
+                }
+            }
+            catch (Exception ex)
+            {
+                item.IntegrityStatusText = $"Error: {ex.Message}";
             }
         }
     }
 
-    public class BackupItemViewModel
+    public class BackupItemViewModel : ViewModelBase
     {
         public string Name { get; set; } = "";
         public string FullPath { get; set; } = "";
         public double SizeMb { get; set; }
         public DateTime CreatedAt { get; set; }
+
+        // Versioning fields
+        public int Version { get; set; }
+        public string TriggerText { get; set; } = "";
+        public string ServerVersion { get; set; } = "";
+        public string ServerType { get; set; } = "";
+        public string SizeDeltaText { get; set; } = "";
+        public bool HasChecksum { get; set; }
+
+        private bool _integrityVerified;
+        public bool IntegrityVerified { get => _integrityVerified; set => SetProperty(ref _integrityVerified, value); }
+
+        private string _label = string.Empty;
+        public string Label { get => _label; set => SetProperty(ref _label, value); }
+
+        private string _integrityStatusText = string.Empty;
+        public string IntegrityStatusText { get => _integrityStatusText; set => SetProperty(ref _integrityStatusText, value); }
+
+        /// <summary>Display-friendly version text, e.g. "v3"</summary>
+        public string VersionText => Version > 0 ? $"v{Version}" : "";
+
+        /// <summary>Formatted creation time for the UI.</summary>
+        public string CreatedAtText => CreatedAt.ToString("MMM dd, yyyy  hh:mm tt");
+
+        /// <summary>Formatted size for the UI.</summary>
+        public string SizeText => SizeMb >= 1024 ? $"{SizeMb / 1024.0:F1} GB" : $"{SizeMb:F1} MB";
+
+        /// <summary>Has metadata from manifest (vs legacy backup with no manifest).</summary>
+        public bool HasMetadata => Version > 0;
     }
 }

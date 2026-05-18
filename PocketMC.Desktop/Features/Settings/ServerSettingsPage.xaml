@@ -789,6 +789,95 @@
                         <TabItem Header="Backups">
                             <ScrollViewer x:Name="BackupsScrollViewer" VerticalScrollBarVisibility="Auto" Padding="0,0,16,0">
                                 <StackPanel>
+
+                                    <!-- HEALTH WARNINGS BANNER -->
+                                    <Border Margin="0,0,0,12" Padding="16,12" CornerRadius="8"
+                                            Visibility="{Binding Backups.HasHealthWarning, Converter={StaticResource VisibleIfTrue}}">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="Background" Value="#22F9A825"/>
+                                                <Setter Property="BorderBrush" Value="#44F9A825"/>
+                                                <Setter Property="BorderThickness" Value="1"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Backups.HasHealthCritical}" Value="True">
+                                                        <Setter Property="Background" Value="#22F38BA8"/>
+                                                        <Setter Property="BorderBrush" Value="#44F38BA8"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <ui:SymbolIcon Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Top">
+                                                <ui:SymbolIcon.Style>
+                                                    <Style TargetType="ui:SymbolIcon">
+                                                        <Setter Property="Symbol" Value="Warning24"/>
+                                                        <Setter Property="Foreground" Value="#F9A825"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Backups.HasHealthCritical}" Value="True">
+                                                                <Setter Property="Symbol" Value="ErrorCircle24"/>
+                                                                <Setter Property="Foreground" Value="#F38BA8"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </ui:SymbolIcon.Style>
+                                            </ui:SymbolIcon>
+                                            <StackPanel Grid.Column="1">
+                                                <TextBlock FontWeight="SemiBold" FontSize="13" Margin="0,0,0,4">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Text" Value="Backup Health Warning"/>
+                                                            <Setter Property="Foreground" Value="#F9A825"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding Backups.HasHealthCritical}" Value="True">
+                                                                    <Setter Property="Foreground" Value="#F38BA8"/>
+                                                                    <Setter Property="Text" Value="Backup Health Alert"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                                <TextBlock Text="{Binding Backups.HealthWarningText}" TextWrapping="Wrap" FontSize="12"
+                                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+
+                                    <!-- BACKUP STATS SUMMARY -->
+                                    <Border Background="{DynamicResource CardBackgroundFillColorSecondaryBrush}" CornerRadius="8" Padding="16" Margin="0,0,0,12">
+                                        <UniformGrid Columns="3">
+                                            <StackPanel HorizontalAlignment="Center">
+                                                <TextBlock Text="TOTAL SIZE" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="{Binding Backups.TotalBackupsSizeText, FallbackValue='—'}" FontSize="13" FontWeight="Bold"
+                                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}" HorizontalAlignment="Center"/>
+                                            </StackPanel>
+                                            <StackPanel HorizontalAlignment="Center">
+                                                <TextBlock Text="LAST BACKUP" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="{Binding Backups.LastBackupTimeText, FallbackValue='Never'}" FontSize="13" FontWeight="Bold"
+                                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}" HorizontalAlignment="Center"/>
+                                            </StackPanel>
+                                            <StackPanel HorizontalAlignment="Center">
+                                                <TextBlock Text="DISK SPACE" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="{Binding Backups.DiskSpaceText, FallbackValue='—'}" FontSize="13" FontWeight="Bold" HorizontalAlignment="Center">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding Backups.ShowDiskWarning}" Value="True">
+                                                                    <Setter Property="Foreground" Value="#F38BA8"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </StackPanel>
+                                        </UniformGrid>
+                                    </Border>
+
+                                    <!-- AUTOMATED DATA RETENTION CONFIG -->
                                     <ui:Card Padding="24" Margin="0,0,0,20">
                                         <StackPanel>
                                             <TextBlock Text="Automated Data Retention" Style="{StaticResource SettingsHeader}"/>
@@ -802,7 +891,7 @@
                                                     <ui:TextBox Text="{Binding Backups.MaxBackupsToKeep, Mode=TwoWay}"/>
                                                 </StackPanel>
                                             </WrapPanel>
-                                            <ui:Button Content="Create Backup Archive" Command="{Binding Backups.CreateBackupCommand}" Appearance="Primary" Icon="{ui:SymbolIcon Save20}" Margin="0,5,0,0"/>
+                                            <ui:Button Content="Create Backup Now" Command="{Binding Backups.CreateBackupCommand}" Appearance="Primary" Icon="{ui:SymbolIcon Save20}" Margin="0,5,0,0"/>
                                             <StackPanel Visibility="{Binding Backups.IsBackingUp, Converter={StaticResource VisibleIfTrue}}" Margin="0,15,0,0">
                                                 <ProgressBar IsIndeterminate="True" Height="4"/>
                                             </StackPanel>
@@ -883,25 +972,84 @@
                                         </StackPanel>
                                     </ui:Card>
 
-                                    <ui:ListView ItemsSource="{Binding Backups.BackupList}" Margin="4,0,0,0" x:Name="BackupListView">
-                                        <ui:ListView.ItemTemplate>
+                                    <!-- BACKUP HISTORY (Versioned Cards) -->
+                                    <TextBlock Text="Backup History" Style="{StaticResource SettingsHeader}" Margin="4,0,0,12"/>
+                                    <ItemsControl ItemsSource="{Binding Backups.BackupList}" Margin="0,0,0,24">
+                                        <ItemsControl.ItemTemplate>
                                             <DataTemplate>
                                                 <ui:Card Margin="0,0,0,10" Padding="16,12">
                                                     <Grid>
-                                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                                        <StackPanel>
-                                                            <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="14"/>
-                                                            <TextBlock Text="{Binding SizeMb, StringFormat={}{0:F1} MB}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+
+                                                        <!-- Version Badge -->
+                                                        <Border Grid.Column="0" Background="#3389B4FA" CornerRadius="6" Padding="8,4" Margin="0,0,12,0"
+                                                                VerticalAlignment="Top" HorizontalAlignment="Center" MinWidth="36">
+                                                            <TextBlock Text="{Binding VersionText, FallbackValue='—'}" FontSize="12" FontWeight="Bold"
+                                                                       Foreground="{DynamicResource SystemFillColorAttentionBrush}" HorizontalAlignment="Center"/>
+                                                        </Border>
+
+                                                        <!-- Backup Info -->
+                                                        <StackPanel Grid.Column="1">
+                                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                                                                <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="14" VerticalAlignment="Center"/>
+                                                                <Border Background="{DynamicResource ControlFillColorSecondaryBrush}" CornerRadius="4" Padding="6,2" Margin="8,0,0,0"
+                                                                        Visibility="{Binding HasMetadata, Converter={StaticResource VisibleIfTrue}}">
+                                                                    <TextBlock Text="{Binding TriggerText}" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                                </Border>
+                                                            </StackPanel>
+
+                                                            <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                                                                <TextBlock Text="{Binding SizeText}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                                <TextBlock Text="{Binding SizeDeltaText}" FontSize="11" Foreground="#A6E3A1" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                                                                <TextBlock Text="·" FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}" Margin="8,0"/>
+                                                                <TextBlock Text="{Binding CreatedAtText}" FontSize="11" Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                                                            </StackPanel>
+
+                                                            <StackPanel Orientation="Horizontal" Margin="0,2,0,0"
+                                                                        Visibility="{Binding HasMetadata, Converter={StaticResource VisibleIfTrue}}">
+                                                                <TextBlock FontSize="11" Foreground="{DynamicResource TextFillColorTertiaryBrush}">
+                                                                    <Run Text="{Binding ServerType, Mode=OneWay}"/>
+                                                                    <Run Text=" · "/>
+                                                                    <Run Text="{Binding ServerVersion, Mode=OneWay}"/>
+                                                                </TextBlock>
+                                                            </StackPanel>
+
+                                                            <!-- Label Editor -->
+                                                            <StackPanel Orientation="Horizontal" Margin="0,6,0,0"
+                                                                        Visibility="{Binding HasMetadata, Converter={StaticResource VisibleIfTrue}}">
+                                                                <ui:TextBox Text="{Binding Label, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="Add a label..."
+                                                                            MinHeight="30" FontSize="12" Width="280" Margin="0,0,8,0"/>
+                                                                <ui:Button Icon="{ui:SymbolIcon Save16}" Appearance="Transparent" Padding="4"
+                                                                           Command="{Binding DataContext.Backups.SaveLabelCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                                           CommandParameter="{Binding}" ToolTip="Save label"/>
+                                                            </StackPanel>
+
+                                                            <!-- Integrity Status -->
+                                                            <TextBlock Text="{Binding IntegrityStatusText}" FontSize="11" Margin="0,4,0,0"
+                                                                       Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
                                                         </StackPanel>
-                                                        <StackPanel Grid.Column="1" Orientation="Horizontal">
-                                                            <ui:Button Content="Restore" Appearance="Secondary" Command="{Binding DataContext.Backups.RestoreBackupCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding FullPath}" Margin="0,0,10,0" VerticalAlignment="Center"/>
-                                                            <ui:Button Icon="{ui:SymbolIcon Delete20}" Appearance="Danger" Command="{Binding DataContext.Backups.DeleteBackupCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding FullPath}" VerticalAlignment="Center"/>
+
+                                                        <!-- Action Buttons -->
+                                                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Top">
+                                                            <ui:Button Icon="{ui:SymbolIcon ShieldCheckmark20}" Appearance="Transparent" Padding="6"
+                                                                       Command="{Binding DataContext.Backups.VerifyIntegrityCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                                       CommandParameter="{Binding}" ToolTip="Verify integrity" Margin="0,0,4,0"/>
+                                                            <ui:Button Content="Restore" Appearance="Secondary"
+                                                                       Command="{Binding DataContext.Backups.RestoreBackupCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                                       CommandParameter="{Binding FullPath}" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                                            <ui:Button Icon="{ui:SymbolIcon Delete20}" Appearance="Danger"
+                                                                       Command="{Binding DataContext.Backups.DeleteBackupCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                                       CommandParameter="{Binding FullPath}" VerticalAlignment="Center"/>
                                                         </StackPanel>
                                                     </Grid>
                                                 </ui:Card>
                                             </DataTemplate>
-                                        </ui:ListView.ItemTemplate>
-                                    </ui:ListView>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
                                 </StackPanel>
                             </ScrollViewer>
                         </TabItem>

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -64,9 +65,15 @@ public class BackupService
         
         if (!localResult.Success || string.IsNullOrEmpty(localResult.ZipPath))
         {
+            // Record failure in manifest for health warnings
+            RecordBackupFailure(serverDir, localResult.Error?.Message ?? "Unknown error");
             if (localResult.Error != null) throw localResult.Error;
             return;
         }
+
+        // Record metadata entry for this backup
+        onProgress?.Invoke("Recording backup metadata...");
+        RecordBackupMetadata(metadata, serverDir, localResult.ZipPath, isManualBackup);
 
         // External replication
         await ReplicateToExternalDirectoryAsync(metadata, localResult.ZipPath, onProgress);
@@ -86,6 +93,105 @@ public class BackupService
         // Prune old backups
         var backupDir = Path.Combine(serverDir, "backups");
         PruneOldBackups(backupDir, metadata.MaxBackupsToKeep);
+
+        // Purge manifest entries whose files were pruned
+        try
+        {
+            var manifest = BackupManifest.Load(serverDir);
+            manifest.PurgeOrphanedEntries(serverDir);
+            manifest.Save(serverDir);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to purge orphaned manifest entries.");
+        }
+    }
+
+    private void RecordBackupMetadata(InstanceMetadata metadata, string serverDir, string zipPath, bool isManual)
+    {
+        try
+        {
+            var manifest = BackupManifest.Load(serverDir);
+            var fi = new FileInfo(zipPath);
+            var previousEntry = manifest.Entries
+                .OrderByDescending(e => e.Version)
+                .FirstOrDefault();
+
+            var entry = new BackupMetadataEntry
+            {
+                FileName = fi.Name,
+                CreatedAtUtc = DateTime.UtcNow,
+                Trigger = isManual ? BackupTrigger.Manual : BackupTrigger.Scheduled,
+                SizeBytes = fi.Length,
+                ServerType = metadata.ServerType ?? "Unknown",
+                MinecraftVersion = metadata.MinecraftVersion ?? "Unknown",
+                Version = manifest.GetNextVersion(),
+                SizeDeltaBytes = previousEntry != null ? fi.Length - previousEntry.SizeBytes : null,
+                Sha256Checksum = ComputeSha256(zipPath),
+                IntegrityVerified = true
+            };
+
+            manifest.Entries.Add(entry);
+
+            // Clear failure state on success
+            manifest.LastFailedBackupUtc = null;
+            manifest.LastFailureReason = null;
+
+            manifest.Save(serverDir);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to record backup metadata for {ZipPath}.", zipPath);
+        }
+    }
+
+    private void RecordBackupFailure(string serverDir, string reason)
+    {
+        try
+        {
+            var manifest = BackupManifest.Load(serverDir);
+            manifest.LastFailedBackupUtc = DateTime.UtcNow;
+            manifest.LastFailureReason = reason;
+            manifest.Save(serverDir);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to record backup failure.");
+        }
+    }
+
+    private static string? ComputeSha256(string filePath)
+    {
+        try
+        {
+            using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            using var sha = SHA256.Create();
+            var hash = sha.ComputeHash(stream);
+            return BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Verify the integrity of a backup ZIP against its stored checksum.
+    /// Returns null if no checksum is available, true if match, false if corrupt.
+    /// </summary>
+    public bool? VerifyBackupIntegrity(string serverDir, string fileName)
+    {
+        var manifest = BackupManifest.Load(serverDir);
+        var entry = manifest.Entries.FirstOrDefault(e =>
+            string.Equals(e.FileName, fileName, StringComparison.OrdinalIgnoreCase));
+
+        if (entry?.Sha256Checksum == null) return null;
+
+        var zipPath = Path.Combine(serverDir, "backups", fileName);
+        if (!File.Exists(zipPath)) return false;
+
+        var currentHash = ComputeSha256(zipPath);
+        return string.Equals(entry.Sha256Checksum, currentHash, StringComparison.OrdinalIgnoreCase);
     }
 
     private async Task<LocalBackupResult> CreateLocalBackupAsync(InstanceMetadata metadata, string serverDir, Action<string>? onProgress)
