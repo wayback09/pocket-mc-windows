@@ -1,6 +1,35 @@
 # Changelog
 
-This file summarizes the Pocket MC Desktop release line from `v1.0.0` to `v1.7.0`.
+This file summarizes the Pocket MC Desktop release line from `v1.0.0` to `v1.7.1`.
+
+## v1.7.1 - Backup Intelligence, Health Monitoring & UI Polish
+
+This release transforms the backup system from a simple archive list into a fully versioned, metadata-rich history with proactive health monitoring. It also fixes a server icon caching bug and adds a feedback section to the About page.
+
+### 📦 Backup Versioning UI
+* **Sequential Version Badges**: Every backup now receives a versioned identifier (v1, v2, v3…) displayed as a prominent blue badge, making it easy to track backup progression over time.
+* **Trigger Identification**: Each backup card clearly indicates whether it was created manually or by the automated scheduler via a labeled badge.
+* **Size Delta Tracking**: The size difference from the previous backup is displayed inline (e.g. "+2.3 MB"), giving immediate visibility into world growth between snapshots.
+
+### 📋 Backup Metadata & History Viewer
+* **Rich Backup Cards**: Each backup now displays its creation timestamp, file size, server type, and Minecraft version — all captured at the moment of backup creation.
+* **Editable Labels**: Users can annotate any backup with a custom label (e.g. "Before Wither fight" or "Pre-update snapshot") that persists across sessions via the backup manifest.
+* **SHA-256 Integrity Verification**: A dedicated shield button per backup runs a full SHA-256 checksum validation against the original hash recorded at creation time, immediately alerting if a backup file has become corrupted.
+* **Persistent Manifest**: All metadata is stored in a `backup-manifest.json` file alongside backup archives, surviving app restarts and providing a complete audit trail.
+
+### 🛡️ Backup Health Warnings
+* **Disk Space Monitoring**: The backup tab now monitors available drive space in real-time — amber warning at <2 GB remaining, critical red alert at <1 GB.
+* **Failed Backup Alerts**: If a scheduled or manual backup fails, the failure reason and timestamp are recorded and surfaced as a prominent banner on the next visit.
+* **Overdue Schedule Detection**: When a scheduled backup misses its window by more than 1 hour, an overdue warning is displayed with the exact delay.
+* **Backup Stats Summary Bar**: A new metrics strip at the top of the Backups tab shows total backup size, time since last backup, and remaining disk space at a glance.
+
+### 🐛 Bug Fixes
+* **Server Icon Persistence**: Fixed a WPF image caching issue where the custom server icon reverted to the default Pocket MC logo after reloading the Server Settings page, despite the file being correctly saved to disk. Added `BitmapCreateOptions.IgnoreImageCache` to both `SettingsGeneralVM` and `ImageCropPage`.
+
+### 🎨 About Page Improvements
+* **Feedback & Bug Reports Section**: Added a new expandable card linking to the Google Forms feedback/bug report form, accessible via a single-click button.
+* **Native GitHub Button**: Replaced the inline hyperlink for the GitHub repository with a proper native Fluent UI button for visual consistency.
+* **Full-Width Card Layout**: Removed the 600px max-width constraint from About page cards so they stretch to match the full application window, consistent with all other pages.
 
 ## v1.7.0 - Robust Cloud Backups, Secure OAuth Proxy & One-Click Restore
 
