@@ -69,7 +69,7 @@ public class RemoteBackupItemViewModel : ViewModelBase
 public class ServerCloudBackupViewModel : ViewModelBase
 {
     private readonly SettingsManager _settingsManager;
-    private readonly IEnumerable<ICloudBackupProvider> _providers;
+    private readonly IReadOnlyList<ICloudBackupProvider> _providers;
     private readonly IDialogService _dialogService;
     private readonly InstanceMetadata _metadata;
     private readonly BackupService _backupService;
@@ -82,9 +82,57 @@ public class ServerCloudBackupViewModel : ViewModelBase
     private bool _isLoading;
     public bool IsLoading { get => _isLoading; set => SetProperty(ref _isLoading, value); }
 
+    private bool _isRefreshingProviders;
+    public bool IsRefreshingProviders
+    {
+        get => _isRefreshingProviders;
+        private set
+        {
+            if (SetProperty(ref _isRefreshingProviders, value))
+            {
+                OnPropertyChanged(nameof(ShowNoConnectedProvidersMessage));
+                System.Windows.Input.CommandManager.InvalidateRequerySuggested();
+            }
+        }
+    }
+
+    private bool _isCloudBackupsEnabled;
+    public bool IsCloudBackupsEnabled
+    {
+        get => _isCloudBackupsEnabled;
+        private set
+        {
+            if (SetProperty(ref _isCloudBackupsEnabled, value))
+            {
+                OnPropertyChanged(nameof(ShowNoConnectedProvidersMessage));
+                System.Windows.Input.CommandManager.InvalidateRequerySuggested();
+            }
+        }
+    }
+
+    private bool _hasConnectedProviders;
+    public bool HasConnectedProviders
+    {
+        get => _hasConnectedProviders;
+        private set
+        {
+            if (SetProperty(ref _hasConnectedProviders, value))
+            {
+                OnPropertyChanged(nameof(ShowNoConnectedProvidersMessage));
+                System.Windows.Input.CommandManager.InvalidateRequerySuggested();
+            }
+        }
+    }
+
+    private string _providerStatusMessage = "No connected cloud providers. Connect Google Drive, Dropbox, or OneDrive in App Settings.";
+    public string ProviderStatusMessage { get => _providerStatusMessage; private set => SetProperty(ref _providerStatusMessage, value); }
+
+    public bool ShowNoConnectedProvidersMessage => IsCloudBackupsEnabled && !IsRefreshingProviders && !HasConnectedProviders;
+
     public ICommand RefreshRemoteBackupsCommand { get; }
     public ICommand DeleteRemoteBackupCommand { get; }
     public ICommand RestoreRemoteBackupCommand { get; }
+    public Task Initialization { get; }
 
     public ServerCloudBackupViewModel(
         SettingsManager settingsManager, 
@@ -96,36 +144,94 @@ public class ServerCloudBackupViewModel : ViewModelBase
         Func<bool> isRunningCheck)
     {
         _settingsManager = settingsManager;
-        _providers = providers;
+        _providers = providers.ToList();
         _dialogService = dialogService;
         _metadata = metadata;
         _backupService = backupService;
         _getServerDir = getServerDir;
         _isRunningCheck = isRunningCheck;
 
-        RefreshRemoteBackupsCommand = new RelayCommand(async _ => await LoadRemoteBackupsAsync());
+        RefreshRemoteBackupsCommand = new RelayCommand(
+            async _ => await RefreshProviderTargetsAndRemoteBackupsAsync(),
+            _ => IsCloudBackupsEnabled && !IsRefreshingProviders && !IsLoading);
         DeleteRemoteBackupCommand = new RelayCommand(async p => await DeleteRemoteBackupAsync(p as RemoteBackupItemViewModel));
         RestoreRemoteBackupCommand = new RelayCommand(async p => await RestoreRemoteBackupAsync(p as RemoteBackupItemViewModel), _ => !_isRunningCheck());
 
-        LoadSettings();
-        _ = LoadRemoteBackupsAsync();
+        Initialization = RefreshProviderTargetsAndRemoteBackupsAsync();
     }
 
-    private void LoadSettings()
+    private async Task RefreshProviderTargetsAndRemoteBackupsAsync()
+    {
+        await LoadSettingsAsync();
+        if (IsCloudBackupsEnabled && HasConnectedProviders)
+        {
+            await LoadRemoteBackupsAsync();
+        }
+    }
+
+    private async Task LoadSettingsAsync()
     {
         var settings = _settingsManager.Load();
+        IsCloudBackupsEnabled = settings.CloudBackups.EnableCloudBackups;
         Targets.Clear();
+        RemoteBackups.Clear();
+        HasConnectedProviders = false;
 
-        foreach (var provider in _providers)
+        if (!IsCloudBackupsEnabled)
         {
-            var target = settings.CloudBackups.Targets.FirstOrDefault(t => t.Provider == provider.ProviderType);
-            if (target == null)
+            ProviderStatusMessage = "Cloud backups are disabled in App Settings.";
+            return;
+        }
+
+        IsRefreshingProviders = true;
+        ProviderStatusMessage = "Checking connected cloud providers...";
+
+        try
+        {
+            var settingsChanged = false;
+            foreach (var provider in _providers)
             {
-                target = new CloudBackupTarget { Provider = provider.ProviderType, Enabled = false, RetentionCount = 5 };
-                settings.CloudBackups.Targets.Add(target);
+                if (!await IsProviderConnectedAsync(provider))
+                {
+                    continue;
+                }
+
+                var target = settings.CloudBackups.Targets.FirstOrDefault(t => t.Provider == provider.ProviderType);
+                if (target == null)
+                {
+                    target = new CloudBackupTarget { Provider = provider.ProviderType, Enabled = false, RetentionCount = 5 };
+                    settings.CloudBackups.Targets.Add(target);
+                    settingsChanged = true;
+                }
+
+                Targets.Add(new ServerCloudBackupTargetViewModel(target, SaveSettings));
+            }
+
+            HasConnectedProviders = Targets.Count > 0;
+            ProviderStatusMessage = HasConnectedProviders
+                ? string.Empty
+                : "No connected cloud providers. Connect Google Drive, Dropbox, or OneDrive in App Settings.";
+
+            if (settingsChanged)
+            {
                 _settingsManager.Save(settings);
             }
-            Targets.Add(new ServerCloudBackupTargetViewModel(target, SaveSettings));
+        }
+        finally
+        {
+            IsRefreshingProviders = false;
+        }
+    }
+
+    private async Task<bool> IsProviderConnectedAsync(ICloudBackupProvider provider)
+    {
+        try
+        {
+            return await provider.GetStatusAsync(CancellationToken.None) == CloudBackupConnectionStatus.Connected;
+        }
+        catch
+        {
+            return false;
         }
     }
 
@@ -135,6 +241,12 @@ public class ServerCloudBackupViewModel : ViewModelBase
         foreach (var vm in Targets)
         {
             var target = settings.CloudBackups.Targets.FirstOrDefault(t => t.Provider == vm.ProviderType);
+            if (target == null)
+            {
+                target = new CloudBackupTarget { Provider = vm.ProviderType };
+                settings.CloudBackups.Targets.Add(target);
+            }
+
             if (target != null)
             {
                 target.Enabled = vm.IsEnabled;
@@ -146,14 +258,21 @@ public class ServerCloudBackupViewModel : ViewModelBase
 
     private async Task LoadRemoteBackupsAsync()
     {
+        if (!IsCloudBackupsEnabled || !HasConnectedProviders)
+        {
+            RemoteBackups.Clear();
+            return;
+        }
+
         IsLoading = true;
+        System.Windows.Input.CommandManager.InvalidateRequerySuggested();
         RemoteBackups.Clear();
         try
         {
             foreach (var provider in _providers)
             {
                 var target = Targets.FirstOrDefault(t => t.ProviderType == provider.ProviderType);
-                if (target != null && target.IsEnabled)
+                if (target != null && target.IsEnabled && await IsProviderConnectedAsync(provider))
                 {
                     var items = await provider.ListBackupsAsync(_metadata.Id, _metadata.Name, CancellationToken.None);
                     foreach (var item in items)
@@ -177,6 +296,7 @@ public class ServerCloudBackupViewModel : ViewModelBase
         finally
         {
             IsLoading = false;
+            System.Windows.Input.CommandManager.InvalidateRequerySuggested();
         }
     }
 

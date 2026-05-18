@@ -57,6 +57,17 @@ public class CloudBackupService
             var target = settings.CloudBackups.Targets.FirstOrDefault(t => t.Provider == provider.ProviderType);
             if (target == null || !target.Enabled) continue;
 
+            var status = await GetProviderStatusAsync(provider);
+            if (status != CloudBackupConnectionStatus.Connected)
+            {
+                onProgress?.Invoke($"{provider.ProviderType} upload skipped (Provider is not connected)");
+                _logger.LogInformation(
+                    "Skipping cloud backup upload to {Provider} because connection status is {Status}.",
+                    provider.ProviderType,
+                    status);
+                continue;
+            }
+
             if (history.Any(h => h.InstanceId == instanceId && h.Provider == provider.ProviderType && h.LocalBackupSha256 == sha256 && h.Status == "Success"))
             {
                 onProgress?.Invoke($"{provider.ProviderType} upload skipped (Already uploaded)");
@@ -69,6 +80,19 @@ public class CloudBackupService
         if (uploadTasks.Any())
         {
             await Task.WhenAll(uploadTasks);
+        }
+    }
+
+    private async Task<CloudBackupConnectionStatus> GetProviderStatusAsync(ICloudBackupProvider provider)
+    {
+        try
+        {
+            return await provider.GetStatusAsync(CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to check cloud backup provider status for {Provider}.", provider.ProviderType);
+            return CloudBackupConnectionStatus.Error;
         }
     }
 
