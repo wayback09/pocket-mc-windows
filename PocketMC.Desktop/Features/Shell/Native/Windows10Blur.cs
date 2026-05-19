@@ -1,18 +1,26 @@
 using System;
 using System.Runtime.InteropServices;
+using System.Windows;
+using System.Windows.Interop;
+using System.Windows.Media;
 
 namespace PocketMC.Desktop.Features.Shell.Native
 {
     /// <summary>
-    /// Applies native Windows 10 acrylic blur using SetWindowCompositionAttribute.
-    /// Uses ACCENT_ENABLE_ACRYLICBLURBEHIND for the real Settings/Start-menu acrylic look.
+    /// Applies native Windows 10 blur-behind using SetWindowCompositionAttribute.
+    /// Uses ACCENT_ENABLE_BLURBEHIND (the reliable, proven approach on Windows 10).
+    /// 
+    /// The critical piece that makes the blur VISIBLE through WPF is setting
+    /// HwndSource.CompositionTarget.BackgroundColor to transparent. Without this,
+    /// WPF paints an opaque surface over the DWM composition and the blur is hidden.
+    /// 
     /// Safe best-effort: failures are silently swallowed so the app never crashes.
     /// </summary>
     internal static class Windows10Blur
     {
         private const int WCA_ACCENT_POLICY = 19;
         private const int ACCENT_DISABLED = 0;
-        private const int ACCENT_ENABLE_ACRYLICBLURBEHIND = 4;
+        private const int ACCENT_ENABLE_BLURBEHIND = 3;
 
         [StructLayout(LayoutKind.Sequential)]
         private struct AccentPolicy
@@ -35,25 +43,35 @@ namespace PocketMC.Desktop.Features.Shell.Native
         private static extern int SetWindowCompositionAttribute(IntPtr hwnd, ref WindowCompositionAttributeData data);
 
         /// <summary>
-        /// Enables acrylic blur-behind on the given window handle.
-        /// Uses a dark translucent tint (0x70181818) matching the Windows 10 Settings look.
-        /// The AABBGGRR format means: A=0x70 alpha, BB=0x18, GG=0x18, RR=0x18.
+        /// Enables blur-behind on the given window.
+        /// Sets ACCENT_ENABLE_BLURBEHIND and makes the WPF rendering surface transparent
+        /// so the DWM blur composition actually shows through.
         /// </summary>
-        public static void Enable(IntPtr hwnd)
+        public static void Enable(Window window)
         {
             try
             {
-                if (hwnd == IntPtr.Zero) return;
+                var helper = new WindowInteropHelper(window);
+                if (helper.Handle == IntPtr.Zero) return;
 
+                // ── Step 1: Make the WPF rendering surface transparent ──
+                // Without this, WPF paints an opaque background OVER the DWM blur.
+                var hwndSource = HwndSource.FromHwnd(helper.Handle);
+                if (hwndSource?.CompositionTarget != null)
+                {
+                    hwndSource.CompositionTarget.BackgroundColor = Colors.Transparent;
+                }
+
+                // ── Step 2: Apply the blur accent policy ──
                 var accent = new AccentPolicy
                 {
-                    AccentState = ACCENT_ENABLE_ACRYLICBLURBEHIND,
-                    AccentFlags = 2,    // required flag for acrylic
-                    GradientColor = 0x70181818,
+                    AccentState = ACCENT_ENABLE_BLURBEHIND,
+                    AccentFlags = 0,
+                    GradientColor = 0,   // No DWM-level tint; tinting is done via XAML overlay
                     AnimationId = 0
                 };
 
-                SetAccent(hwnd, ref accent);
+                SetAccent(helper.Handle, ref accent);
             }
             catch
             {
@@ -62,14 +80,16 @@ namespace PocketMC.Desktop.Features.Shell.Native
         }
 
         /// <summary>
-        /// Disables the blur effect, returning the window to a normal composition state.
+        /// Disables the blur effect, restores opaque WPF composition target.
         /// </summary>
-        public static void Disable(IntPtr hwnd)
+        public static void Disable(Window window)
         {
             try
             {
-                if (hwnd == IntPtr.Zero) return;
+                var helper = new WindowInteropHelper(window);
+                if (helper.Handle == IntPtr.Zero) return;
 
+                // ── Restore DWM accent to disabled ──
                 var accent = new AccentPolicy
                 {
                     AccentState = ACCENT_DISABLED,
@@ -78,7 +98,16 @@ namespace PocketMC.Desktop.Features.Shell.Native
                     AnimationId = 0
                 };
 
-                SetAccent(hwnd, ref accent);
+                SetAccent(helper.Handle, ref accent);
+
+                // ── Restore opaque WPF composition ──
+                var hwndSource = HwndSource.FromHwnd(helper.Handle);
+                if (hwndSource?.CompositionTarget != null)
+                {
+                    // Restore to the default dark background so the window isn't transparent
+                    // while in solid/inactive mode.
+                    hwndSource.CompositionTarget.BackgroundColor = Color.FromRgb(0x20, 0x20, 0x20);
+                }
             }
             catch
             {

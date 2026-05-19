@@ -21,13 +21,12 @@ namespace PocketMC.Desktop.Features.Shell
         private const int DwmUseImmersiveDarkModeBefore20H1 = 19;
 
         // ── Blur-specific constants ──
-        // Lighter tint so the real acrylic wallpaper bleed-through is visible.
+        // Light WPF overlay tint — lets the DWM blur show through clearly.
         private const string BlurOverlayTint = "#73181818";
         private const string BlurInactiveFallback = "#FF202020";
 
         private readonly ApplicationState _applicationState;
         private FluentWindow? _boundWindow;
-        private IntPtr _boundHwnd;
         private bool _isWindowActive = true;
         private bool _isNativeBlurActive;
 
@@ -42,20 +41,6 @@ namespace PocketMC.Desktop.Features.Shell
         public void Attach(FluentWindow window)
         {
             _boundWindow = window;
-
-            // Capture the HWND once the window has a valid handle.
-            if (window.IsLoaded)
-            {
-                _boundHwnd = new WindowInteropHelper(window).Handle;
-            }
-            else
-            {
-                window.Loaded += (_, _) =>
-                {
-                    _boundHwnd = new WindowInteropHelper(window).Handle;
-                };
-            }
-
             ApplyTheme();
             RequestMicaUpdate();
         }
@@ -131,7 +116,7 @@ namespace PocketMC.Desktop.Features.Shell
                         return;
                     }
 
-                    // Windows 10: Mica not supported — use native acrylic blur.
+                    // Windows 10: Mica not supported — use native blur.
                     ApplyNativeBlur(window);
                     return;
                 }
@@ -150,7 +135,7 @@ namespace PocketMC.Desktop.Features.Shell
                         return;
                     }
 
-                    // Windows 10: Acrylic not supported — use native acrylic blur.
+                    // Windows 10: Acrylic not supported — use native blur.
                     ApplyNativeBlur(window);
                     return;
                 }
@@ -224,8 +209,8 @@ namespace PocketMC.Desktop.Features.Shell
         }
 
         /// <summary>
-        /// Applies native Windows 10 acrylic blur: transparent window, dark overlay tint,
-        /// and semi-transparent WPF-UI theme brushes so the wallpaper bleeds through.
+        /// Applies native Windows 10 blur: transparent WPF surface, DWM blur composition,
+        /// dark WPF overlay tint, and semi-transparent theme brushes so wallpaper shows through.
         /// </summary>
         private void ApplyNativeBlur(FluentWindow window)
         {
@@ -233,18 +218,19 @@ namespace PocketMC.Desktop.Features.Shell
             window.WindowBackdropType = WindowBackdropType.None;
             window.Background = Brushes.Transparent;
 
-            // BackdropTintLayer stays transparent — the native acrylic provides its own tint.
+            // BackdropTintLayer stays transparent — blur provides its own background.
             SetTintLayer(window, "BackdropTintLayer", TransparentTint);
 
-            // AcrylicTintLayer provides an additional WPF-side dark overlay.
+            // AcrylicTintLayer provides a dark WPF overlay for readability.
             SetTintLayer(window, "AcrylicTintLayer", BlurOverlayTint);
 
-            // Override WPF-UI theme brushes to semi-transparent so the blur shows through.
+            // Override WPF-UI theme brushes to semi-transparent so blur shows through.
             ApplyTransparentBrushes(window);
 
-            if (_boundHwnd != IntPtr.Zero)
+            // Enable the actual DWM blur + make WPF composition target transparent.
+            if (window.IsLoaded)
             {
-                Windows10Blur.Enable(_boundHwnd);
+                Windows10Blur.Enable(window);
                 _isNativeBlurActive = true;
             }
         }
@@ -254,9 +240,9 @@ namespace PocketMC.Desktop.Features.Shell
         /// </summary>
         private void DisableNativeBlurIfActive()
         {
-            if (_isNativeBlurActive && _boundHwnd != IntPtr.Zero)
+            if (_isNativeBlurActive && _boundWindow != null && _boundWindow.IsLoaded)
             {
-                Windows10Blur.Disable(_boundHwnd);
+                Windows10Blur.Disable(_boundWindow);
                 _isNativeBlurActive = false;
             }
         }
@@ -265,13 +251,14 @@ namespace PocketMC.Desktop.Features.Shell
 
         /// <summary>
         /// Overrides key WPF-UI theme resource brushes with semi-transparent equivalents
-        /// so that the native acrylic blur shows through cards, panes, and content areas.
+        /// so that the native blur shows through cards, panes, and content areas.
         /// </summary>
         private static void ApplyTransparentBrushes(FluentWindow window)
         {
             try
             {
                 var res = window.Resources;
+
                 // NavigationView pane + content background
                 res["NavigationViewContentBackground"] = Brushes.Transparent;
                 res["NavigationViewPaneBackground"] = CreateBrush("#40282828");
