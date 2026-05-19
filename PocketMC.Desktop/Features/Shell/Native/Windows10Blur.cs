@@ -4,21 +4,22 @@ using System.Runtime.InteropServices;
 namespace PocketMC.Desktop.Features.Shell.Native
 {
     /// <summary>
-    /// Applies native Windows 10 blur-behind using SetWindowCompositionAttribute.
+    /// Applies native Windows 10 acrylic blur using SetWindowCompositionAttribute.
+    /// Uses ACCENT_ENABLE_ACRYLICBLURBEHIND for the real Settings/Start-menu acrylic look.
     /// Safe best-effort: failures are silently swallowed so the app never crashes.
     /// </summary>
     internal static class Windows10Blur
     {
         private const int WCA_ACCENT_POLICY = 19;
         private const int ACCENT_DISABLED = 0;
-        private const int ACCENT_ENABLE_BLURBEHIND = 3;
+        private const int ACCENT_ENABLE_ACRYLICBLURBEHIND = 4;
 
         [StructLayout(LayoutKind.Sequential)]
         private struct AccentPolicy
         {
             public int AccentState;
             public int AccentFlags;
-            public uint GradientColor;   // AABBGGRR
+            public uint GradientColor;   // AABBGGRR format
             public int AnimationId;
         }
 
@@ -34,9 +35,9 @@ namespace PocketMC.Desktop.Features.Shell.Native
         private static extern int SetWindowCompositionAttribute(IntPtr hwnd, ref WindowCompositionAttributeData data);
 
         /// <summary>
-        /// Enables blur-behind on the given window handle.
-        /// Uses a near-transparent black gradient so the visible tint is controlled
-        /// by the BackdropTintLayer in XAML, not by DWM.
+        /// Enables acrylic blur-behind on the given window handle.
+        /// Uses a dark translucent tint (0x70181818) matching the Windows 10 Settings look.
+        /// The AABBGGRR format means: A=0x70 alpha, BB=0x18, GG=0x18, RR=0x18.
         /// </summary>
         public static void Enable(IntPtr hwnd)
         {
@@ -46,9 +47,9 @@ namespace PocketMC.Desktop.Features.Shell.Native
 
                 var accent = new AccentPolicy
                 {
-                    AccentState = ACCENT_ENABLE_BLURBEHIND,
-                    AccentFlags = 0,
-                    GradientColor = 0x01000000,   // near-transparent black (AABBGGRR)
+                    AccentState = ACCENT_ENABLE_ACRYLICBLURBEHIND,
+                    AccentFlags = 2,    // required flag for acrylic
+                    GradientColor = 0x70181818,
                     AnimationId = 0
                 };
 
