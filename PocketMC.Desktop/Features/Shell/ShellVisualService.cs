@@ -44,15 +44,9 @@ namespace PocketMC.Desktop.Features.Shell
             }
             else if (backdrop == "Acrylic" || backdrop == "Mica")
             {
-                if (WallpaperMicaService.IsWindows11OrLater)
-                {
-                    _boundWindow.WindowBackdropType = WindowBackdropType.Acrylic;
-                }
-                else
-                {
-                    _boundWindow.WindowBackdropType = WindowBackdropType.None;
-                    ApplyWin10Fallback();
-                }
+                // Always use custom wallpaper fallback for Acrylic to keep it active when unfocused
+                _boundWindow.WindowBackdropType = WindowBackdropType.None;
+                ApplyWallpaperFallback();
             }
             else
             {
@@ -60,7 +54,7 @@ namespace PocketMC.Desktop.Features.Shell
             }
         }
 
-        private void ApplyWin10Fallback()
+        private void ApplyWallpaperFallback()
         {
             if (_boundWindow == null || _micaFallbackImage == null) return;
 
