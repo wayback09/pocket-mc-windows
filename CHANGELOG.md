@@ -1,6 +1,26 @@
 # Changelog
 
-This file summarizes the Pocket MC Desktop release line from `v1.0.0` to `v1.7.3`.
+This file summarizes the Pocket MC Desktop release line from `v1.0.0` to `v1.7.4`.
+
+## v1.7.4 - System-Wide Backdrops, Wallpaper Blur & Startup Safeguards
+
+This release introduces an advanced, unified window backdrop system featuring a new high-performance **Wallpaper Blur** theme for all Windows versions, native light theme compatibility, and true native Acrylic styling. It also improves application safety by introducing a dedicated server startup state to prevent race conditions and refines the overall user experience.
+
+### 🎨 System-Wide Backdrop & Theming Overhaul
+* **Wallpaper Blur Theme**: Added a beautiful "Wallpaper Blur" option that extracts the desktop wallpaper via registry/SPI fallback, pre-renders a fast Gaussian blur into a frozen bitmap, and displays it as a static background fill. This works seamlessly across both Windows 10 and Windows 11 without requiring native composition APIs.
+* **Unified Backdrop Selector**: Replaced disjointed backdrop and theme toggles in App Settings with a single cohesive Window Background Theme dropdown, dynamically offering Mica (exclusive to Windows 11), Acrylic, Wallpaper Blur, Solid Dark, and Solid Light.
+* **True Native Acrylic**: Rebuilt the Windows Native Acrylic implementation using direct P-Invoke calls to `dwmapi.dll` (`DwmSetWindowAttribute`) to forcefully inject the immersive dark mode attribute. This guarantees that native backdrops match the dark themed composition perfectly.
+* **Windows 11 Glass Enhancements**: Bypassed native DWM behavior on Windows 11 that aggressively fallbacks to a solid flat gray when the window loses focus. The frosted glass effect now remains active and beautiful even when unfocused.
+* **Dynamic Light Theme**: Added a "Solid Light (None)" option. The visual service now dynamically switches the entire application UI between light and dark modes based on backdrop selection, eliminating the hardcoded dark mode lock.
+* **Window Activation and Performance**: Refactored the backdrop application and window activation state tracking. Purged complex, heavy fallback logic and consolidated native window composition to improve rendering efficiency and prevent startup lags.
+
+### ⚙️ Server Startup & State Safety
+* **`SettingUp` Server State**: Introduced a new `ServerState.SettingUp` state to prevent concurrent server startup race conditions. The UI now transitions the card to a disabled "⚙ Setting Up..." state, blocking subsequent clicks during pre-flight setups.
+* **Graceful State Reversion**: Added robust error and cancel handling. If pre-flight actions (such as Simple Voice Chat tunnel creation or memory warnings) are aborted by the user, the UI gracefully reverts to its previous offline state.
+
+### 💎 User Experience & UI Polish
+* **Clean Confirmation Dialogs**: Overhauled the `WpfDialogService` to stop displaying redundant "No" and "Cancel" buttons. Simple confirmation dialogs now cleanly default to a two-button (`Yes`/`No`) layout unless third-party custom cancellation button text is explicitly provided.
+* **Enhanced Metric Targets**: Wrapped the entire "PLAYERS" badge (label and numeric count) on the dashboard instance cards inside a transparent hand-cursor button. This increases the click area substantially, offering a larger and more accessible interactive target while maintaining perfect layout alignment.
 
 ## v1.7.3 - Tunnel Display Fix (#40)
 
