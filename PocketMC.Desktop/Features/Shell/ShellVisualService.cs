@@ -1,22 +1,27 @@
 using System;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Interop;
 using System.Windows.Media;
-using Microsoft.Win32;
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Shell.Interfaces;
-using PocketMC.Desktop.Features.Shell;
-using PocketMC.Desktop.Features.Instances.Services;
-using PocketMC.Desktop.Features.Instances.Models;
-using PocketMC.Desktop.Features.Dashboard;
-using PocketMC.Desktop.Infrastructure;
 using Wpf.Ui.Controls;
 
 namespace PocketMC.Desktop.Features.Shell
 {
     public sealed class ShellVisualService : IShellVisualService, IDisposable
     {
+        private const string SolidDarkFallback = "#FF242424";
+        private const string AcrylicActiveTint = "#CC202020";
+        private const string MicaActiveTint = "#B8202020";
+        private const string SolidLightFallback = "#FFF7F7F7";
+        private const string TransparentTint = "#00FFFFFF";
+        private const int DwmUseImmersiveDarkMode = 20;
+        private const int DwmUseImmersiveDarkModeBefore20H1 = 19;
+
         private readonly ApplicationState _applicationState;
         private FluentWindow? _boundWindow;
+        private bool _isWindowActive = true;
 
         [System.Runtime.InteropServices.DllImport("dwmapi.dll")]
         private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
@@ -30,64 +35,156 @@ namespace PocketMC.Desktop.Features.Shell
         {
             _boundWindow = window;
             ApplyTheme();
+            RequestMicaUpdate();
         }
 
         public void RequestMicaUpdate()
         {
-            if (_boundWindow == null) return;
+            var window = _boundWindow;
+            if (window == null) return;
 
-            ApplyTheme(); // Apply theme resources first
-
-            string backdrop = _applicationState.Settings.WindowBackdrop ?? "Acrylic";
-
-            if (backdrop == "Mica" && Environment.OSVersion.Version.Build >= 22000)
+            if (!window.Dispatcher.CheckAccess())
             {
-                _boundWindow.WindowBackdropType = WindowBackdropType.Mica;
-            }
-            else if (backdrop == "Acrylic" && Environment.OSVersion.Version.Build >= 22000)
-            {
-                _boundWindow.WindowBackdropType = WindowBackdropType.Acrylic;
-            }
-            else
-            {
-                _boundWindow.WindowBackdropType = WindowBackdropType.None;
+                window.Dispatcher.Invoke(RequestMicaUpdate);
+                return;
             }
 
-            // Force DWM attributes to match the theme immediately after setting the backdrop type
-            if (_boundWindow.IsLoaded && backdrop != "Light")
+            try
             {
-                var helper = new System.Windows.Interop.WindowInteropHelper(_boundWindow);
-                int isDark = 1;
-                // Force DWM Dark Mode
-                DwmSetWindowAttribute(helper.Handle, 20, ref isDark, sizeof(int)); 
+                ApplyTheme();
+                ApplyDwmDarkMode(window);
 
-                // Wpf.Ui will apply a white overlay brush if the OS is in Light Mode.
-                // We must forcefully override the window background to transparent!
-                if (backdrop == "Mica" || backdrop == "Acrylic")
+                string backdrop = _applicationState.Settings.WindowBackdrop ?? "Acrylic";
+
+                if (!_isWindowActive)
                 {
-                    _boundWindow.Background = System.Windows.Media.Brushes.Transparent;
+                    ApplySolidFallback(window, SolidDarkFallback);
+                    return;
                 }
+
+                if (backdrop.Equals("Light", StringComparison.OrdinalIgnoreCase))
+                {
+                    window.WindowBackdropType = WindowBackdropType.None;
+                    window.Background = CreateBrush(SolidLightFallback);
+                    SetTintLayer(window, TransparentTint);
+                    return;
+                }
+
+                if (backdrop.Equals("Mica", StringComparison.OrdinalIgnoreCase) &&
+                    Environment.OSVersion.Version.Build >= 22000)
+                {
+                    window.WindowBackdropType = WindowBackdropType.Mica;
+                    window.Background = Brushes.Transparent;
+                    SetTintLayer(window, MicaActiveTint);
+                    return;
+                }
+
+                if (backdrop.Equals("Acrylic", StringComparison.OrdinalIgnoreCase) &&
+                    Environment.OSVersion.Version.Build >= 22000)
+                {
+                    window.WindowBackdropType = WindowBackdropType.Acrylic;
+                    window.Background = Brushes.Transparent;
+                    SetTintLayer(window, AcrylicActiveTint);
+                    return;
+                }
+
+                ApplySolidFallback(window, SolidDarkFallback);
+            }
+            catch
+            {
+                ApplySolidFallbackBestEffort(window);
             }
         }
 
         public void ApplyTheme(string theme = "Dark")
         {
-            if (_boundWindow == null) return;
-            
-            if (_boundWindow.IsLoaded)
+            var window = _boundWindow;
+            if (window == null) return;
+
+            if (!window.Dispatcher.CheckAccess())
             {
-                Wpf.Ui.Appearance.SystemThemeWatcher.UnWatch(_boundWindow);
+                window.Dispatcher.Invoke(() => ApplyTheme(theme));
+                return;
             }
 
-            string backdrop = _applicationState.Settings.WindowBackdrop ?? "Acrylic";
-            if (backdrop == "Light")
+            try
             {
-                Wpf.Ui.Appearance.ApplicationThemeManager.Apply(Wpf.Ui.Appearance.ApplicationTheme.Light);
+                if (window.IsLoaded)
+                {
+                    Wpf.Ui.Appearance.SystemThemeWatcher.UnWatch(window);
+                }
+
+                string backdrop = _applicationState.Settings.WindowBackdrop ?? "Acrylic";
+                bool explicitLightMode = backdrop.Equals("Light", StringComparison.OrdinalIgnoreCase);
+                Wpf.Ui.Appearance.ApplicationThemeManager.Apply(
+                    explicitLightMode
+                        ? Wpf.Ui.Appearance.ApplicationTheme.Light
+                        : Wpf.Ui.Appearance.ApplicationTheme.Dark);
             }
-            else
+            catch
             {
-                Wpf.Ui.Appearance.ApplicationThemeManager.Apply(Wpf.Ui.Appearance.ApplicationTheme.Dark);
+                // Visual polish should never block startup or server control.
             }
+        }
+
+        public void SetWindowActive(bool isActive)
+        {
+            _isWindowActive = isActive;
+            RequestMicaUpdate();
+        }
+
+        private static void ApplyDwmDarkMode(FluentWindow window)
+        {
+            try
+            {
+                if (!window.IsLoaded) return;
+
+                var helper = new WindowInteropHelper(window);
+                if (helper.Handle == IntPtr.Zero) return;
+
+                int isDark = 1;
+                int size = sizeof(int);
+                DwmSetWindowAttribute(helper.Handle, DwmUseImmersiveDarkMode, ref isDark, size);
+                DwmSetWindowAttribute(helper.Handle, DwmUseImmersiveDarkModeBefore20H1, ref isDark, size);
+            }
+            catch
+            {
+                // Best-effort only. Older Windows builds or hosted previews may reject this.
+            }
+        }
+
+        private static void ApplySolidFallback(FluentWindow window, string color)
+        {
+            window.WindowBackdropType = WindowBackdropType.None;
+            window.Background = CreateBrush(color);
+            SetTintLayer(window, color);
+        }
+
+        private static void ApplySolidFallbackBestEffort(FluentWindow window)
+        {
+            try
+            {
+                ApplySolidFallback(window, SolidDarkFallback);
+            }
+            catch
+            {
+                // Nothing else to do; failures here must not crash the shell.
+            }
+        }
+
+        private static void SetTintLayer(FluentWindow window, string color)
+        {
+            if (window.FindName("BackdropTintLayer") is Border tintLayer)
+            {
+                tintLayer.Background = CreateBrush(color);
+            }
+        }
+
+        private static SolidColorBrush CreateBrush(string color)
+        {
+            var brush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(color)!);
+            brush.Freeze();
+            return brush;
         }
 
         public void Dispose()

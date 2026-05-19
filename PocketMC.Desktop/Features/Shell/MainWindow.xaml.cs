@@ -78,11 +78,18 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
     private void Window_Loaded(object sender, RoutedEventArgs e)
     {
         _visualService.ApplyTheme();
+        _visualService.SetWindowActive(IsActive);
         _visualService.RequestMicaUpdate();
         
         _startupCoordinator.Start();
         _viewModel.InitializeUpdateCheck();
     }
+
+    private void Window_Activated(object? sender, EventArgs e) =>
+        _visualService.SetWindowActive(true);
+
+    private void Window_Deactivated(object? sender, EventArgs e) =>
+        _visualService.SetWindowActive(false);
 
     private void OnNavigated(NavigationView sender, NavigatedEventArgs args)
     {

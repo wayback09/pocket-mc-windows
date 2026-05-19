@@ -11,14 +11,21 @@
         xmlns:tb="clr-namespace:Hardcodet.Wpf.TaskbarNotification;assembly=Hardcodet.NotifyIcon.Wpf"
         mc:Ignorable="d"
         Title="PocketMC Desktop"
-        WindowBackdropType="Mica"
+        WindowBackdropType="None"
         ExtendsContentIntoTitleBar="True"
         WindowCornerPreference="Round"
         WindowStartupLocation="CenterScreen"
         Icon="pack://application:,,,/icon.ico"
-        Loaded="Window_Loaded">
+        Background="#FF242424"
+        Loaded="Window_Loaded"
+        Activated="Window_Activated"
+        Deactivated="Window_Deactivated">
 
     <Grid>
+        <Border x:Name="BackdropTintLayer"
+                Background="#CC202020"
+                IsHitTestVisible="False"/>
+
         <!-- TRAY ICON -->
         <tb:TaskbarIcon x:Name="AppTrayIcon"
                         IconSource="pack://application:,,,/icon.ico"

@@ -7,5 +7,6 @@ namespace PocketMC.Desktop.Features.Shell.Interfaces
     {
         void RequestMicaUpdate();
         void ApplyTheme(string theme = "Dark");
+        void SetWindowActive(bool isActive);
     }
 }
