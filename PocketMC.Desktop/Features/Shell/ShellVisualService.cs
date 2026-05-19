@@ -19,6 +19,9 @@ namespace PocketMC.Desktop.Features.Shell
         private FluentWindow? _boundWindow;
         private System.Windows.Controls.Image? _micaFallbackImage;
 
+        [System.Runtime.InteropServices.DllImport("dwmapi.dll")]
+        private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
+
         public ShellVisualService(ApplicationState applicationState)
         {
             _applicationState = applicationState;
@@ -36,23 +39,35 @@ namespace PocketMC.Desktop.Features.Shell
             if (_boundWindow == null) return;
             if (_micaFallbackImage != null) _micaFallbackImage.Visibility = Visibility.Collapsed;
 
-            string backdrop = _applicationState.Settings.WindowBackdrop ?? "Acrylic";
+            ApplyTheme(); // Apply theme resources first
 
-            ApplyTheme(); // Update light/dark state before changing backdrop
+            string backdrop = _applicationState.Settings.WindowBackdrop ?? "Acrylic";
 
             if (backdrop == "Mica" && WallpaperMicaService.IsWindows11OrLater)
             {
                 _boundWindow.WindowBackdropType = WindowBackdropType.Mica;
             }
-            else if (backdrop == "Acrylic" || backdrop == "Mica")
+            else if (backdrop == "Acrylic")
             {
-                // Always use custom wallpaper fallback for Acrylic to keep it active when unfocused
+                _boundWindow.WindowBackdropType = WindowBackdropType.Acrylic;
+            }
+            else if (backdrop == "Blur")
+            {
+                // Use custom wallpaper fallback to keep it active when unfocused
                 _boundWindow.WindowBackdropType = WindowBackdropType.None;
                 ApplyWallpaperFallback();
             }
             else
             {
                 _boundWindow.WindowBackdropType = WindowBackdropType.None;
+            }
+
+            // Force DWM attributes to match the theme immediately after setting the backdrop type
+            if (_boundWindow.IsLoaded && backdrop != "Light")
+            {
+                var helper = new System.Windows.Interop.WindowInteropHelper(_boundWindow);
+                int isDark = 1;
+                DwmSetWindowAttribute(helper.Handle, 20, ref isDark, sizeof(int)); // 20 is DWMWA_USE_IMMERSIVE_DARK_MODE
             }
         }
 

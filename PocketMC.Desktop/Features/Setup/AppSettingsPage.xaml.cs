@@ -88,7 +88,8 @@ namespace PocketMC.Desktop.Features.Setup
             {
                 BackdropCombo.Items.Add(new ComboBoxItem { Content = "Mica (Windows 11)", Tag = "Mica" });
             }
-            BackdropCombo.Items.Add(new ComboBoxItem { Content = "Acrylic (Blurred)", Tag = "Acrylic" });
+            BackdropCombo.Items.Add(new ComboBoxItem { Content = "Acrylic", Tag = "Acrylic" });
+            BackdropCombo.Items.Add(new ComboBoxItem { Content = "Blur (Wallpaper)", Tag = "Blur" });
             BackdropCombo.Items.Add(new ComboBoxItem { Content = "Solid Dark (None)", Tag = "None" });
             BackdropCombo.Items.Add(new ComboBoxItem { Content = "Solid Light (None)", Tag = "Light" });
 
