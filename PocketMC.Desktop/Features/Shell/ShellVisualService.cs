@@ -58,7 +58,15 @@ namespace PocketMC.Desktop.Features.Shell
             {
                 var helper = new System.Windows.Interop.WindowInteropHelper(_boundWindow);
                 int isDark = 1;
-                DwmSetWindowAttribute(helper.Handle, 20, ref isDark, sizeof(int)); // 20 is DWMWA_USE_IMMERSIVE_DARK_MODE
+                // Force DWM Dark Mode
+                DwmSetWindowAttribute(helper.Handle, 20, ref isDark, sizeof(int)); 
+
+                // Wpf.Ui will apply a white overlay brush if the OS is in Light Mode.
+                // We must forcefully override the window background to transparent!
+                if (backdrop == "Mica" || backdrop == "Acrylic")
+                {
+                    _boundWindow.Background = System.Windows.Media.Brushes.Transparent;
+                }
             }
         }
 
