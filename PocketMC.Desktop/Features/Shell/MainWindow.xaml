@@ -25,9 +25,6 @@
         <Border x:Name="BackdropTintLayer"
                 Background="#CC202020"
                 IsHitTestVisible="False"/>
-        <Border x:Name="AcrylicTintLayer"
-                Background="Transparent"
-                IsHitTestVisible="False"/>
 
         <!-- TRAY ICON -->
         <tb:TaskbarIcon x:Name="AppTrayIcon"
@@ -114,7 +111,6 @@
                                IsPaneToggleVisible="{Binding IsPaneToggleVisible}"
                                IsPaneVisible="{Binding IsPaneVisible}"
                                OpenPaneLength="240"
-                               Background="Transparent"
                                ScrollViewer.VerticalScrollBarVisibility="Disabled"
                                ScrollViewer.HorizontalScrollBarVisibility="Disabled">
 
