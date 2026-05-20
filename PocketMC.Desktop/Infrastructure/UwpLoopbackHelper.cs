@@ -103,8 +103,8 @@ public static class UwpLoopbackHelper
 
         try
         {
-            await proc.WaitForExitAsync(cts.Token);
-            await Task.WhenAll(outputTask, errorTask);
+            await proc.WaitForExitAsync(cts.Token).ConfigureAwait(false);
+            await Task.WhenAll(outputTask, errorTask).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
