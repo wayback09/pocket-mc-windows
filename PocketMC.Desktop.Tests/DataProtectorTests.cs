@@ -21,9 +21,17 @@ public sealed class DataProtectorTests
     }
 
     [Fact]
-    public void Unprotect_Throws_WhenBase64PayloadCannotBeDecrypted()
+    public void Unprotect_ReturnsLegacyPlaintext_WhenUnprefixedBase64CannotBeDecrypted()
     {
-        string corruptedPayload = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
+        string legacySecret = Convert.ToBase64String("legacy-secret"u8.ToArray());
+
+        Assert.Equal(legacySecret, DataProtector.Unprotect(legacySecret));
+    }
+
+    [Fact]
+    public void Unprotect_Throws_WhenPrefixedBase64PayloadCannotBeDecrypted()
+    {
+        string corruptedPayload = "dpapi:v1:" + Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
 
         Assert.Throws<CryptographicException>(() => DataProtector.Unprotect(corruptedPayload));
     }

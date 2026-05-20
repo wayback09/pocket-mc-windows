@@ -57,6 +57,11 @@ namespace PocketMC.Desktop.Infrastructure.Security
                 plainBytes = ProtectedData.Unprotect(cipherBytes, Entropy, Scope);
                 return Encoding.UTF8.GetString(plainBytes);
             }
+            catch (CryptographicException) when (!hasPrefix)
+            {
+                // Legacy plaintext settings can be Base64-shaped. Only versioned payloads fail closed.
+                return cipherText;
+            }
             catch (CryptographicException)
             {
                 throw;

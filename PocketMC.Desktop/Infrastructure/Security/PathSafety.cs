@@ -11,8 +11,8 @@ namespace PocketMC.Desktop.Infrastructure.Security
     {
         private static readonly char[] DirectorySeparators =
         [
-            Path.DirectorySeparatorChar,
-            Path.AltDirectorySeparatorChar
+            '\\',
+            '/'
         ];
 
         /// <summary>
@@ -22,7 +22,6 @@ namespace PocketMC.Desktop.Infrastructure.Security
         /// </summary>
         public static bool ContainsTraversal(string relativePath)
         {
-            const string syntheticRoot = @"C:\syntheticroot\";
             if (IsUnsafeRelativePath(relativePath))
             {
                 return true;
@@ -30,8 +29,8 @@ namespace PocketMC.Desktop.Infrastructure.Security
 
             try
             {
-                string resolved = Path.GetFullPath(Path.Combine(syntheticRoot, relativePath));
-                return !resolved.StartsWith(syntheticRoot, StringComparison.OrdinalIgnoreCase);
+                _ = Path.GetFullPath(relativePath);
+                return false;
             }
             catch
             {
@@ -50,12 +49,10 @@ namespace PocketMC.Desktop.Infrastructure.Security
                 return null;
             }
 
-            string root = Path.GetFullPath(rootDirectory);
-            if (!root.EndsWith(Path.DirectorySeparatorChar))
-                root += Path.DirectorySeparatorChar;
+            string root = EnsureTrailingDirectorySeparator(Path.GetFullPath(rootDirectory));
 
             string resolved = Path.GetFullPath(Path.Combine(rootDirectory, relativePath));
-            return resolved.StartsWith(root, StringComparison.OrdinalIgnoreCase) ? resolved : null;
+            return resolved.StartsWith(root, GetPathComparison()) ? resolved : null;
         }
 
         private static bool IsUnsafeRelativePath(string relativePath)
@@ -65,7 +62,7 @@ namespace PocketMC.Desktop.Infrastructure.Security
                 return true;
             }
 
-            if (Path.IsPathRooted(relativePath))
+            if (Path.IsPathRooted(relativePath) || IsWindowsRootedPath(relativePath))
             {
                 return true;
             }
@@ -84,6 +81,39 @@ namespace PocketMC.Desktop.Infrastructure.Security
             }
 
             return false;
+        }
+
+        private static bool IsWindowsRootedPath(string path)
+        {
+            if (path.StartsWith(@"\\", StringComparison.Ordinal) ||
+                path.StartsWith("//", StringComparison.Ordinal))
+            {
+                return true;
+            }
+
+            return path.Length >= 3 &&
+                   IsAsciiLetter(path[0]) &&
+                   path[1] == ':' &&
+                   (path[2] == '\\' || path[2] == '/');
+        }
+
+        private static bool IsAsciiLetter(char value)
+        {
+            return (value >= 'A' && value <= 'Z') || (value >= 'a' && value <= 'z');
+        }
+
+        private static string EnsureTrailingDirectorySeparator(string path)
+        {
+            return path.EndsWith('\\') || path.EndsWith('/')
+                ? path
+                : path + Path.DirectorySeparatorChar;
+        }
+
+        private static StringComparison GetPathComparison()
+        {
+            return OperatingSystem.IsWindows()
+                ? StringComparison.OrdinalIgnoreCase
+                : StringComparison.Ordinal;
         }
     }
 }
