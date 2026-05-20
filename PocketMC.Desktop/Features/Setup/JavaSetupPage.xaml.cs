@@ -254,7 +254,7 @@ namespace PocketMC.Desktop.Features.Setup
         {
             Runtimes.Clear();
             string appRoot = _applicationState.GetRequiredAppRootPath();
-            var requiredVersions = JavaRuntimeResolver.GetBundledJavaVersions();
+            var requiredVersions = JavaRuntimeResolver.GetBundledJavaVersions().OrderByDescending(v => v).ToList();
 
             foreach (var version in requiredVersions)
             {

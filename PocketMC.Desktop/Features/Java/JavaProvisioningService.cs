@@ -131,7 +131,7 @@ namespace PocketMC.Desktop.Features.Java
         private async Task EnsureVersionsAsync(IEnumerable<int> versions, bool ignoreAutomaticRetryCooldown, bool isManualUserTriggered, CancellationToken cancellationToken)
         {
             var settings = _settingsManager.Load();
-            foreach (int version in versions.Distinct().OrderBy(v => v))
+            foreach (int version in versions.Distinct().OrderByDescending(v => v))
             {
                 if (!isManualUserTriggered && settings.UserRemovedJavaVersions.Contains(version))
                 {
