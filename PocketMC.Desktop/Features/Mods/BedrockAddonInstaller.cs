@@ -93,7 +93,7 @@ public sealed class BedrockAddonInstaller : IAddonManager
         }
     }
 
-    public Task UninstallAsync(string addonPathOrId, string serverDir, CancellationToken ct = default)
+    public async Task UninstallAsync(string addonPathOrId, string serverDir, CancellationToken ct = default)
     {
         // Uninstall = delete the pack directory from behavior_packs / resource_packs
         // and scrub the UUID from the world JSON files.
@@ -103,6 +103,11 @@ public sealed class BedrockAddonInstaller : IAddonManager
 
         foreach (var subDir in new[] { BehaviorPacksDir, ResourcePacksDir })
         {
+            if (Path.IsPathRooted(subDir))
+            {
+                throw new InvalidOperationException($"Bedrock add-on pack directory '{subDir}' must be relative.");
+            }
+
             string packsRoot = Path.Combine(serverDir, subDir);
             string? candidate = PathSafety.ValidateContainedPath(packsRoot, addonPathOrId);
             if (candidate == null)
@@ -117,7 +122,7 @@ public sealed class BedrockAddonInstaller : IAddonManager
                 // Try to read UUID from the manifest so we can scrub the world JSON.
                 var mPath = Path.Combine(candidate, "manifest.json");
                 if (File.Exists(mPath))
-                    packUuid = TryReadUuid(mPath);
+                    packUuid = await TryReadUuidAsync(mPath, ct);
                 break;
             }
         }
@@ -125,7 +130,8 @@ public sealed class BedrockAddonInstaller : IAddonManager
         if (packDir == null)
             throw new DirectoryNotFoundException($"Pack directory not found for id '{addonPathOrId}'.");
 
-        Directory.Delete(packDir, recursive: true);
+        ct.ThrowIfCancellationRequested();
+        await Task.Run(() => Directory.Delete(packDir, recursive: true), ct);
         _logger.LogInformation("Deleted pack directory {Dir}.", packDir);
 
         if (packUuid != null)
@@ -135,10 +141,8 @@ public sealed class BedrockAddonInstaller : IAddonManager
                 ? Path.Combine(worldDir, WorldBehaviorJson)
                 : Path.Combine(worldDir, WorldResourceJson);
 
-            RemoveFromWorldJson(jsonFile, packUuid);
+            await RemoveFromWorldJsonAsync(jsonFile, packUuid, ct);
         }
-
-        return Task.CompletedTask;
     }
 
     // ── Core installation logic ────────────────────────────────────────────
@@ -224,6 +228,26 @@ public sealed class BedrockAddonInstaller : IAddonManager
         catch { return null; }
     }
 
+    private static async Task<string?> TryReadUuidAsync(string manifestPath, CancellationToken ct)
+    {
+        try
+        {
+            await using var stream = new FileStream(
+                manifestPath,
+                FileMode.Open,
+                FileAccess.Read,
+                FileShare.ReadWrite | FileShare.Delete,
+                bufferSize: 4096,
+                useAsync: true);
+            var doc = await JsonNode.ParseAsync(stream, cancellationToken: ct);
+            return doc?["header"]?["uuid"]?.GetValue<string>();
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
     // ── World JSON management ─────────────────────────────────────────────
 
     private void RegisterInWorldJson(string jsonFilePath, string uuid, string version)
@@ -281,6 +305,43 @@ public sealed class BedrockAddonInstaller : IAddonManager
             var options = new JsonSerializerOptions { WriteIndented = true };
             FileUtils.AtomicWriteAllText(jsonFilePath, entries.ToJsonString(options));
             _logger.LogInformation("Removed UUID {Uuid} from {File}.", uuid, Path.GetFileName(jsonFilePath));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to scrub UUID {Uuid} from {File}.", uuid, jsonFilePath);
+        }
+    }
+
+    private async Task RemoveFromWorldJsonAsync(string jsonFilePath, string uuid, CancellationToken ct)
+    {
+        if (!File.Exists(jsonFilePath)) return;
+        try
+        {
+            JsonArray entries;
+            await using (var stream = new FileStream(
+                jsonFilePath,
+                FileMode.Open,
+                FileAccess.Read,
+                FileShare.ReadWrite | FileShare.Delete,
+                bufferSize: 4096,
+                useAsync: true))
+            {
+                entries = await JsonNode.ParseAsync(stream, cancellationToken: ct) as JsonArray ?? new JsonArray();
+            }
+
+            for (int i = entries.Count - 1; i >= 0; i--)
+            {
+                if (entries[i]?["pack_id"]?.GetValue<string>() == uuid)
+                    entries.RemoveAt(i);
+            }
+
+            var options = new JsonSerializerOptions { WriteIndented = true };
+            await FileUtils.AtomicWriteAllTextAsync(jsonFilePath, entries.ToJsonString(options), cancellationToken: ct);
+            _logger.LogInformation("Removed UUID {Uuid} from {File}.", uuid, Path.GetFileName(jsonFilePath));
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch (Exception ex)
         {

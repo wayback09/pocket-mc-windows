@@ -252,7 +252,14 @@ public class ServerLifecycleService : IServerLifecycleService, IDisposable
 
     private async void HandleProcessManagerServerCrashed(Guid instanceId, string _)
     {
-        await HandleServerCrashAsync(instanceId);
+        try
+        {
+            await HandleServerCrashAsync(instanceId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unhandled error while processing crash recovery for instance {InstanceId}.", instanceId);
+        }
     }
 
     private async Task HandleServerCrashAsync(Guid instanceId)
