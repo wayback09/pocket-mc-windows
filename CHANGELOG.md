@@ -1,7 +1,22 @@
 # Changelog
 
-This file summarizes the Pocket MC Desktop release line from `v1.0.0` to `v1.7.4`.
+This file summarizes the Pocket MC Desktop release line from `v1.0.0` to `v1.7.5`.
 
+## v1.7.5 - Playit Agent Safety & Java Provisioning Tweaks
+
+This release hardens the Playit.gg Tunnel connection flows with safety guards and UI cleanups, and significantly improves the Java runtime setup experience with better ordering and bug fixes.
+
+### 🌐 Tunnel Management & Safety
+* **Playit Agent Disconnect Guard**: Added a confirmation dialog to the "Disconnect" button on the Tunnel Page to warn users that their local secret key will be wiped, preventing accidental credential loss.
+* **Delete Agent Button**: Added a new "Delete Agent" button to the Tunnel Page to securely remove the local `playit.exe` binary. The button is only enabled when the agent is fully stopped to prevent OS file-lock crashes.
+* **Instance Card IP Decluttering**: Removed the display of the Simple Voice Chat tunnel IP on the dashboard instance cards. The voice chat IP is now correctly routed to the config file exclusively, preventing dashboard clutter and confusion.
+* **Skeleton Loader Fixes**: Fixed a bug where skeleton loaders on the dashboard would disappear prematurely before Bedrock/Playit IPs had fully resolved.
+
+### ☕ Java Provisioning Improvements
+* **Smart Download Ordering**: The background Java provisioning engine now downloads runtimes in descending order (Java 25 first, down to Java 8), ensuring modern servers can be started faster on a fresh installation.
+* **Setup Page Order**: The Java Setup page now properly displays runtimes in descending chronological order (25, 21, 17, 11, 8), keeping the most relevant versions at the top.
+* **Ghost State Fix**: Fixed a bug where a manually deleted Java runtime would still appear as "Installed" when switching tabs due to aggressive caching. The provisioning service now actively verifies the physical folder presence.
+* **Duplicate Icon Fix**: Fixed a visual glitch on the Java Setup page that caused a duplicate download icon to appear alongside the main download button.
 ## v1.7.4 - System-Wide Backdrops, Wallpaper Blur & Startup Safeguards
 
 This release introduces an advanced, unified window backdrop system featuring a new high-performance **Wallpaper Blur** theme for all Windows versions, native light theme compatibility, and true native Acrylic styling. It also improves application safety by introducing a dedicated server startup state to prevent race conditions and refines the overall user experience.
