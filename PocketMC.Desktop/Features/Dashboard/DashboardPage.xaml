@@ -8,6 +8,62 @@
     <Page.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
         <presentation:NullOrEmptyToVisibilityConverter x:Key="NullOrEmptyToVis"/>
+
+        <!-- Reusable skeleton placeholder row for tunnel IP resolution -->
+        <Style x:Key="SkeletonRow" TargetType="ContentControl">
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="IsTabStop" Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ContentControl">
+                        <Border Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="6" Padding="10,8" Margin="0,0,0,4">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Border Grid.Column="0" Width="18" Height="18" CornerRadius="4" Margin="0,0,8,0" VerticalAlignment="Center">
+                                    <Border.Background>
+                                        <LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5">
+                                            <GradientStop Color="#15888888" Offset="0"/>
+                                            <GradientStop Color="#30888888" Offset="0.5"/>
+                                            <GradientStop Color="#15888888" Offset="1"/>
+                                        </LinearGradientBrush>
+                                    </Border.Background>
+                                    <Border.Triggers>
+                                        <EventTrigger RoutedEvent="Loaded">
+                                            <BeginStoryboard>
+                                                <Storyboard RepeatBehavior="Forever">
+                                                    <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0.4" To="1.0" Duration="0:0:0.9" AutoReverse="True"/>
+                                                </Storyboard>
+                                            </BeginStoryboard>
+                                        </EventTrigger>
+                                    </Border.Triggers>
+                                </Border>
+                                <Border Grid.Column="1" CornerRadius="4" Height="14" MaxWidth="180" HorizontalAlignment="Left">
+                                    <Border.Background>
+                                        <LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5">
+                                            <GradientStop Color="#11888888" Offset="0"/>
+                                            <GradientStop Color="#33888888" Offset="0.5"/>
+                                            <GradientStop Color="#11888888" Offset="1"/>
+                                        </LinearGradientBrush>
+                                    </Border.Background>
+                                    <Border.Triggers>
+                                        <EventTrigger RoutedEvent="Loaded">
+                                            <BeginStoryboard>
+                                                <Storyboard RepeatBehavior="Forever">
+                                                    <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0.4" To="1.0" Duration="0:0:1" AutoReverse="True"/>
+                                                </Storyboard>
+                                            </BeginStoryboard>
+                                        </EventTrigger>
+                                    </Border.Triggers>
+                                </Border>
+                            </Grid>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Page.Resources>
 
     <Grid Margin="24">
@@ -111,72 +167,10 @@
                                 <!-- Connections -->
                                 <StackPanel Grid.Row="2" Margin="0,0,0,16" Visibility="{Binding IsRunning, Converter={StaticResource BoolToVis}}">
 
-                                    <!-- Skeleton loader (shown while tunnel address is resolving) -->
-                                    <!-- Engine-aware: shows correct number of placeholder rows per server type -->
-                                    <ItemsControl Visibility="{Binding ShowTunnelSkeleton, Converter={StaticResource BoolToVis}}"
-                                                  ItemsSource="{Binding SkeletonRowCount, Converter={x:Static presentation:IntToRangeConverter.Instance}}">
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <Border Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="6" Padding="10,8" Margin="0,0,0,4">
-                                                    <Grid>
-                                                        <Grid.ColumnDefinitions>
-                                                            <ColumnDefinition Width="Auto"/>
-                                                            <ColumnDefinition Width="*"/>
-                                                        </Grid.ColumnDefinitions>
-                                                        <Border Grid.Column="0" Width="18" Height="18" CornerRadius="4" Margin="0,0,8,0" VerticalAlignment="Center">
-                                                            <Border.Background>
-                                                                <LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5">
-                                                                    <GradientStop Color="#15888888" Offset="0"/>
-                                                                    <GradientStop Color="#30888888" Offset="0.5"/>
-                                                                    <GradientStop Color="#15888888" Offset="1"/>
-                                                                </LinearGradientBrush>
-                                                            </Border.Background>
-                                                            <Border.Triggers>
-                                                                <EventTrigger RoutedEvent="Loaded">
-                                                                    <BeginStoryboard>
-                                                                        <Storyboard RepeatBehavior="Forever">
-                                                                            <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0.4" To="1.0" Duration="0:0:0.9" AutoReverse="True"/>
-                                                                        </Storyboard>
-                                                                    </BeginStoryboard>
-                                                                </EventTrigger>
-                                                            </Border.Triggers>
-                                                        </Border>
-                                                        <Border Grid.Column="1" CornerRadius="4" Height="14" MaxWidth="180" HorizontalAlignment="Left">
-                                                            <Border.Background>
-                                                                <LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5">
-                                                                    <GradientStop Color="#11888888" Offset="0"/>
-                                                                    <GradientStop Color="#33888888" Offset="0.5"/>
-                                                                    <GradientStop Color="#11888888" Offset="1"/>
-                                                                </LinearGradientBrush>
-                                                            </Border.Background>
-                                                            <Border.Triggers>
-                                                                <EventTrigger RoutedEvent="Loaded">
-                                                                    <BeginStoryboard>
-                                                                        <Storyboard RepeatBehavior="Forever">
-                                                                            <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0.4" To="1.0" Duration="0:0:1" AutoReverse="True"/>
-                                                                        </Storyboard>
-                                                                    </BeginStoryboard>
-                                                                </EventTrigger>
-                                                            </Border.Triggers>
-                                                        </Border>
-                                                    </Grid>
-                                                </Border>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
 
-                                    <!-- Error state (shown when tunnel resolution failed) -->
-                                    <Border Visibility="{Binding HasTunnelError, Converter={StaticResource BoolToVis}}"
-                                            Background="{DynamicResource SystemFillColorCriticalBackgroundBrush}" CornerRadius="6" Padding="10,8" Margin="0,0,0,4">
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto"/>
-                                                <ColumnDefinition Width="*"/>
-                                            </Grid.ColumnDefinitions>
-                                            <ui:SymbolIcon Grid.Column="0" Symbol="ErrorCircle24" Foreground="{DynamicResource SystemFillColorCriticalBrush}" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                            <TextBlock Grid.Column="1" Text="{Binding TunnelErrorText}" FontSize="12" Foreground="{DynamicResource SystemFillColorCriticalBrush}" VerticalAlignment="Center"/>
-                                        </Grid>
-                                    </Border>
+
+                                    <!-- Skeleton: Primary tunnel address -->
+                                    <ContentControl Style="{StaticResource SkeletonRow}" Visibility="{Binding ShowPrimaryTunnelSkeleton, Converter={StaticResource BoolToVis}}"/>
 
                                     <!-- Primary Connection (Java or Native Bedrock) -->
                                     <Border Visibility="{Binding HasTunnelAddress, Converter={StaticResource BoolToVis}}"
@@ -225,6 +219,8 @@
 
                                     <!-- Bedrock-specific Tunnels (Native Bedrock Numeric, or Geyser Hostname + Numeric) -->
                                     <StackPanel Visibility="{Binding IsBedrockServer, Converter={StaticResource BoolToVis}}">
+                                        <!-- Skeleton: Native Bedrock numeric IP -->
+                                        <ContentControl Style="{StaticResource SkeletonRow}" Visibility="{Binding ShowBedrockNumericSkeleton, Converter={StaticResource BoolToVis}}"/>
                                         <!-- Native Bedrock Numeric IP -->
                                         <Border Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="6" Padding="10,8" Margin="0,0,0,4"
                                                 Visibility="{Binding HasNumericTunnelAddress, Converter={StaticResource BoolToVis}}">
@@ -242,6 +238,8 @@
                                     </StackPanel>
 
                                     <StackPanel Visibility="{Binding ShowBedrockIp, Converter={StaticResource BoolToVis}}">
+                                        <!-- Skeleton: Geyser Bedrock hostname -->
+                                        <ContentControl Style="{StaticResource SkeletonRow}" Visibility="{Binding ShowGeyserHostnameSkeleton, Converter={StaticResource BoolToVis}}"/>
                                         <!-- Geyser Bedrock Hostname -->
                                         <Border Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="6" Padding="10,8" Margin="0,0,0,4"
                                                 Visibility="{Binding HasBedrockTunnelAddress, Converter={StaticResource BoolToVis}}">
@@ -259,6 +257,8 @@
                                                 <ui:Button Grid.Column="2" Appearance="Transparent" Icon="{ui:SymbolIcon Copy16}" Click="BtnCopyBedrockIp_Click"/>
                                             </Grid>
                                         </Border>
+                                        <!-- Skeleton: Geyser Bedrock numeric -->
+                                        <ContentControl Style="{StaticResource SkeletonRow}" Visibility="{Binding ShowGeyserNumericSkeleton, Converter={StaticResource BoolToVis}}"/>
                                         <!-- Geyser Bedrock Numeric -->
                                         <Border Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="6" Padding="10,8" Visibility="{Binding HasBedrockNumericTunnelAddress, Converter={StaticResource BoolToVis}}">
                                             <Grid>
@@ -273,39 +273,6 @@
                                             </Grid>
                                         </Border>
                                     </StackPanel>
-
-                                    <!-- Simple Voice Chat tunnel -->
-                                    <Border Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="6" Padding="10,8" Margin="0,0,0,4"
-                                            Visibility="{Binding HasSimpleVoiceChatTunnelAddress, Converter={StaticResource BoolToVis}}">
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto"/>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                            </Grid.ColumnDefinitions>
-                                            <ui:SymbolIcon Grid.Column="0" Symbol="Mic24" Foreground="{DynamicResource SystemFillColorSuccessBrush}" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                                <TextBlock Text="Simple Voice Chat" FontSize="10" Foreground="{DynamicResource SystemFillColorSuccessBrush}" FontWeight="Bold"/>
-                                                <TextBlock Text="{Binding SimpleVoiceChatTunnelAddress}" FontSize="12" Foreground="{DynamicResource SystemFillColorSuccessBrush}" TextTrimming="CharacterEllipsis"/>
-                                            </StackPanel>
-                                            <ui:Button Grid.Column="2" Appearance="Transparent" Icon="{ui:SymbolIcon Copy16}" Click="BtnCopySimpleVoiceChatIp_Click"/>
-                                        </Grid>
-                                    </Border>
-
-                                    <Border Background="{DynamicResource SystemFillColorCautionBackgroundBrush}" CornerRadius="6" Padding="10,8" Margin="0,0,0,4"
-                                            Visibility="{Binding SimpleVoiceChatWarningVisibility}">
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto"/>
-                                                <ColumnDefinition Width="*"/>
-                                            </Grid.ColumnDefinitions>
-                                            <ui:SymbolIcon Grid.Column="0" Symbol="Warning24" Foreground="{DynamicResource SystemFillColorCautionBrush}" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                                <TextBlock Text="Simple Voice Chat" FontSize="10" Foreground="{DynamicResource SystemFillColorCautionBrush}" FontWeight="Bold"/>
-                                                <TextBlock Text="{Binding SimpleVoiceChatWarning}" FontSize="12" Foreground="{DynamicResource SystemFillColorCautionBrush}" TextWrapping="Wrap"/>
-                                            </StackPanel>
-                                        </Grid>
-                                    </Border>
                                 </StackPanel>
 
                                 <!-- Actions -->

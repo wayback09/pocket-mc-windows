@@ -112,14 +112,6 @@ namespace PocketMC.Desktop.Features.Dashboard
             }
         }
 
-        private async void BtnCopySimpleVoiceChatIp_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is FrameworkElement fe && fe.DataContext is InstanceCardViewModel vm && vm.HasSimpleVoiceChatTunnelAddress)
-            {
-                await TrySetClipboardText(vm.SimpleVoiceChatTunnelAddress!);
-                await ShowCopiedFeedback(fe);
-            }
-        }
 
         private async Task TrySetClipboardText(string text)
         {

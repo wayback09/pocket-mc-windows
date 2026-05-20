@@ -114,10 +114,6 @@ namespace PocketMC.Desktop.Features.Tunnel
                             SetTunnelAddress(vm, request, resolution.PublicAddress, resolution.NumericAddress, resolution.TunnelId);
                             _dispatcher.Invoke(() => vm.ClearPortIssue());
                         }
-                        else
-                        {
-                            _dispatcher.Invoke(() => vm.SetTunnelError("Playit tunnel found, waiting for public address..."));
-                        }
                         continue;
                     }
 
@@ -128,38 +124,27 @@ namespace PocketMC.Desktop.Features.Tunnel
                             SetTunnelAddress(vm, request, resolution.PublicAddress, resolution.NumericAddress, resolution.TunnelId);
                             _dispatcher.Invoke(() => vm.ClearPortIssue());
                         }
-                        else
-                        {
-                            _dispatcher.Invoke(() => vm.SetTunnelError(resolution.ErrorMessage ?? "Address pending"));
-                        }
                         continue;
                     }
 
                     if (resolution.Status == TunnelResolutionResult.TunnelStatus.FoundPendingAllocation)
                     {
-                        _dispatcher.Invoke(() =>
-                            vm.SetTunnelError(resolution.ErrorMessage ?? "Playit tunnel found, waiting for public address..."));
                         HandleResolutionError(vm.Name, request, resolution);
                         continue;
                     }
 
                     if (resolution.Status == TunnelResolutionResult.TunnelStatus.LimitReached)
                     {
-                        _dispatcher.Invoke(() =>
+                        if (!string.IsNullOrEmpty(resolution.CreateErrorCode))
                         {
-                            vm.SetTunnelError(resolution.ErrorMessage ?? "Address unavailable");
-                            if (!string.IsNullOrEmpty(resolution.CreateErrorCode))
-                            {
+                            _dispatcher.Invoke(() =>
                                 AppDialog.ShowError("Tunnel Creation Failed",
-                                    TunnelCreateResult.MapCreateError(resolution.CreateErrorCode));
-                            }
-                        });
+                                    TunnelCreateResult.MapCreateError(resolution.CreateErrorCode)));
+                        }
                         break;
                     }
                     else if (resolution.Status == TunnelResolutionResult.TunnelStatus.AgentOffline)
                     {
-                        _dispatcher.Invoke(() =>
-                            vm.SetTunnelError(resolution.ErrorMessage ?? "Playit agent is not connected."));
                         PortCheckResult? result = resolution.ToPortCheckResult(request);
                         if (result != null)
                         {
@@ -171,15 +156,12 @@ namespace PocketMC.Desktop.Features.Tunnel
                     }
                     else if (resolution.Status == TunnelResolutionResult.TunnelStatus.Error)
                     {
-                        _dispatcher.Invoke(() =>
+                        if (!string.IsNullOrEmpty(resolution.CreateErrorCode))
                         {
-                            vm.SetTunnelError(resolution.ErrorMessage ?? "Address unavailable");
-                            if (!string.IsNullOrEmpty(resolution.CreateErrorCode))
-                            {
+                            _dispatcher.Invoke(() =>
                                 AppDialog.ShowError("Tunnel Creation Failed",
-                                    TunnelCreateResult.MapCreateError(resolution.CreateErrorCode));
-                            }
-                        });
+                                    TunnelCreateResult.MapCreateError(resolution.CreateErrorCode)));
+                        }
                         HandleResolutionError(vm.Name, request, resolution);
                     }
                 }
@@ -420,14 +402,23 @@ namespace PocketMC.Desktop.Features.Tunnel
         private async Task<TunnelResolutionResult> ResolveTunnelWithWarmupAsync(PortCheckRequest request, bool allowAutoCreate)
         {
             TunnelResolutionResult? lastResult = null;
+            bool isUdp = request.Protocol == PortProtocol.Udp || request.Protocol == PortProtocol.TcpAndUdp;
 
-            for (int attempt = 0; attempt < 4; attempt++)
+            for (int attempt = 0; attempt < 6; attempt++)
             {
                 lastResult = await _tunnelService.ResolveTunnelAsync(request, allowAutoCreate);
+                
+                bool missingNumeric = isUdp && 
+                                      (lastResult.Status == TunnelResolutionResult.TunnelStatus.Found || 
+                                       lastResult.Status == TunnelResolutionResult.TunnelStatus.AutoCreated) &&
+                                      string.IsNullOrWhiteSpace(lastResult.NumericAddress);
+
                 bool shouldRetry =
-                    attempt < 3 &&
+                    attempt < 5 &&
                     (lastResult.Status == TunnelResolutionResult.TunnelStatus.AgentOffline ||
-                     (lastResult.Status == TunnelResolutionResult.TunnelStatus.Error && lastResult.RequiresClaim));
+                     lastResult.Status == TunnelResolutionResult.TunnelStatus.FoundPendingAllocation ||
+                     (lastResult.Status == TunnelResolutionResult.TunnelStatus.Error && lastResult.RequiresClaim) ||
+                     missingNumeric);
 
                 if (!shouldRetry)
                 {

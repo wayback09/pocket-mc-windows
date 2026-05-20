@@ -29,7 +29,7 @@ public sealed class InstanceTunnelOrchestratorTunnelFlowTests
         await orchestrator.EnsureTunnelFlowAsync(vm);
 
         Assert.Equal("old.playit.gg:25565", vm.TunnelAddress);
-        Assert.True(vm.HasTunnelError);
+        Assert.False(vm.IsTunnelResolving);
     }
 
     [Fact]
@@ -50,8 +50,7 @@ public sealed class InstanceTunnelOrchestratorTunnelFlowTests
         await orchestrator.EnsureTunnelFlowAsync(vm);
 
         Assert.False(vm.HasTunnelAddress);
-        Assert.True(vm.HasTunnelError);
-        Assert.Contains("public address", vm.TunnelErrorText, StringComparison.OrdinalIgnoreCase);
+        Assert.False(vm.IsTunnelResolving);
     }
 
     [Fact]
@@ -82,8 +81,7 @@ public sealed class InstanceTunnelOrchestratorTunnelFlowTests
 
         Assert.True(created);
         Assert.False(vm.HasTunnelAddress);
-        Assert.True(vm.HasTunnelError);
-        Assert.Contains("pending", vm.TunnelErrorText, StringComparison.OrdinalIgnoreCase);
+        Assert.False(vm.IsTunnelResolving);
     }
 
     [Fact]
@@ -106,7 +104,7 @@ public sealed class InstanceTunnelOrchestratorTunnelFlowTests
         await orchestrator.EnsureTunnelFlowAsync(vm);
 
         Assert.Equal("old.playit.gg:25565", vm.TunnelAddress);
-        Assert.True(vm.HasTunnelError);
+        Assert.False(vm.IsTunnelResolving);
     }
 
     private static InstanceCardViewModel CreateCard(PortReliabilityTestWorkspace workspace, InstanceMetadata metadata)

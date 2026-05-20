@@ -16,6 +16,7 @@ public class InstanceCardViewModel : INotifyPropertyChanged
     private InstanceMetadata _metadata;
     private readonly ServerProcessManager _serverProcessManager;
     private readonly IServerLifecycleService _lifecycleService;
+    private readonly PocketMC.Desktop.Features.Shell.ApplicationState _appState;
     private ServerState _state = ServerState.Stopped;
     private string? _countdownText;
     private string _cpuText = "· · ·";
@@ -34,13 +35,13 @@ public class InstanceCardViewModel : INotifyPropertyChanged
     private string? _portIssueText;
     private string? _portIssueTooltip;
     private bool _isTunnelResolving;
-    private string? _tunnelErrorText;
 
     public InstanceCardViewModel(InstanceMetadata metadata, ServerProcessManager serverProcessManager, IServerLifecycleService lifecycleService, PocketMC.Desktop.Features.Shell.ApplicationState appState)
     {
         _metadata = metadata;
         _serverProcessManager = serverProcessManager;
         _lifecycleService = lifecycleService;
+        _appState = appState;
         _bedrockLocalPort = metadata.GeyserBedrockPort ?? 19132;
 
         _tunnelAddress = appState.GetTunnelAddress(metadata.Id);
@@ -91,47 +92,31 @@ public class InstanceCardViewModel : INotifyPropertyChanged
         {
             if (SetProperty(ref _isTunnelResolving, value))
             {
-                OnPropertyChanged(nameof(ShowTunnelSkeleton));
+                OnPropertyChanged(nameof(ShowPrimaryTunnelSkeleton));
+                OnPropertyChanged(nameof(ShowBedrockNumericSkeleton));
+                OnPropertyChanged(nameof(ShowGeyserHostnameSkeleton));
+                OnPropertyChanged(nameof(ShowGeyserNumericSkeleton));
             }
         }
     }
 
-    /// <summary>True when tunnel resolution failed and no address is available.</summary>
-    public bool HasTunnelError => !string.IsNullOrEmpty(_tunnelErrorText);
-    public string? TunnelErrorText => _tunnelErrorText;
 
-    /// <summary>True when we should show the skeleton loader (resolving + no address yet).</summary>
-    public bool ShowTunnelSkeleton => _isTunnelResolving && !HasTunnelAddress;
+    /// <summary>True when the primary tunnel address skeleton should show
+    /// (resolving and primary hostname/address not yet received).</summary>
+    public bool ShowPrimaryTunnelSkeleton => _isTunnelResolving && !HasTunnelAddress;
 
-    /// <summary>Number of skeleton placeholder rows to show, based on the expected IP
-    /// layout for this server type. LAN IP is excluded since it appears instantly.
-    ///   Java (no Geyser):  1 row  — hostname only
-    ///   Native Bedrock/PM: 2 rows — hostname + numeric
-    ///   Java + Geyser:     3 rows — Java hostname + Bedrock hostname + Bedrock numeric
-    /// </summary>
-    public int SkeletonRowCount =>
-        IsBedrockServer ? 2 :
-        HasGeyser       ? 3 :
-                          1;
+    /// <summary>True when the native-Bedrock numeric IP skeleton should show.</summary>
+    public bool ShowBedrockNumericSkeleton => IsBedrockServer && (!HasNumericTunnelAddress && (_isTunnelResolving || HasTunnelAddress));
+
+    /// <summary>True when the Geyser Bedrock hostname skeleton should show.</summary>
+    public bool ShowGeyserHostnameSkeleton => _isTunnelResolving && HasGeyser && !HasBedrockTunnelAddress;
+
+    /// <summary>True when the Geyser Bedrock numeric skeleton should show.</summary>
+    public bool ShowGeyserNumericSkeleton => HasGeyser && (!HasBedrockNumericTunnelAddress && (_isTunnelResolving || HasBedrockTunnelAddress));
 
     public void SetTunnelResolving(bool resolving)
     {
-        if (resolving)
-        {
-            _tunnelErrorText = null;
-            OnPropertyChanged(nameof(HasTunnelError));
-            OnPropertyChanged(nameof(TunnelErrorText));
-        }
-
         IsTunnelResolving = resolving;
-    }
-
-    public void SetTunnelError(string message)
-    {
-        _tunnelErrorText = message;
-        IsTunnelResolving = false;
-        OnPropertyChanged(nameof(HasTunnelError));
-        OnPropertyChanged(nameof(TunnelErrorText));
     }
 
     /// <summary>True for native Bedrock servers (BDS, Pocketmine).</summary>
@@ -217,6 +202,7 @@ public class InstanceCardViewModel : INotifyPropertyChanged
             if (SetProperty(ref _numericTunnelAddress, value))
             {
                 OnPropertyChanged(nameof(HasNumericTunnelAddress));
+                OnPropertyChanged(nameof(ShowBedrockNumericSkeleton));
             }
         }
     }
@@ -230,6 +216,7 @@ public class InstanceCardViewModel : INotifyPropertyChanged
             if (SetProperty(ref _bedrockNumericTunnelAddress, value))
             {
                 OnPropertyChanged(nameof(HasBedrockNumericTunnelAddress));
+                OnPropertyChanged(nameof(ShowGeyserNumericSkeleton));
             }
         }
     }
@@ -260,6 +247,7 @@ public class InstanceCardViewModel : INotifyPropertyChanged
                 OnPropertyChanged(nameof(DisplayAddress));
                 OnPropertyChanged(nameof(HasTunnelAddress));
                 OnPropertyChanged(nameof(BedrockIpDisplayText));
+                OnPropertyChanged(nameof(ShowPrimaryTunnelSkeleton));
                 UpdateIpDisplay();
             }
         }
@@ -274,6 +262,7 @@ public class InstanceCardViewModel : INotifyPropertyChanged
             {
                 OnPropertyChanged(nameof(HasBedrockTunnelAddress));
                 OnPropertyChanged(nameof(BedrockIpDisplayText));
+                OnPropertyChanged(nameof(ShowGeyserHostnameSkeleton));
             }
         }
     }
@@ -325,6 +314,17 @@ public class InstanceCardViewModel : INotifyPropertyChanged
     {
         if (_state != newState)
         {
+            if (newState == ServerState.SettingUp || newState == ServerState.Starting)
+            {
+                TunnelAddress = null;
+                NumericTunnelAddress = null;
+                BedrockTunnelAddress = null;
+                BedrockNumericTunnelAddress = null;
+                VoiceChatTunnelAddress = null;
+                VoiceChatNumericTunnelAddress = null;
+                _appState.ClearTunnelAddress(Id);
+            }
+
             _state = newState;
             OnPropertyChanged(nameof(StatusText));
             OnPropertyChanged(nameof(StatusBrush));
