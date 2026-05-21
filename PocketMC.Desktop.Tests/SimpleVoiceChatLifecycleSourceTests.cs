@@ -86,6 +86,13 @@ public sealed class SimpleVoiceChatLifecycleSourceTests
 
     private static string FindRepositoryRoot()
     {
+        string? explicitRoot = Environment.GetEnvironmentVariable("POCKETMC_SOURCE_ROOT");
+        if (!string.IsNullOrWhiteSpace(explicitRoot) &&
+            File.Exists(Path.Combine(explicitRoot, "PocketMC.Desktop.sln")))
+        {
+            return explicitRoot;
+        }
+
         var candidates = new[]
         {
             AppContext.BaseDirectory,

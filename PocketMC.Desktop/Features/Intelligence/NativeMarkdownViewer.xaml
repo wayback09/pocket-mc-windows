@@ -1,0 +1,10 @@
+<UserControl x:Class="PocketMC.Desktop.Features.Intelligence.NativeMarkdownViewer"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <FlowDocumentScrollViewer x:Name="DocumentViewer"
+                              VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled"
+                              IsToolBarVisible="False"
+                              Background="Transparent"
+                              Focusable="False"/>
+</UserControl>

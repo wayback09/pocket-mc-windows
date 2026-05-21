@@ -110,7 +110,7 @@ public class SettingsSummariesVM : ViewModelBase
         var realDuration = summary.SessionEnd.ToUniversalTime() - summary.SessionStart.ToUniversalTime();
         var displayDuration = realDuration.TotalSeconds < 0 ? summary.Duration : realDuration;
 
-        SummaryContent = $"**Total Online Time:** {FormatDuration(displayDuration)}\n\n{summary.Content}";
+        SummaryContent = $"**Total Online Time:** {FormatDuration(displayDuration)}\n\n{SummaryEmojiFormatter.Apply(summary.Content)}";
         IsViewingSummary = true;
     }
 
@@ -154,7 +154,7 @@ public class SettingsSummariesVM : ViewModelBase
         var lines = content.Split('\n', StringSplitOptions.RemoveEmptyEntries);
         foreach (var line in lines)
         {
-            var trimmed = line.Trim().TrimStart('#', ' ', '-', '*');
+            var trimmed = line.Trim().Trim('#', ' ', '-', '*');
             if (trimmed.Length > 10)
                 return trimmed.Length > 120 ? trimmed[..120] + "..." : trimmed;
         }

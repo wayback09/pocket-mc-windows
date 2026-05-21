@@ -117,6 +117,8 @@ If the logs include sensitive data (IPs, emails), DO NOT include them in the sum
                 finalContent = metaResult.Content;
             }
 
+            finalContent = SummaryEmojiFormatter.Apply(finalContent);
+
             // 4. Save
             var summary = new SessionSummary
             {

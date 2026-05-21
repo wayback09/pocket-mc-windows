@@ -18,6 +18,12 @@ internal static class TestSourceFileResolver
 
     private static IEnumerable<string> EnumerateCandidateRoots()
     {
+        string? explicitRoot = Environment.GetEnvironmentVariable("POCKETMC_SOURCE_ROOT");
+        if (!string.IsNullOrWhiteSpace(explicitRoot))
+        {
+            yield return explicitRoot;
+        }
+
         yield return Directory.GetCurrentDirectory();
 
         DirectoryInfo? directory = new(AppContext.BaseDirectory);
