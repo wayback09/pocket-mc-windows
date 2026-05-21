@@ -15,8 +15,9 @@
             <TextBlock x:Name="TxtVersion" Text="Version 1.0.0" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="13"/>
         </StackPanel>
 
-        <StackPanel Grid.Row="1">
-            <ui:Card Padding="24" VerticalAlignment="Top" Margin="0,0,0,12">
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="0,0,16,0">
+            <StackPanel>
+                <ui:Card Padding="24" VerticalAlignment="Top" Margin="0,0,0,12">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
@@ -98,6 +99,28 @@
                     </StackPanel>
                 </StackPanel>
             </ui:CardExpander>
-        </StackPanel>
+
+            <!-- SUPPORT & DONATION SECTION -->
+            <ui:CardExpander IsExpanded="True" Icon="{ui:SymbolIcon Heart24}" Margin="0,12,0,0">
+                <ui:CardExpander.Header>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Support &amp; Donation" FontSize="16" FontWeight="SemiBold"/>
+                            <TextBlock Text="Support the development of PocketMC! If you love this project and find it useful, consider buying us a coffee." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Grid>
+                </ui:CardExpander.Header>
+
+                <StackPanel Margin="16,8,16,16">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                        <ui:Button Content="Buy Me a Coffee" Appearance="Primary" Click="OpenDonationPage_Click" Icon="{ui:SymbolIcon Heart20}"/>
+                    </StackPanel>
+                </StackPanel>
+            </ui:CardExpander>
+            </StackPanel>
+        </ScrollViewer>
     </Grid>
 </Page>

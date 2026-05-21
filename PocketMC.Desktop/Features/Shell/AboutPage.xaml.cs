@@ -76,6 +76,20 @@ namespace PocketMC.Desktop.Features.Shell
             }
         }
 
+        private void OpenDonationPage_Click(object sender, RoutedEventArgs e)
+        {
+            var donationUrl = "https://buymeacoffee.com/sahaj33";
+            try
+            {
+                var psi = new ProcessStartInfo(donationUrl) { UseShellExecute = true };
+                Process.Start(psi);
+            }
+            catch (Exception ex)
+            {
+                _dialogService.ShowMessage("Unable to open link", ex.Message);
+            }
+        }
+
         private void Hyperlink_RequestNavigate(object sender, RequestNavigateEventArgs e)
         {
             Process.Start(new ProcessStartInfo
