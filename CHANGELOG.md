@@ -12,7 +12,7 @@ This release introduces a new Custom Background Image option for the Wallpaper B
 * **High-Res Branding**: Replaced the About page branding with a high-resolution 1280x1280 logo (`logo_highres.png`). Wired layout rounding, snap-to-pixels, and high-quality Fant scaling to prevent DPI blur.
 * **Minecraft Icon Compatibility**: Kept the original 64x64 `logo.png` resource separately to ensure generated Minecraft server icons remain fully compatible with multiplayer game client server lists.
 * **About Page Scroll Fix**: Wrapped cards on the About page in an auto-scrolling container with proper scrollbar gutter padding, resolving clipping on lower-resolution monitors.
-* **AI Summary Formatting**: Fixed markdown rendering and layout bugs in the Server Console's AI Summary window.
+* **AI Summary Formatting**: Fixed markdown rendering Emojis and layout bugs in the Server Console's AI Summary window.
 
 ### 🛡️ Security & Robustness Hardening
 * **Directory Traversal Protection**: Implemented `PathSafety.ValidateContainedPath` across Backup, Summary, and Addon services, and added `MarketplaceFileNameSanitizer` to fully eliminate path traversal vulnerabilities.
