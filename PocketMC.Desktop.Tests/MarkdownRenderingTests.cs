@@ -28,7 +28,7 @@ public sealed class MarkdownRenderingTests
     }
 
     [Fact]
-    public void NativeMarkdownRenderer_UsesEmojiFontForUnicodeEmojiGlyphs()
+    public void NativeMarkdownRenderer_UsesEmojiWpfForUnicodeEmojiGlyphs()
     {
         RunOnSta(() =>
         {
@@ -36,22 +36,16 @@ public sealed class MarkdownRenderingTests
                 "## \U0001F511 Key Events\n\n\u26A0\uFE0F Watch lag spikes and \U0001F604 player moments.",
                 isDarkMode: true);
 
-            TextBlock[] emojiBlocks = EnumerateEmojiTextBlocks(document).ToArray();
+            Emoji.Wpf.TextBlock[] emojiBlocks = EnumerateEmojiTextBlocks(document).ToArray();
 
-            Assert.Contains(emojiBlocks, block =>
-                block.Text == "\U0001F511" &&
-                block.FontFamily.Source == "Segoe UI Emoji");
-            Assert.Contains(emojiBlocks, block =>
-                block.Text.Contains("\u26A0") &&
-                block.FontFamily.Source == "Segoe UI Emoji");
-            Assert.Contains(emojiBlocks, block =>
-                block.Text == "\U0001F604" &&
-                block.FontFamily.Source == "Segoe UI Emoji");
+            Assert.Contains(emojiBlocks, block => block.Text == "\U0001F511");
+            Assert.Contains(emojiBlocks, block => block.Text.Contains("\u26A0"));
+            Assert.Contains(emojiBlocks, block => block.Text == "\U0001F604");
         });
     }
 
     [Fact]
-    public void NativeMarkdownRenderer_DoesNotRenderEmojiWithBoldFontWeight()
+    public void NativeMarkdownRenderer_UsesEmojiWpfInsideBoldHeadings()
     {
         RunOnSta(() =>
         {
@@ -59,10 +53,10 @@ public sealed class MarkdownRenderingTests
                 "## **\U0001F4CC Key Events**\n\n## **\u26A0\uFE0F Warnings & Issues**",
                 isDarkMode: true);
 
-            TextBlock[] emojiBlocks = EnumerateEmojiTextBlocks(document).ToArray();
+            Emoji.Wpf.TextBlock[] emojiBlocks = EnumerateEmojiTextBlocks(document).ToArray();
 
             Assert.NotEmpty(emojiBlocks);
-            Assert.All(emojiBlocks, block => Assert.Equal(FontWeights.Normal, block.FontWeight));
+            Assert.All(emojiBlocks, block => Assert.IsType<Emoji.Wpf.TextBlock>(block));
         });
     }
 
@@ -75,16 +69,28 @@ public sealed class MarkdownRenderingTests
                 "## **\U0001F4CC Key Events**\n\nDone \u2705 and happy \U0001F604",
                 isDarkMode: true);
 
-            TextBlock[] emojiBlocks = EnumerateEmojiTextBlocks(document).ToArray();
+            Emoji.Wpf.TextBlock[] emojiBlocks = EnumerateEmojiTextBlocks(document).ToArray();
 
             Assert.Contains(emojiBlocks, block => block.Text == "\U0001F4CC");
             Assert.Contains(emojiBlocks, block => block.Text == "\u2705");
             Assert.Contains(emojiBlocks, block => block.Text == "\U0001F604");
-            Assert.All(emojiBlocks, block =>
-            {
-                Assert.Equal("Segoe UI Emoji", block.FontFamily.Source);
-                Assert.Equal(FontWeights.Normal, block.FontWeight);
-            });
+            Assert.All(emojiBlocks, block => Assert.IsType<Emoji.Wpf.TextBlock>(block));
+        });
+    }
+
+    [Fact]
+    public void NativeMarkdownRenderer_UsesEmojiWpfTextBlocksForEmojiGlyphs()
+    {
+        RunOnSta(() =>
+        {
+            FlowDocument document = MarkdownFlowDocumentConverter.Convert(
+                "## **\U0001F4CC Key Events**\n\nDone \u2705",
+                isDarkMode: true);
+
+            Emoji.Wpf.TextBlock[] emojiBlocks = EnumerateEmojiTextBlocks(document).ToArray();
+
+            Assert.NotEmpty(emojiBlocks);
+            Assert.All(emojiBlocks, block => Assert.IsType<Emoji.Wpf.TextBlock>(block));
         });
     }
 
@@ -163,7 +169,7 @@ public sealed class MarkdownRenderingTests
         }
     }
 
-    private static IEnumerable<TextBlock> EnumerateEmojiTextBlocks(FlowDocument document)
+    private static IEnumerable<Emoji.Wpf.TextBlock> EnumerateEmojiTextBlocks(FlowDocument document)
     {
         return document.Blocks.SelectMany(EnumerateEmojiTextBlocks);
     }
@@ -173,23 +179,23 @@ public sealed class MarkdownRenderingTests
         return document.Blocks.SelectMany(EnumerateInlineText);
     }
 
-    private static IEnumerable<TextBlock> EnumerateEmojiTextBlocks(Block block)
+    private static IEnumerable<Emoji.Wpf.TextBlock> EnumerateEmojiTextBlocks(Block block)
     {
         switch (block)
         {
             case Paragraph paragraph:
-                foreach (TextBlock textBlock in EnumerateEmojiTextBlocks(paragraph.Inlines))
+                foreach (Emoji.Wpf.TextBlock textBlock in EnumerateEmojiTextBlocks(paragraph.Inlines))
                     yield return textBlock;
                 break;
             case List list:
                 foreach (ListItem item in list.ListItems)
                 foreach (Block child in item.Blocks)
-                foreach (TextBlock textBlock in EnumerateEmojiTextBlocks(child))
+                foreach (Emoji.Wpf.TextBlock textBlock in EnumerateEmojiTextBlocks(child))
                     yield return textBlock;
                 break;
             case Section section:
                 foreach (Block child in section.Blocks)
-                foreach (TextBlock textBlock in EnumerateEmojiTextBlocks(child))
+                foreach (Emoji.Wpf.TextBlock textBlock in EnumerateEmojiTextBlocks(child))
                     yield return textBlock;
                 break;
             case Table table:
@@ -197,23 +203,23 @@ public sealed class MarkdownRenderingTests
                 foreach (TableRow row in group.Rows)
                 foreach (TableCell cell in row.Cells)
                 foreach (Block child in cell.Blocks)
-                foreach (TextBlock textBlock in EnumerateEmojiTextBlocks(child))
+                foreach (Emoji.Wpf.TextBlock textBlock in EnumerateEmojiTextBlocks(child))
                     yield return textBlock;
                 break;
         }
     }
 
-    private static IEnumerable<TextBlock> EnumerateEmojiTextBlocks(InlineCollection inlines)
+    private static IEnumerable<Emoji.Wpf.TextBlock> EnumerateEmojiTextBlocks(InlineCollection inlines)
     {
         foreach (Inline inline in inlines)
         {
             switch (inline)
             {
-                case InlineUIContainer { Child: TextBlock textBlock }:
+                case InlineUIContainer { Child: Emoji.Wpf.TextBlock textBlock }:
                     yield return textBlock;
                     break;
                 case Span span:
-                    foreach (TextBlock child in EnumerateEmojiTextBlocks(span.Inlines))
+                    foreach (Emoji.Wpf.TextBlock child in EnumerateEmojiTextBlocks(span.Inlines))
                         yield return child;
                     break;
             }
@@ -259,6 +265,9 @@ public sealed class MarkdownRenderingTests
                 case Run run:
                     yield return run.Text;
                     break;
+                case InlineUIContainer { Child: Emoji.Wpf.TextBlock textBlock }:
+                    yield return textBlock.Text;
+                    break;
                 case InlineUIContainer { Child: TextBlock textBlock }:
                     yield return textBlock.Text;
                     break;
@@ -292,3 +301,4 @@ public sealed class MarkdownRenderingTests
             throw exception;
     }
 }
+

@@ -10,7 +10,6 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Media;
 
@@ -45,8 +44,6 @@ namespace PocketMC.Desktop.Infrastructure
         private static Color LightTableBorder => Color.FromRgb(0xE5, 0xE7, 0xEB);
         private static Color LightTableEvenBg => Color.FromRgb(0xF9, 0xFA, 0xFB);
         private static Color LightHr => Color.FromRgb(0xE5, 0xE7, 0xEB);
-        private static FontFamily EmojiFontFamily { get; } = new("Segoe UI Emoji");
-
         public static FlowDocument Convert(string markdown, bool isDarkMode)
         {
             var doc = new FlowDocument
@@ -448,17 +445,12 @@ namespace PocketMC.Desktop.Infrastructure
 
         private static System.Windows.Documents.Inline CreateEmojiInline(string text)
         {
-            var textBlock = new TextBlock
+            var textBlock = new Emoji.Wpf.TextBlock
             {
                 Text = text,
-                FontFamily = EmojiFontFamily,
-                FontWeight = FontWeights.Normal,
-                FontStyle = FontStyles.Normal,
                 VerticalAlignment = VerticalAlignment.Center,
                 IsHitTestVisible = false
             };
-            TextOptions.SetTextFormattingMode(textBlock, TextFormattingMode.Ideal);
-            TextOptions.SetTextRenderingMode(textBlock, TextRenderingMode.ClearType);
 
             return new InlineUIContainer(textBlock)
             {
