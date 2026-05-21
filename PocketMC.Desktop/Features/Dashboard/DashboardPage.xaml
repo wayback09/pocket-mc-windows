@@ -156,41 +156,22 @@
 
                                 <!-- Metadata -->
                                 <Border Grid.Row="1" Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="8" Padding="12,10" Margin="0,0,0,12">
-                                    <Grid>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                        </Grid.RowDefinitions>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
-
-                                        <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,12,10">
+                                    <UniformGrid Columns="3">
+                                        <StackPanel Margin="0,0,8,0">
                                             <TextBlock Style="{StaticResource MetadataItemLabel}" Text="Last played"/>
                                             <TextBlock Style="{StaticResource MetadataItemValue}" Text="{Binding LastPlayedValueText}"/>
                                         </StackPanel>
 
-                                        <StackPanel Grid.Row="0" Grid.Column="1" Margin="12,0,0,10">
+                                        <StackPanel Margin="4,0,4,0" HorizontalAlignment="Stretch">
+                                            <TextBlock Style="{StaticResource MetadataItemLabel}" Text="Created" TextAlignment="Center"/>
+                                            <TextBlock Style="{StaticResource MetadataItemValue}" Text="{Binding CreatedValueText}" TextAlignment="Center"/>
+                                        </StackPanel>
+
+                                        <StackPanel Margin="8,0,0,0">
                                             <TextBlock Style="{StaticResource MetadataItemLabel}" Text="Platform" TextAlignment="Right"/>
                                             <TextBlock Style="{StaticResource MetadataItemValue}" Text="{Binding PlatformSummaryText}" TextAlignment="Right"/>
                                         </StackPanel>
-
-                                        <UniformGrid Grid.Row="1" Grid.ColumnSpan="2" Columns="3">
-                                            <StackPanel Margin="0,0,8,0">
-                                                <TextBlock Style="{StaticResource MetadataItemLabel}" Text="Created"/>
-                                                <TextBlock Style="{StaticResource MetadataItemValue}" Text="{Binding CreatedValueText}"/>
-                                            </StackPanel>
-                                            <StackPanel Margin="4,0,4,0" HorizontalAlignment="Stretch">
-                                                <TextBlock Style="{StaticResource MetadataItemLabel}" Text="RAM" TextAlignment="Center"/>
-                                                <TextBlock Style="{StaticResource MetadataItemValue}" Text="{Binding MemoryValueText}" TextAlignment="Center"/>
-                                            </StackPanel>
-                                            <StackPanel Margin="8,0,0,0">
-                                                <TextBlock Style="{StaticResource MetadataItemLabel}" Text="Slots" TextAlignment="Right"/>
-                                                <TextBlock Style="{StaticResource MetadataItemValue}" Text="{Binding PlayerLimitValueText}" TextAlignment="Right"/>
-                                            </StackPanel>
-                                        </UniformGrid>
-                                    </Grid>
+                                    </UniformGrid>
                                 </Border>
 
                                 <!-- Metrics -->

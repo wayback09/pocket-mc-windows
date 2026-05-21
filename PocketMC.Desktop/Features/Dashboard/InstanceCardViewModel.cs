@@ -81,10 +81,6 @@ public class InstanceCardViewModel : INotifyPropertyChanged
         : "Never";
     public string CreatedText => $"Created: {_metadata.CreatedAt.ToLocalTime().ToString("MMM d, yyyy", CultureInfo.CurrentCulture)}";
     public string CreatedValueText => _metadata.CreatedAt.ToLocalTime().ToString("MMM d, yyyy", CultureInfo.CurrentCulture);
-    public string MemoryBadgeText => $"RAM {FormatMemoryMb(_metadata.MinRamMb)}-{FormatMemoryMb(_metadata.MaxRamMb)}";
-    public string MemoryValueText => $"{FormatMemoryMb(_metadata.MinRamMb)} - {FormatMemoryMb(_metadata.MaxRamMb)}";
-    public string PlayerLimitBadgeText => $"{MaxPlayers} slots";
-    public string PlayerLimitValueText => MaxPlayers.ToString(CultureInfo.CurrentCulture);
     public bool ShowCrossPlayBadge => HasGeyser;
     public Visibility CrossPlayBadgeVisibility => ShowCrossPlayBadge ? Visibility.Visible : Visibility.Collapsed;
     public string CrossPlayBadgeText => "Cross-play";
@@ -441,26 +437,10 @@ public class InstanceCardViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(LastPlayedValueText));
         OnPropertyChanged(nameof(CreatedText));
         OnPropertyChanged(nameof(CreatedValueText));
-        OnPropertyChanged(nameof(MemoryBadgeText));
-        OnPropertyChanged(nameof(MemoryValueText));
-        OnPropertyChanged(nameof(PlayerLimitBadgeText));
-        OnPropertyChanged(nameof(PlayerLimitValueText));
         OnPropertyChanged(nameof(PlatformSummaryText));
         OnPropertyChanged(nameof(PrimaryPort));
         OnPropertyChanged(nameof(LanAddressDisplayText));
         OnPropertyChanged(nameof(BedrockIpDisplayText));
-    }
-
-    private static string FormatMemoryMb(int value)
-    {
-        if (value <= 0)
-        {
-            return "0 MB";
-        }
-
-        return value % 1024 == 0
-            ? $"{value / 1024} GB"
-            : $"{value} MB";
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
