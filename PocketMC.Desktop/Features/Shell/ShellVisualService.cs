@@ -76,11 +76,24 @@ namespace PocketMC.Desktop.Features.Shell
 
                 if (backdrop.Equals("FakeMica", StringComparison.OrdinalIgnoreCase))
                 {
-                    // Fake Mica: use wallpaper-blur background — works on Win10 + Win11
+                    // Fake Mica: use custom image or wallpaper-blur background
                     window.WindowBackdropType = WindowBackdropType.None;
                     window.Background = CreateBrush("#FF1A1A1A");
                     SetTintLayer(window, TransparentTint);
-                    ApplyFakeMicaLayer(window);
+
+                    string? customImagePath = _applicationState.Settings.CustomBackgroundImagePath;
+                    if (!string.IsNullOrWhiteSpace(customImagePath))
+                    {
+                        // Try custom image first; fall back to wallpaper if it fails
+                        if (!ApplyFakeMicaLayerWithCustomImage(window, customImagePath))
+                        {
+                            ApplyFakeMicaLayer(window);
+                        }
+                    }
+                    else
+                    {
+                        ApplyFakeMicaLayer(window);
+                    }
                     return;
                 }
 
@@ -165,6 +178,22 @@ namespace PocketMC.Desktop.Features.Shell
             catch
             {
                 // Non-critical — fall through silently
+            }
+        }
+
+        private bool ApplyFakeMicaLayerWithCustomImage(FluentWindow window, string customImagePath)
+        {
+            try
+            {
+                var imageElement = window.FindName("WallpaperBlurLayer") as System.Windows.Controls.Image;
+                var tintOverlay = window.FindName("WallpaperTintOverlay") as Border;
+                if (imageElement == null || tintOverlay == null) return false;
+
+                return _wallpaperMicaService.ApplyCustomImage(window, imageElement, tintOverlay, customImagePath);
+            }
+            catch
+            {
+                return false;
             }
         }
 

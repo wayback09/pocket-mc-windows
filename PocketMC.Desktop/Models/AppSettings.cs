@@ -20,6 +20,7 @@ namespace PocketMC.Desktop.Models
         public PlayitPartnerConnection? PlayitPartnerConnection { get; set; }
         public bool HasCompletedFirstLaunch { get; set; }
         public string WindowBackdrop { get; set; } = "Acrylic";
+        public string? CustomBackgroundImagePath { get; set; }
         public string? CurseForgeApiKey { get; set; }
 
         // AI Summarization

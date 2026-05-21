@@ -74,6 +74,68 @@
                         <ComboBox x:Name="BackdropCombo" Width="260" HorizontalAlignment="Left" SelectionChanged="BackdropCombo_SelectionChanged">
                             <!-- Items populated dynamically based on OS version -->
                         </ComboBox>
+
+                        <!-- Custom Background Image — only shown when Wallpaper Blur is selected -->
+                        <StackPanel x:Name="CustomBackgroundPanel" Visibility="Collapsed" Margin="0,16,0,0">
+                            <Separator Margin="0,0,0,12" Opacity="0.15"/>
+                            <TextBlock Text="Custom Background Image" FontSize="14" FontWeight="Medium"/>
+                            <TextBlock Text="Use a custom image instead of your desktop wallpaper. The image will be blurred and darkened automatically." 
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,10" TextWrapping="Wrap"/>
+
+                            <!-- Preview + Controls -->
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Thumbnail preview -->
+                                <Border x:Name="CustomBgPreviewBorder"
+                                        Width="80" Height="48"
+                                        CornerRadius="6"
+                                        BorderThickness="1"
+                                        BorderBrush="#30FFFFFF"
+                                        Background="#18FFFFFF"
+                                        Margin="0,0,12,0"
+                                        VerticalAlignment="Center">
+                                    <Grid>
+                                        <Image x:Name="CustomBgPreviewImage"
+                                               Stretch="UniformToFill"
+                                               Visibility="Collapsed"/>
+                                        <ui:SymbolIcon x:Name="CustomBgPlaceholderIcon"
+                                                       Symbol="Image24"
+                                                       FontSize="20"
+                                                       Foreground="#50FFFFFF"
+                                                       HorizontalAlignment="Center"
+                                                       VerticalAlignment="Center"/>
+                                    </Grid>
+                                </Border>
+
+                                <!-- Path + Buttons -->
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                    <TextBlock x:Name="CustomBgPathLabel"
+                                               Text="No custom image selected"
+                                               FontSize="12"
+                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                               TextTrimming="CharacterEllipsis"
+                                               Margin="0,0,0,8"/>
+                                    <StackPanel Orientation="Horizontal">
+                                        <ui:Button x:Name="BtnBrowseCustomBg"
+                                                   Content="Browse Image"
+                                                   Icon="{ui:SymbolIcon FolderOpen24}"
+                                                   Appearance="Secondary"
+                                                   Click="BrowseCustomBackground_Click"
+                                                   Margin="0,0,8,0"/>
+                                        <ui:Button x:Name="BtnClearCustomBg"
+                                                   Content="Use Wallpaper"
+                                                   Icon="{ui:SymbolIcon Dismiss24}"
+                                                   Appearance="Danger"
+                                                   Click="ClearCustomBackground_Click"
+                                                   Visibility="Collapsed"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
                     </StackPanel>
                 </ui:CardExpander>
 

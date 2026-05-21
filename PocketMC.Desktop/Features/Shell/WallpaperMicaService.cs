@@ -90,6 +90,59 @@ namespace PocketMC.Desktop.Features.Shell
         }
 
         /// <summary>
+        /// Applies a user-selected custom image with the same blur+freeze pipeline.
+        /// Returns true if the custom image was applied successfully.
+        /// </summary>
+        public bool ApplyCustomImage(Window window, Image wallpaperImageElement, Border tintOverlay, string customImagePath)
+        {
+            if (window == null || wallpaperImageElement == null) return false;
+            if (string.IsNullOrWhiteSpace(customImagePath) || !File.Exists(customImagePath)) return false;
+
+            try
+            {
+                // Only re-render if the image path changed
+                if (_blurredBitmap == null || _lastWallpaperPath != customImagePath)
+                {
+                    _blurredBitmap = CreatePreBlurredBitmap(customImagePath);
+                    _lastWallpaperPath = customImagePath;
+                }
+
+                if (_blurredBitmap == null) return false;
+
+                wallpaperImageElement.Source = _blurredBitmap;
+                wallpaperImageElement.Stretch = Stretch.UniformToFill;
+                wallpaperImageElement.HorizontalAlignment = HorizontalAlignment.Center;
+                wallpaperImageElement.VerticalAlignment = VerticalAlignment.Center;
+                wallpaperImageElement.Visibility = Visibility.Visible;
+                wallpaperImageElement.IsHitTestVisible = false;
+                wallpaperImageElement.Effect = null;
+                wallpaperImageElement.Margin = new Thickness(0);
+
+                if (tintOverlay != null)
+                {
+                    tintOverlay.Background = new SolidColorBrush(Color.FromArgb(0xB8, 0x18, 0x18, 0x18));
+                    tintOverlay.Visibility = Visibility.Visible;
+                }
+
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Clears the cached bitmap so the next Apply/ApplyCustomImage re-renders.
+        /// Call when the user changes their custom image selection.
+        /// </summary>
+        public void ClearCachedBitmap()
+        {
+            _blurredBitmap = null;
+            _lastWallpaperPath = null;
+        }
+
+        /// <summary>
         /// Loads the wallpaper at a small resolution and bakes a Gaussian blur
         /// into the pixels via RenderTargetBitmap. The result is a frozen
         /// BitmapSource with zero ongoing GPU cost.

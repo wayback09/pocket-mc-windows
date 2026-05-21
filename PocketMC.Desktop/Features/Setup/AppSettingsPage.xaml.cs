@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using System.Windows;
@@ -108,6 +109,10 @@ namespace PocketMC.Desktop.Features.Setup
                 BackdropCombo.SelectedIndex = 0;
             }
 
+            // Initialize custom background panel state
+            UpdateCustomBackgroundPanelVisibility();
+            UpdateCustomBackgroundUI();
+
             // Set initial state
             ExternalBackupPathInput.Text = _applicationState.Settings.ExternalBackupDirectory ?? "";
 
@@ -184,10 +189,117 @@ namespace PocketMC.Desktop.Features.Setup
                 settings.WindowBackdrop = backdropTag;
                 _settingsManager.Save(settings);
 
+                UpdateCustomBackgroundPanelVisibility();
+
                 if (Window.GetWindow(this) as MainWindow is MainWindow mainWin)
                 {
                     mainWin.RequestMicaUpdate(); // This will apply the backdrop
                 }
+            }
+        }
+
+        // ── Custom Background Image Handlers ────────────────────────────────
+
+        private void BrowseCustomBackground_Click(object sender, RoutedEventArgs e)
+        {
+            var openFileDialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Title = "Select Custom Background Image",
+                Filter = "Image Files|*.jpg;*.jpeg;*.png;*.bmp;*.webp;*.tif;*.tiff|All Files|*.*",
+                CheckFileExists = true
+            };
+
+            // Pre-select current custom image directory if one is set
+            string? currentPath = _applicationState.Settings.CustomBackgroundImagePath;
+            if (!string.IsNullOrWhiteSpace(currentPath) && File.Exists(currentPath))
+            {
+                openFileDialog.InitialDirectory = Path.GetDirectoryName(currentPath) ?? "";
+            }
+
+            if (openFileDialog.ShowDialog() == true)
+            {
+                var settings = _applicationState.Settings;
+                settings.CustomBackgroundImagePath = openFileDialog.FileName;
+                _settingsManager.Save(settings);
+
+                UpdateCustomBackgroundUI();
+
+                // Apply immediately
+                if (Window.GetWindow(this) as MainWindow is MainWindow mainWin)
+                {
+                    mainWin.RequestMicaUpdate();
+                }
+            }
+        }
+
+        private void ClearCustomBackground_Click(object sender, RoutedEventArgs e)
+        {
+            var settings = _applicationState.Settings;
+            settings.CustomBackgroundImagePath = null;
+            _settingsManager.Save(settings);
+
+            UpdateCustomBackgroundUI();
+
+            // Revert to wallpaper immediately
+            if (Window.GetWindow(this) as MainWindow is MainWindow mainWin)
+            {
+                mainWin.RequestMicaUpdate();
+            }
+        }
+
+        private void UpdateCustomBackgroundPanelVisibility()
+        {
+            if (CustomBackgroundPanel == null) return;
+
+            bool isFakeMica = false;
+            if (BackdropCombo?.SelectedItem is ComboBoxItem item && item.Tag is string tag)
+            {
+                isFakeMica = tag.Equals("FakeMica", StringComparison.OrdinalIgnoreCase);
+            }
+
+            CustomBackgroundPanel.Visibility = isFakeMica ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private void UpdateCustomBackgroundUI()
+        {
+            if (CustomBgPathLabel == null || CustomBgPreviewImage == null) return;
+
+            string? customPath = _applicationState.Settings.CustomBackgroundImagePath;
+            bool hasCustomImage = !string.IsNullOrWhiteSpace(customPath) && File.Exists(customPath);
+
+            if (hasCustomImage)
+            {
+                CustomBgPathLabel.Text = Path.GetFileName(customPath);
+                BtnClearCustomBg.Visibility = Visibility.Visible;
+                CustomBgPlaceholderIcon.Visibility = Visibility.Collapsed;
+
+                // Load thumbnail preview
+                try
+                {
+                    var bi = new System.Windows.Media.Imaging.BitmapImage();
+                    bi.BeginInit();
+                    bi.UriSource = new Uri(customPath!, UriKind.Absolute);
+                    bi.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                    bi.DecodePixelWidth = 160; // Small thumbnail
+                    bi.EndInit();
+                    bi.Freeze();
+
+                    CustomBgPreviewImage.Source = bi;
+                    CustomBgPreviewImage.Visibility = Visibility.Visible;
+                }
+                catch
+                {
+                    CustomBgPreviewImage.Visibility = Visibility.Collapsed;
+                    CustomBgPlaceholderIcon.Visibility = Visibility.Visible;
+                }
+            }
+            else
+            {
+                CustomBgPathLabel.Text = "No custom image selected";
+                BtnClearCustomBg.Visibility = Visibility.Collapsed;
+                CustomBgPreviewImage.Source = null;
+                CustomBgPreviewImage.Visibility = Visibility.Collapsed;
+                CustomBgPlaceholderIcon.Visibility = Visibility.Visible;
             }
         }
 
