@@ -85,6 +85,8 @@ public class ServerProcessManager
         try
         {
             await serverProcess.StartAsync(meta, instancePath, appRootPath);
+            meta.LastPlayedAt = DateTime.UtcNow;
+            _instanceManager.SaveMetadata(meta, instancePath);
         }
         catch
         {

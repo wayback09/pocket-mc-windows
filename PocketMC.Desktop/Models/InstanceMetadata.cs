@@ -13,6 +13,7 @@ namespace PocketMC.Desktop.Models
         public string Motd { get; set; } = "A Minecraft Server";
         public int MaxPlayers { get; set; } = 20;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime? LastPlayedAt { get; set; }
         public int MinRamMb { get; set; } = 1024;
         public int MaxRamMb { get; set; } = 4096;
 

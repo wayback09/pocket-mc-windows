@@ -2,6 +2,7 @@ using PocketMC.Desktop.Features.Instances;
 using PocketMC.Desktop.Features.Instances.Services;
 using PocketMC.Desktop.Features.Instances.Models;
 using PocketMC.Desktop.Models;
+using System.Text.Json;
 
 namespace PocketMC.Desktop.Tests;
 
@@ -38,6 +39,35 @@ public class ServerProcessManagerTests
 
             File.Delete(sessionLogPath);
             Assert.False(File.Exists(sessionLogPath));
+        }
+        finally
+        {
+            processManager.ReleaseInstance(metadata.Id);
+        }
+    }
+
+    [Fact]
+    public async Task StartProcessAsync_WhenLaunchSucceeds_PersistsLastPlayedAt()
+    {
+        using var workspace = new PortReliabilityTestWorkspace();
+        ServerProcessManager processManager = workspace.CreateServerProcessManager();
+        InstanceMetadata metadata = workspace.CreateInstance("Bedrock Last Played", serverType: "Bedrock (BDS)");
+        string instancePath = workspace.GetInstancePath(metadata.Id);
+        string serverExePath = Path.Combine(instancePath, "bedrock_server.exe");
+        File.Copy(Environment.GetEnvironmentVariable("ComSpec") ?? @"C:\Windows\System32\cmd.exe", serverExePath);
+
+        DateTime beforeStart = DateTime.UtcNow.AddSeconds(-1);
+
+        try
+        {
+            await processManager.StartProcessAsync(metadata, workspace.RootPath);
+
+            string metadataJson = File.ReadAllText(workspace.PathService.GetMetadataPath(instancePath));
+            InstanceMetadata savedMetadata = JsonSerializer.Deserialize<InstanceMetadata>(metadataJson)!;
+
+            Assert.NotNull(savedMetadata.LastPlayedAt);
+            Assert.True(savedMetadata.LastPlayedAt >= beforeStart);
+            Assert.True(savedMetadata.LastPlayedAt <= DateTime.UtcNow.AddSeconds(1));
         }
         finally
         {

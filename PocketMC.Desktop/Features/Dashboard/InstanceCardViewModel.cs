@@ -1,6 +1,7 @@
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Globalization;
 using System.Windows;
 using System.Windows.Media;
 using PocketMC.Desktop.Models;
@@ -72,6 +73,25 @@ public class InstanceCardViewModel : INotifyPropertyChanged
     public string MinecraftVersion => _metadata.MinecraftVersion;
     public string ServerType => _metadata.ServerType;
     public int MaxPlayers => _metadata.MaxPlayers;
+    public string LastPlayedText => _metadata.LastPlayedAt.HasValue
+        ? $"Last played: {_metadata.LastPlayedAt.Value.ToLocalTime().ToString("MMM d, yyyy h:mm tt", CultureInfo.CurrentCulture)}"
+        : "Last played: Never";
+    public string LastPlayedValueText => _metadata.LastPlayedAt.HasValue
+        ? _metadata.LastPlayedAt.Value.ToLocalTime().ToString("MMM d, yyyy h:mm tt", CultureInfo.CurrentCulture)
+        : "Never";
+    public string CreatedText => $"Created: {_metadata.CreatedAt.ToLocalTime().ToString("MMM d, yyyy", CultureInfo.CurrentCulture)}";
+    public string CreatedValueText => _metadata.CreatedAt.ToLocalTime().ToString("MMM d, yyyy", CultureInfo.CurrentCulture);
+    public string MemoryBadgeText => $"RAM {FormatMemoryMb(_metadata.MinRamMb)}-{FormatMemoryMb(_metadata.MaxRamMb)}";
+    public string MemoryValueText => $"{FormatMemoryMb(_metadata.MinRamMb)} - {FormatMemoryMb(_metadata.MaxRamMb)}";
+    public string PlayerLimitBadgeText => $"{MaxPlayers} slots";
+    public string PlayerLimitValueText => MaxPlayers.ToString(CultureInfo.CurrentCulture);
+    public bool ShowCrossPlayBadge => HasGeyser;
+    public Visibility CrossPlayBadgeVisibility => ShowCrossPlayBadge ? Visibility.Visible : Visibility.Collapsed;
+    public string CrossPlayBadgeText => "Cross-play";
+    public string CrossPlayBadgeTooltip => "Java and Bedrock players can join through Geyser/Floodgate.";
+    public string PlatformSummaryText => ShowCrossPlayBadge
+        ? "Java + Bedrock"
+        : IsBedrockServer ? "Bedrock network" : "Java network";
     public bool HasTunnelAddress => !string.IsNullOrEmpty(_tunnelAddress);
     public bool HasBedrockTunnelAddress => !string.IsNullOrEmpty(_bedrockTunnelAddress);
     public bool HasVoiceChatTunnelAddress => !string.IsNullOrEmpty(_voiceChatTunnelAddress);
@@ -410,8 +430,37 @@ public class InstanceCardViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(MinecraftVersion));
         OnPropertyChanged(nameof(ServerType));
         OnPropertyChanged(nameof(MaxPlayers));
+        OnPropertyChanged(nameof(HasGeyser));
+        OnPropertyChanged(nameof(IsBedrockServer));
+        OnPropertyChanged(nameof(ShowBedrockIp));
+        OnPropertyChanged(nameof(ShowCrossPlayBadge));
+        OnPropertyChanged(nameof(CrossPlayBadgeVisibility));
+        OnPropertyChanged(nameof(CrossPlayBadgeText));
+        OnPropertyChanged(nameof(CrossPlayBadgeTooltip));
+        OnPropertyChanged(nameof(LastPlayedText));
+        OnPropertyChanged(nameof(LastPlayedValueText));
+        OnPropertyChanged(nameof(CreatedText));
+        OnPropertyChanged(nameof(CreatedValueText));
+        OnPropertyChanged(nameof(MemoryBadgeText));
+        OnPropertyChanged(nameof(MemoryValueText));
+        OnPropertyChanged(nameof(PlayerLimitBadgeText));
+        OnPropertyChanged(nameof(PlayerLimitValueText));
+        OnPropertyChanged(nameof(PlatformSummaryText));
         OnPropertyChanged(nameof(PrimaryPort));
         OnPropertyChanged(nameof(LanAddressDisplayText));
+        OnPropertyChanged(nameof(BedrockIpDisplayText));
+    }
+
+    private static string FormatMemoryMb(int value)
+    {
+        if (value <= 0)
+        {
+            return "0 MB";
+        }
+
+        return value % 1024 == 0
+            ? $"{value / 1024} GB"
+            : $"{value} MB";
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;

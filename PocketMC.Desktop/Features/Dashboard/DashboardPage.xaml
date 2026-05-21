@@ -64,6 +64,21 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <Style x:Key="MetadataItemLabel" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="9"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorTertiaryBrush}"/>
+            <Setter Property="TextOptions.TextFormattingMode" Value="Ideal"/>
+        </Style>
+
+        <Style x:Key="MetadataItemValue" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+            <Setter Property="TextWrapping" Value="NoWrap"/>
+        </Style>
     </Page.Resources>
 
     <Grid Margin="24">
@@ -86,7 +101,7 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <ui:Card Margin="12" Width="320">
+                        <ui:Card Margin="12" Width="340">
                             <ui:Card.Style>
                                 <Style TargetType="ui:Card" BasedOn="{StaticResource {x:Type ui:Card}}">
                                     <Style.Triggers>
@@ -99,27 +114,31 @@
                             <Grid Margin="4">
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"/> <!-- Header -->
+                                    <RowDefinition Height="Auto"/> <!-- Metadata -->
                                     <RowDefinition Height="Auto"/> <!-- Metrics -->
                                     <RowDefinition Height="Auto"/> <!-- Connections -->
                                     <RowDefinition Height="Auto"/> <!-- Actions -->
                                 </Grid.RowDefinitions>
 
                                 <!-- Header -->
-                                <Grid Grid.Row="0" Margin="0,0,0,16">
+                                <Grid Grid.Row="0" Margin="0,0,0,12">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
                                     <StackPanel Grid.Column="0">
                                         <ui:TextBlock FontTypography="Subtitle" Text="{Binding Name}" FontWeight="Bold" TextTrimming="CharacterEllipsis"/>
-                                        <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                        <WrapPanel Margin="0,6,0,0">
                                             <Border Background="{DynamicResource ControlFillColorSecondaryBrush}" CornerRadius="4" Padding="6,2" Margin="0,0,4,0">
                                                 <TextBlock Text="{Binding MinecraftVersion}" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                             </Border>
-                                            <Border Background="#3389B4FA" CornerRadius="4" Padding="6,2">
+                                            <Border Background="#3389B4FA" CornerRadius="4" Padding="6,2" Margin="0,0,4,0">
                                                 <TextBlock Text="{Binding ServerType}" FontSize="10" Foreground="{DynamicResource SystemFillColorAttentionBrush}" FontWeight="SemiBold"/>
                                             </Border>
-                                        </StackPanel>
+                                            <Border Background="#2234D399" BorderBrush="#5534D399" BorderThickness="1" CornerRadius="4" Padding="6,2" Visibility="{Binding CrossPlayBadgeVisibility}" ToolTip="{Binding CrossPlayBadgeTooltip}">
+                                                <TextBlock Text="{Binding CrossPlayBadgeText}" FontSize="10" Foreground="#34D399" FontWeight="SemiBold"/>
+                                            </Border>
+                                        </WrapPanel>
                                         <TextBlock Text="{Binding Description}" FontSize="12" Foreground="SlateGray" Margin="0,4,0,0" TextWrapping="Wrap" MaxHeight="32" TextTrimming="CharacterEllipsis" Visibility="{Binding Description, Converter={StaticResource NullOrEmptyToVis}}"/>
                                         <TextBlock Text="{Binding StatusText}" Foreground="{Binding StatusBrush}" FontWeight="Bold" FontSize="11" Margin="0,8,0,0"/>
                                     </StackPanel>
@@ -135,8 +154,47 @@
                                     </ui:Button>
                                 </Grid>
 
+                                <!-- Metadata -->
+                                <Border Grid.Row="1" Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="8" Padding="12,10" Margin="0,0,0,12">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,12,10">
+                                            <TextBlock Style="{StaticResource MetadataItemLabel}" Text="Last played"/>
+                                            <TextBlock Style="{StaticResource MetadataItemValue}" Text="{Binding LastPlayedValueText}"/>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Row="0" Grid.Column="1" Margin="12,0,0,10">
+                                            <TextBlock Style="{StaticResource MetadataItemLabel}" Text="Platform" TextAlignment="Right"/>
+                                            <TextBlock Style="{StaticResource MetadataItemValue}" Text="{Binding PlatformSummaryText}" TextAlignment="Right"/>
+                                        </StackPanel>
+
+                                        <UniformGrid Grid.Row="1" Grid.ColumnSpan="2" Columns="3">
+                                            <StackPanel Margin="0,0,8,0">
+                                                <TextBlock Style="{StaticResource MetadataItemLabel}" Text="Created"/>
+                                                <TextBlock Style="{StaticResource MetadataItemValue}" Text="{Binding CreatedValueText}"/>
+                                            </StackPanel>
+                                            <StackPanel Margin="4,0,4,0" HorizontalAlignment="Stretch">
+                                                <TextBlock Style="{StaticResource MetadataItemLabel}" Text="RAM" TextAlignment="Center"/>
+                                                <TextBlock Style="{StaticResource MetadataItemValue}" Text="{Binding MemoryValueText}" TextAlignment="Center"/>
+                                            </StackPanel>
+                                            <StackPanel Margin="8,0,0,0">
+                                                <TextBlock Style="{StaticResource MetadataItemLabel}" Text="Slots" TextAlignment="Right"/>
+                                                <TextBlock Style="{StaticResource MetadataItemValue}" Text="{Binding PlayerLimitValueText}" TextAlignment="Right"/>
+                                            </StackPanel>
+                                        </UniformGrid>
+                                    </Grid>
+                                </Border>
+
                                 <!-- Metrics -->
-                                <Border Grid.Row="1" Background="{DynamicResource CardBackgroundFillColorSecondaryBrush}" CornerRadius="8" Padding="12" Margin="0,0,0,16">
+                                <Border Grid.Row="2" Background="{DynamicResource CardBackgroundFillColorSecondaryBrush}" CornerRadius="8" Padding="12" Margin="0,0,0,16">
                                     <UniformGrid Columns="3">
                                         <StackPanel HorizontalAlignment="Center">
                                             <TextBlock Text="CPU" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
@@ -165,7 +223,7 @@
                                 </Border>
 
                                 <!-- Connections -->
-                                <StackPanel Grid.Row="2" Margin="0,0,0,16" Visibility="{Binding IsRunning, Converter={StaticResource BoolToVis}}">
+                                <StackPanel Grid.Row="3" Margin="0,0,0,16" Visibility="{Binding IsRunning, Converter={StaticResource BoolToVis}}">
 
 
 
@@ -276,7 +334,7 @@
                                 </StackPanel>
 
                                 <!-- Actions -->
-                                <Grid Grid.Row="3">
+                                <Grid Grid.Row="4">
                                     <UniformGrid Columns="2" Visibility="{Binding StoppedControlsVisibility}">
                                         <ui:Button Content="Start" Appearance="Primary" Icon="{ui:SymbolIcon Play24}" Command="{Binding DataContext.StartServerCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="2" HorizontalAlignment="Stretch"/>
                                         <ui:Button Content="Logs" Appearance="Secondary" Icon="{ui:SymbolIcon WindowConsole20}" Command="{Binding DataContext.OpenConsoleCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="2" HorizontalAlignment="Stretch"/>

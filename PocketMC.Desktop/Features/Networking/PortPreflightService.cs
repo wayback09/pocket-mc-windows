@@ -455,6 +455,7 @@ public sealed class PortPreflightService
             Motd = metadata.Motd,
             MaxPlayers = metadata.MaxPlayers,
             CreatedAt = metadata.CreatedAt,
+            LastPlayedAt = metadata.LastPlayedAt,
             MinRamMb = metadata.MinRamMb,
             MaxRamMb = metadata.MaxRamMb,
             BackupIntervalHours = metadata.BackupIntervalHours,

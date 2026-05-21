@@ -30,4 +30,94 @@ public sealed class InstanceCardViewModelTests
         Assert.Equal(19145, vm.BedrockLocalPort);
         Assert.Contains("19145", vm.BedrockIpDisplayText);
     }
+
+    [Fact]
+    public void Constructor_WithGeyserEnabled_ShowsCrossPlayBadge()
+    {
+        var metadata = new InstanceMetadata
+        {
+            Id = Guid.NewGuid(),
+            Name = "Crossplay Server",
+            ServerType = "Paper",
+            HasGeyser = true
+        };
+
+        using var workspace = new PortReliabilityTestWorkspace();
+        var vm = CreateViewModel(workspace, metadata);
+
+        Assert.True(vm.ShowCrossPlayBadge);
+        Assert.Equal("Cross-play", vm.CrossPlayBadgeText);
+        Assert.Contains("Java", vm.CrossPlayBadgeTooltip);
+        Assert.Contains("Bedrock", vm.CrossPlayBadgeTooltip);
+    }
+
+    [Fact]
+    public void Constructor_WithNativeBedrock_DoesNotShowCrossPlayBadge()
+    {
+        var metadata = new InstanceMetadata
+        {
+            Id = Guid.NewGuid(),
+            Name = "Bedrock Server",
+            ServerType = "Bedrock Dedicated Server",
+            HasGeyser = false
+        };
+
+        using var workspace = new PortReliabilityTestWorkspace();
+        var vm = CreateViewModel(workspace, metadata);
+
+        Assert.False(vm.ShowCrossPlayBadge);
+    }
+
+    [Fact]
+    public void Constructor_WithLastPlayedAt_FormatsLastPlayedText()
+    {
+        var lastPlayed = new DateTime(2026, 5, 20, 12, 30, 0, DateTimeKind.Utc);
+        var metadata = new InstanceMetadata
+        {
+            Id = Guid.NewGuid(),
+            Name = "Recent Server",
+            ServerType = "Paper",
+            LastPlayedAt = lastPlayed
+        };
+
+        using var workspace = new PortReliabilityTestWorkspace();
+        var vm = CreateViewModel(workspace, metadata);
+
+        Assert.StartsWith("Last played: ", vm.LastPlayedText);
+        Assert.Contains(lastPlayed.ToLocalTime().ToString("MMM d, yyyy"), vm.LastPlayedText);
+        Assert.Equal(lastPlayed.ToLocalTime().ToString("MMM d, yyyy h:mm tt"), vm.LastPlayedValueText);
+    }
+
+    [Fact]
+    public void Constructor_WithoutLastPlayedAt_ShowsNeverPlayedText()
+    {
+        var metadata = new InstanceMetadata
+        {
+            Id = Guid.NewGuid(),
+            Name = "Fresh Server",
+            ServerType = "Paper"
+        };
+
+        using var workspace = new PortReliabilityTestWorkspace();
+        var vm = CreateViewModel(workspace, metadata);
+
+        Assert.Equal("Last played: Never", vm.LastPlayedText);
+        Assert.Equal("Never", vm.LastPlayedValueText);
+    }
+
+    private static InstanceCardViewModel CreateViewModel(PortReliabilityTestWorkspace workspace, InstanceMetadata metadata)
+    {
+        var processManager = workspace.CreateServerProcessManager();
+        var probeService = workspace.CreatePortProbeService();
+        var leaseRegistry = workspace.CreatePortLeaseRegistry();
+        var recoveryService = workspace.CreatePortRecoveryService(probeService, leaseRegistry);
+        var lifecycleService = workspace.CreateServerLifecycleService(
+            processManager,
+            workspace.CreatePortPreflightService(processManager),
+            probeService,
+            leaseRegistry,
+            recoveryService);
+
+        return new InstanceCardViewModel(metadata, processManager, lifecycleService, workspace.AppState);
+    }
 }
