@@ -18,6 +18,7 @@
     <Resource Include="icon.ico" />
     <Resource Include="Assets\dark_dirt.png" />
     <Resource Include="Assets\logo.png" />
+    <Resource Include="Assets\logo_highres.png" />
   </ItemGroup>
 
   <ItemGroup>

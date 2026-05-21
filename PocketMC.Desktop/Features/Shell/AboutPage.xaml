@@ -17,16 +17,43 @@
 
         <StackPanel Grid.Row="1">
             <ui:Card Padding="24" VerticalAlignment="Top" Margin="0,0,0,12">
-                <StackPanel>
-                    <TextBlock Text="PocketMC Desktop" FontSize="20" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,0,8"/>
-                    <TextBlock Text="A modern native desktop application for managing Minecraft servers, proxies, modpacks, and more." Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,0,16"/>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
 
-                    <TextBlock Text="Repository" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,0,8"/>
-                    <TextBlock Text="Contributions, issues, and feature requests are welcome on GitHub!" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,0,12"/>
-                    <StackPanel Orientation="Horizontal">
-                        <ui:Button Content="GitHub" Appearance="Secondary" Click="OpenGitHub_Click" Icon="{ui:SymbolIcon Code24}"/>
+                    <!-- App Logo -->
+                    <Border Grid.Column="0"
+                            Width="120" Height="120"
+                            CornerRadius="16"
+                            Margin="0,0,24,0"
+                            VerticalAlignment="Center"
+                            UseLayoutRounding="True"
+                            SnapsToDevicePixels="True">
+                        <Border.Clip>
+                            <RectangleGeometry Rect="0,0,120,120" RadiusX="16" RadiusY="16"/>
+                        </Border.Clip>
+                        <Image Source="pack://application:,,,/Assets/logo_highres.png"
+                               Stretch="UniformToFill"
+                               UseLayoutRounding="True"
+                               SnapsToDevicePixels="True"
+                               RenderOptions.BitmapScalingMode="Fant"
+                               RenderOptions.EdgeMode="Aliased"/>
+                    </Border>
+
+                    <!-- Info Content -->
+                    <StackPanel Grid.Column="1">
+                        <TextBlock Text="PocketMC Desktop" FontSize="20" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,0,8"/>
+                        <TextBlock Text="A modern native desktop application for managing Minecraft servers, proxies, modpacks, and more." Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,0,16"/>
+
+                        <TextBlock Text="Repository" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,0,8"/>
+                        <TextBlock Text="Contributions, issues, and feature requests are welcome on GitHub!" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,0,12"/>
+                        <StackPanel Orientation="Horizontal">
+                            <ui:Button Content="GitHub" Appearance="Secondary" Click="OpenGitHub_Click" Icon="{ui:SymbolIcon Code24}"/>
+                        </StackPanel>
                     </StackPanel>
-                </StackPanel>
+                </Grid>
             </ui:Card>
 
             <!-- COMMUNITY SECTION -->
