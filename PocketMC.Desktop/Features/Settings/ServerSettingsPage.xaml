@@ -1057,18 +1057,20 @@
                         <!-- TAB 6: FAULT TOLERANCE -->
                         <TabItem Header="FaultTolerance">
                             <ScrollViewer x:Name="RestartScrollViewer" VerticalScrollBarVisibility="Auto" Padding="0,0,16,0">
-                                <ui:Card Padding="32">
-                                    <StackPanel>
-                                        <TextBlock Text="Auto-Restart Engine" Style="{StaticResource SettingsHeader}" FontSize="18"/>
-                                        <ui:ToggleSwitch IsChecked="{Binding Advanced.EnableAutoRestart}" Content="Restart on Failure" OnContent="Enabled" OffContent="Disabled"/>
+                                <StackPanel>
+                                    <ui:Card Padding="32">
+                                        <StackPanel>
+                                            <TextBlock Text="Auto-Restart Engine" Style="{StaticResource SettingsHeader}" FontSize="18"/>
+                                            <ui:ToggleSwitch IsChecked="{Binding Advanced.EnableAutoRestart}" Content="Restart on Failure" OnContent="Enabled" OffContent="Disabled"/>
 
-                                        <TextBlock Text="Max Failure Tolerance (Attempts):" Style="{StaticResource SettingsSubtext}" Margin="0,20,0,8"/>
-                                        <ui:TextBox Text="{Binding Advanced.MaxAutoRestarts}" Width="100" HorizontalAlignment="Left"/>
+                                            <TextBlock Text="Max Failure Tolerance (Attempts):" Style="{StaticResource SettingsSubtext}" Margin="0,20,0,8"/>
+                                            <ui:TextBox Text="{Binding Advanced.MaxAutoRestarts}" Width="100" HorizontalAlignment="Left"/>
 
-                                        <TextBlock Text="Restart Cooldown (Seconds):" Style="{StaticResource SettingsSubtext}" Margin="0,20,0,8"/>
-                                        <ui:TextBox Text="{Binding Advanced.AutoRestartDelay}" Width="100" HorizontalAlignment="Left"/>
-                                    </StackPanel>
-                                </ui:Card>
+                                            <TextBlock Text="Restart Cooldown (Seconds):" Style="{StaticResource SettingsSubtext}" Margin="0,20,0,8"/>
+                                            <ui:TextBox Text="{Binding Advanced.AutoRestartDelay}" Width="100" HorizontalAlignment="Left"/>
+                                        </StackPanel>
+                                    </ui:Card>
+                                </StackPanel>
                             </ScrollViewer>
                         </TabItem>
 
