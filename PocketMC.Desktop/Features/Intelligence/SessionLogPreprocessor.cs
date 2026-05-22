@@ -14,6 +14,13 @@ public static class SessionLogPreprocessor
 {
     private static readonly TimeSpan RegexTimeout = TimeSpan.FromSeconds(1);
 
+    // Matches common Minecraft log timestamp prefixes:
+    // [HH:MM:SS]  |  [HH:MM:SS INFO]:  |  [HH:MM:SS WARN]:  etc.
+    private static readonly Regex TimestampPrefixRegex = new(
+        @"^\[?\d{1,2}:\d{2}:\d{2}\]?\s*(\[?[A-Z]+\]?:?\s*)?",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant,
+        RegexTimeout);
+
     // Lines matching these patterns are noise and should be removed
     private static readonly Regex[] NoisePatterns = new[]
     {
@@ -107,7 +114,10 @@ public static class SessionLogPreprocessor
         if (result.Count < MinimumLines)
             return null;
 
-        return string.Join('\n', result);
+        // Collapse consecutive duplicate lines to reduce token waste
+        var deduplicated = DeduplicateLines(result);
+
+        return string.Join('\n', deduplicated);
     }
 
     /// <summary>
@@ -136,5 +146,61 @@ public static class SessionLogPreprocessor
             chunks.Add(current.ToString());
 
         return chunks;
+    }
+
+    /// <summary>
+    /// Collapses consecutive lines that are identical (after stripping timestamps)
+    /// into a single representative line with a "(repeated N times)" suffix.
+    /// </summary>
+    public static List<string> DeduplicateLines(List<string> lines)
+    {
+        if (lines.Count == 0)
+            return lines;
+
+        var result = new List<string>();
+        string prevStripped = StripTimestamp(lines[0]);
+        string prevOriginal = lines[0];
+        int runCount = 1;
+
+        for (int i = 1; i < lines.Count; i++)
+        {
+            string curStripped = StripTimestamp(lines[i]);
+
+            if (string.Equals(curStripped, prevStripped, StringComparison.Ordinal))
+            {
+                runCount++;
+            }
+            else
+            {
+                FlushRun(result, prevOriginal, runCount);
+                prevStripped = curStripped;
+                prevOriginal = lines[i];
+                runCount = 1;
+            }
+        }
+
+        FlushRun(result, prevOriginal, runCount);
+        return result;
+    }
+
+    /// <summary>
+    /// Strips the leading timestamp prefix from a log line so that lines
+    /// differing only by timestamp compare as equal.
+    /// </summary>
+    internal static string StripTimestamp(string line)
+    {
+        return TimestampPrefixRegex.Replace(line, string.Empty);
+    }
+
+    private static void FlushRun(List<string> result, string representativeLine, int count)
+    {
+        if (count <= 1)
+        {
+            result.Add(representativeLine);
+        }
+        else
+        {
+            result.Add($"{representativeLine} (repeated {count} times)");
+        }
     }
 }
