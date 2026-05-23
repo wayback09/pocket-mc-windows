@@ -1,6 +1,32 @@
 # Changelog
 
-This file summarizes the Pocket MC Desktop release line from `v1.0.0` to `v1.7.6`.
+This file summarizes the Pocket MC Desktop release line from `v1.0.0` to `v1.7.7`.
+
+## v1.7.7 - Custom AI Providers, Rich Creator Wizard & UX Polish
+
+This release introduces comprehensive local/cloud Ollama support, dynamic per-provider AI models and custom endpoints, a major overhaul to the New Instance creation page featuring inline world importing and advanced world/gameplay configurations, a platform migration to the PaperMC v3 API, and numerous dashboard visual and console efficiency polishments.
+
+### 🤖 AI & Console Intelligence
+* **Ollama & Advanced AI Configurations**: Added first-class support for Ollama local/cloud models (defaulting to `ministral-3:3b-cloud`) and dynamic model overrides + custom endpoint configurations for all AI providers.
+* **Smart Endpoint URL Toggle**: The Endpoint URL text box now dynamically hides and only becomes visible when Ollama is selected, maintaining a clutter-free settings view.
+* **Pre-flight Log Deduplication**: Implemented consecutive identical log line collapsing during AI preprocessing (e.g., appending "(repeated N times)"), significantly reducing token consumption and processing costs from repetitive server spam.
+* **Console Spam Suppression**: Replicated runtime player list suppression logic when loading console history from `pocketmc-session.log`. Hides programmatic list command outputs in the UI (showing only 1 in 100 entries) to minimize screen clutter.
+
+### ⚙️ New Instance Wizard & Gameplay Presets
+* **Upfront Gameplay Configurations**: Added a "World & Gameplay Settings" section to the New Instance page, allowing players to set Level Seed, World Type, Gamemode, Difficulty, and Player Limits before creating the server.
+* **Custom World Import**: Enabled direct Minecraft world imports (`.zip` and `.mcworld`) during creation with dynamic, engine-aware extraction path resolution (Java vs. Bedrock/PocketMine).
+* **Creation Layout Refinements**: Redesigned the Wizard UI with a sleek two-column side-by-side layout, dynamic one-column vertical collapse for smaller screens (<780px), a bottom-pinned Footer Action Bar with locked parent scrolling, and fixed mouse-wheel scroll event swallowing.
+
+### ☕ Platform Migration & Platform Stability
+* **PaperMC API v3 Migration**: Re-engineered the Paper engine to consume the new `fill.papermc.io/v3` API endpoint, resolving potential deprecation blocks. Includes a compliant User-Agent, content-addressed build resolver (`/builds/{id}`), stable release sorting, and robust fallback parsers.
+
+### 🎨 Dashboard & Layout Polish
+* **Human-Friendly Relative Times**: Upgraded the instance card's "Last Played" field to show elegant relative time descriptions (e.g., "Just now", "Yesterday", "3 hours ago"), while preserving exact timestamps in a hover tooltip.
+* **Streamlined Card Metadata**: Consolidated card metadata layout into a single clean `UniformGrid`, removing duplicate RAM and Slots fields and aligning the RAM text perfectly.
+
+### 🛠️ Bug Fixes & Reliability
+* **Fault Tolerance Layout Fix**: Wrapped the Fault Tolerance card in a top-aligned StackPanel, preventing it from awkwardly floating in the center of the settings page.
+* **Unit Test Resilience**: Patched file-locking `UnauthorizedAccessException` and time-dependency failures in the test suite to ensure stable builds.
 
 ## v1.7.6 - Appearance Customization, Security Hardening & UI Polish
 
