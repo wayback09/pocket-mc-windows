@@ -25,7 +25,7 @@ public sealed class InstanceCardViewModelTests
         var recoveryService = workspace.CreatePortRecoveryService(probeService, leaseRegistry);
         var lifecycleService = workspace.CreateServerLifecycleService(processManager, workspace.CreatePortPreflightService(processManager), probeService, leaseRegistry, recoveryService);
 
-        var vm = new InstanceCardViewModel(metadata, processManager, lifecycleService, workspace.AppState);
+        var vm = new InstanceCardViewModel(metadata, processManager, lifecycleService, workspace.AppState, workspace.Registry);
 
         Assert.Equal(19145, vm.BedrockLocalPort);
         Assert.Contains("19145", vm.BedrockIpDisplayText);
@@ -192,6 +192,6 @@ public sealed class InstanceCardViewModelTests
             leaseRegistry,
             recoveryService);
 
-        return new InstanceCardViewModel(metadata, processManager, lifecycleService, workspace.AppState);
+        return new InstanceCardViewModel(metadata, processManager, lifecycleService, workspace.AppState, workspace.Registry);
     }
 }

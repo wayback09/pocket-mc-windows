@@ -116,7 +116,7 @@ public sealed class InstanceTunnelOrchestratorTunnelFlowTests
             workspace.CreatePortProbeService(),
             workspace.CreatePortLeaseRegistry(),
             workspace.CreatePortRecoveryService());
-        return new InstanceCardViewModel(metadata, processManager, lifecycleService, workspace.AppState);
+        return new InstanceCardViewModel(metadata, processManager, lifecycleService, workspace.AppState, workspace.Registry);
     }
 
     private static InstanceTunnelOrchestrator CreateOrchestrator(
