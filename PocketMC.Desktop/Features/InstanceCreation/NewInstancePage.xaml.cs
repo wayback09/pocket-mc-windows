@@ -6,12 +6,16 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Navigation;
 using Microsoft.Extensions.Logging;
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Shell.Interfaces;
 using PocketMC.Desktop.Models;
 using PocketMC.Desktop.Features.Shell;
+using PocketMC.Desktop.Features.Instances;
 using PocketMC.Desktop.Features.Instances.Services;
 using PocketMC.Desktop.Features.Instances.Models;
 
@@ -20,6 +24,7 @@ using PocketMC.Desktop.Features.Marketplace;
 using PocketMC.Desktop.Features.Mods;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Win32;
+using PocketMC.Desktop.Infrastructure;
 
 namespace PocketMC.Desktop.Features.InstanceCreation
 {
@@ -38,11 +43,15 @@ namespace PocketMC.Desktop.Features.InstanceCreation
         private readonly GeyserProvisioningService _geyserProvisioning;
         private readonly DownloaderService _downloader;
         private readonly ILogger<NewInstancePage> _logger;
+        private readonly IDialogService _dialogService;
+        private readonly WorldManager _worldManager;
         private bool _isCreating;
         private bool _isLoadingVersions;
         private bool _hasLoadedInitialVersions;
         private int _versionLoadRequestId;
         private CancellationTokenSource? _downloadCts;
+        private readonly MouseWheelEventHandler _previewMouseWheelHandler;
+        private bool _isForwardingMouseWheel;
 
         public static bool IsDownloadInProgress { get; private set; }
         public static bool InstanceCreatePageIsOpen { get; private set; }
@@ -60,7 +69,9 @@ namespace PocketMC.Desktop.Features.InstanceCreation
             PocketmineProvider pocketmineProvider,
             GeyserProvisioningService geyserProvisioning,
             DownloaderService downloader,
-            ILogger<NewInstancePage> logger)
+            ILogger<NewInstancePage> logger,
+            IDialogService dialogService,
+            WorldManager worldManager)
         {
             InitializeComponent();
             _navigationService = navigationService;
@@ -76,6 +87,10 @@ namespace PocketMC.Desktop.Features.InstanceCreation
             _geyserProvisioning = geyserProvisioning;
             _downloader = downloader;
             _logger = logger;
+            _dialogService = dialogService;
+            _worldManager = worldManager;
+
+            _previewMouseWheelHandler = OnPagePreviewMouseWheel;
 
             Loaded += OnLoaded;
             Unloaded += OnUnloaded;
@@ -84,12 +99,14 @@ namespace PocketMC.Desktop.Features.InstanceCreation
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
             InstanceCreatePageIsOpen = false;
+            RemoveHandler(UIElement.PreviewMouseWheelEvent, _previewMouseWheelHandler);
         }
 
         private async void OnLoaded(object sender, RoutedEventArgs e)
         {
-
             InstanceCreatePageIsOpen = true;
+            AddHandler(UIElement.PreviewMouseWheelEvent, _previewMouseWheelHandler, true);
+            DisableParentScrollViewer(this);
 
             if (_hasLoadedInitialVersions)
             {
@@ -102,6 +119,62 @@ namespace PocketMC.Desktop.Features.InstanceCreation
             UpdateAddonPanelVisibility(serverType);
             UpdateCreateButtonState();
             await LoadVersionsAsync(serverType);
+        }
+
+        private void Page_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            if (InputsPanel == null || LeftPanel == null || RightPanel == null || CompliancePanel == null)
+                return;
+
+            // When page width is narrow (e.g., less than 780 pixels), stack columns vertically
+            if (e.NewSize.Width < 780)
+            {
+                // Stack vertically
+                Col0.Width = new GridLength(1, GridUnitType.Star);
+                Col1.Width = new GridLength(0);
+                Col2.Width = new GridLength(0);
+
+                Row1.Height = new GridLength(24); // spacing between Basics and World Settings
+                Row2.Height = GridLength.Auto;
+                Row3.Height = new GridLength(24); // spacing before EULA
+                Row4.Height = GridLength.Auto;
+
+                Grid.SetColumn(LeftPanel, 0);
+                Grid.SetRow(LeftPanel, 0);
+                Grid.SetColumnSpan(LeftPanel, 3);
+
+                Grid.SetColumn(RightPanel, 0);
+                Grid.SetRow(RightPanel, 2);
+                Grid.SetColumnSpan(RightPanel, 3);
+
+                Grid.SetColumn(CompliancePanel, 0);
+                Grid.SetRow(CompliancePanel, 4);
+                Grid.SetColumnSpan(CompliancePanel, 3);
+            }
+            else
+            {
+                // Side-by-side
+                Col0.Width = new GridLength(1, GridUnitType.Star);
+                Col1.Width = new GridLength(32);
+                Col2.Width = new GridLength(1, GridUnitType.Star);
+
+                Row1.Height = new GridLength(0);
+                Row2.Height = new GridLength(0);
+                Row3.Height = new GridLength(24); // spacing before EULA
+                Row4.Height = GridLength.Auto;
+
+                Grid.SetColumn(LeftPanel, 0);
+                Grid.SetRow(LeftPanel, 0);
+                Grid.SetColumnSpan(LeftPanel, 1);
+
+                Grid.SetColumn(RightPanel, 2);
+                Grid.SetRow(RightPanel, 0);
+                Grid.SetColumnSpan(RightPanel, 1);
+
+                Grid.SetColumn(CompliancePanel, 0);
+                Grid.SetRow(CompliancePanel, 4);
+                Grid.SetColumnSpan(CompliancePanel, 3);
+            }
         }
 
 
@@ -253,6 +326,25 @@ namespace PocketMC.Desktop.Features.InstanceCreation
         }
 
 
+        private async void BtnBrowseWorld_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var result = await _dialogService.OpenFileDialogAsync(
+                    "Select Custom World Archive",
+                    "Minecraft World Archives (*.zip;*.mcworld)|*.zip;*.mcworld|All Files (*.*)|*.*");
+                if (result != null)
+                {
+                    TxtCustomWorldPath.Text = result;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to browse for custom world archive.");
+                ShowError($"Failed to browse for world: {ex.Message}");
+            }
+        }
+
         private void BtnBack_Click(object sender, RoutedEventArgs e)
         {
             if (_isCreating)
@@ -295,6 +387,19 @@ namespace PocketMC.Desktop.Features.InstanceCreation
             if (CmbVersion.SelectedItem is not MinecraftVersion selectedVersion)
             {
                 ShowError("Select a Minecraft version before continuing.");
+                return;
+            }
+
+            if (!int.TryParse(TxtMaxPlayers.Text.Trim(), out int maxPlayers) || maxPlayers <= 0)
+            {
+                ShowError("Players Limit must be a positive integer.");
+                return;
+            }
+
+            string customWorldPath = TxtCustomWorldPath.Text.Trim();
+            if (!string.IsNullOrEmpty(customWorldPath) && !File.Exists(customWorldPath))
+            {
+                ShowError("The custom world archive file does not exist.");
                 return;
             }
 
@@ -389,6 +494,55 @@ namespace PocketMC.Desktop.Features.InstanceCreation
                 if (ChkAcceptEula.IsChecked == true && createdFolderName != null)
                 {
                     _instanceManager.AcceptEula(createdFolderName);
+                }
+
+                // Apply World & Gameplay Settings
+                if (createdInstancePath != null)
+                {
+                    string propsFile = Path.Combine(createdInstancePath, "server.properties");
+                    var props = ServerPropertiesParser.Read(propsFile);
+
+                    if (!string.IsNullOrWhiteSpace(TxtSeed.Text))
+                    {
+                        props["level-seed"] = TxtSeed.Text.Trim();
+                    }
+
+                    if (CmbLevelType.SelectedItem is ComboBoxItem levelTypeItem)
+                    {
+                        string levelType = levelTypeItem.Content?.ToString()?.ToLower() ?? "default";
+                        props["level-type"] = levelType;
+                    }
+
+                    if (CmbGamemode.SelectedItem is ComboBoxItem gamemodeItem)
+                    {
+                        string gamemode = gamemodeItem.Content?.ToString()?.ToLower() ?? "survival";
+                        props["gamemode"] = gamemode;
+                    }
+
+                    if (CmbDifficulty.SelectedItem is ComboBoxItem difficultyItem)
+                    {
+                        string difficulty = difficultyItem.Content?.ToString()?.ToLower() ?? "easy";
+                        props["difficulty"] = difficulty;
+                    }
+
+                    props["max-players"] = maxPlayers.ToString();
+                    metadata.MaxPlayers = maxPlayers;
+
+                    ServerPropertiesParser.Write(propsFile, props);
+
+                    // Import Custom World if selected
+                    if (!string.IsNullOrWhiteSpace(customWorldPath))
+                    {
+                        string targetWorldPath = WorldPathResolver.Resolve(createdInstancePath, metadata, null);
+                        Dispatcher.Invoke(() => TxtProgress.Text = "Importing custom world...");
+                        await _worldManager.ImportWorldZipAsync(
+                            customWorldPath,
+                            targetWorldPath,
+                            msg => Dispatcher.Invoke(() => TxtProgress.Text = msg)
+                        );
+                    }
+
+                    _instanceManager.SaveMetadata(metadata, createdInstancePath);
                 }
 
                 if (ChkEnableGeyser.IsChecked == true && createdInstancePath != null)
@@ -615,6 +769,76 @@ namespace PocketMC.Desktop.Features.InstanceCreation
             }
 
             return _vanillaProvider;
+        }
+
+        private void OnPagePreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            if (_isForwardingMouseWheel || e.OriginalSource is not DependencyObject source)
+                return;
+
+            // 1. Never intercept if a ScrollBar thumb is being dragged
+            if (FindAncestor<ScrollBar>(source) != null)
+                return;
+
+            // 2. Skip if inside an OPEN ComboBox dropdown (let it scroll its own list)
+            var comboBox = FindAncestor<ComboBox>(source);
+            if (comboBox?.IsDropDownOpen == true)
+                return;
+
+            // 3. Skip if inside a Popup (ComboBox dropdown popup, tooltip, etc.)
+            if (FindAncestor<Popup>(source) != null)
+                return;
+
+            // 4. Forward the scroll to Scroller ScrollViewer
+            if (Scroller == null || Scroller.ScrollableHeight <= 0)
+                return;
+
+            e.Handled = true;
+
+            try
+            {
+                _isForwardingMouseWheel = true;
+                // Scroll by 3 lines per notch for responsive feel
+                int steps = Math.Max(1, Math.Abs(e.Delta) / Mouse.MouseWheelDeltaForOneLine) * 3;
+                for (int i = 0; i < steps; i++)
+                {
+                    if (e.Delta > 0)
+                        Scroller.LineUp();
+                    else
+                        Scroller.LineDown();
+                }
+            }
+            finally
+            {
+                _isForwardingMouseWheel = false;
+            }
+        }
+
+        private static T? FindAncestor<T>(DependencyObject? current) where T : DependencyObject
+        {
+            while (current != null)
+            {
+                if (current is T match)
+                    return match;
+                DependencyObject? visualParent = null;
+                try { visualParent = VisualTreeHelper.GetParent(current); } catch { }
+                current = visualParent ?? LogicalTreeHelper.GetParent(current);
+            }
+            return null;
+        }
+
+        private void DisableParentScrollViewer(DependencyObject obj)
+        {
+            var parent = VisualTreeHelper.GetParent(obj);
+            while (parent != null)
+            {
+                if (parent is ScrollViewer sv)
+                {
+                    sv.VerticalScrollBarVisibility = ScrollBarVisibility.Disabled;
+                    sv.HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled;
+                }
+                parent = VisualTreeHelper.GetParent(parent);
+            }
         }
     }
 }
