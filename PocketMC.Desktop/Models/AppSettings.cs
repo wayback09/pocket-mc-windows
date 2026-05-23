@@ -43,6 +43,9 @@ namespace PocketMC.Desktop.Models
         // Console Settings
         public int ConsoleBufferSize { get; set; } = 5000;
 
+        // Discord Rich Presence
+        public bool EnableDiscordRpc { get; set; } = true;
+
         // User Intent Flags
         public System.Collections.Generic.HashSet<int> UserRemovedJavaVersions { get; set; } = new();
 

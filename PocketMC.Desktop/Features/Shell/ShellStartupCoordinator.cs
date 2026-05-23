@@ -27,6 +27,7 @@ namespace PocketMC.Desktop.Features.Shell
         private readonly IResourceMonitorService _resourceMonitorService;
         private readonly PocketMC.Desktop.Features.Diagnostics.DependencyHealthMonitor _healthMonitor;
         private readonly InstanceRegistry _registry;
+        private readonly IDiscordRpcService _discordRpcService;
         private readonly ILogger<ShellStartupCoordinator> _logger;
         private IStartupShellHost? _host;
         private bool _startupServicesStarted;
@@ -43,6 +44,7 @@ namespace PocketMC.Desktop.Features.Shell
             IResourceMonitorService resourceMonitorService,
             PocketMC.Desktop.Features.Diagnostics.DependencyHealthMonitor healthMonitor,
             InstanceRegistry registry,
+            IDiscordRpcService discordRpcService,
             ILogger<ShellStartupCoordinator> logger)
         {
             _settingsManager = settingsManager;
@@ -54,6 +56,7 @@ namespace PocketMC.Desktop.Features.Shell
             _resourceMonitorService = resourceMonitorService;
             _healthMonitor = healthMonitor;
             _registry = registry;
+            _discordRpcService = discordRpcService;
             _logger = logger;
         }
 
@@ -114,6 +117,7 @@ namespace PocketMC.Desktop.Features.Shell
             _playitAgentService.OnTunnelRunning -= OnPlayitTunnelRunning;
             _backupScheduler.Stop();
             _healthMonitor.StopMonitoring();
+            _discordRpcService.Shutdown();
             // Go through the lifecycle layer so shutdown also releases port leases and
             // clears cached tunnel state instead of only killing the OS processes.
             _serverLifecycleService.KillAll();
@@ -143,6 +147,7 @@ namespace PocketMC.Desktop.Features.Shell
                     _ = _playitAgentService.DownloadAgentAsync();
                 }
 
+                _discordRpcService.Initialize();
                 _startupServicesStarted = true;
             }
 

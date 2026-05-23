@@ -13,17 +13,20 @@ namespace PocketMC.Desktop.Infrastructure
         private readonly IServerLifecycleService _serverLifecycle;
         private readonly ServerProcessManager _serverProcessManager;
         private readonly PlayitAgentService _playitAgentService;
+        private readonly IDiscordRpcService _discordRpcService;
         private readonly ILogger<ApplicationLifecycleService> _logger;
 
         public ApplicationLifecycleService(
             IServerLifecycleService serverLifecycle,
             ServerProcessManager serverProcessManager,
             PlayitAgentService playitAgentService,
+            IDiscordRpcService discordRpcService,
             ILogger<ApplicationLifecycleService> logger)
         {
             _serverLifecycle = serverLifecycle;
             _serverProcessManager = serverProcessManager;
             _playitAgentService = playitAgentService;
+            _discordRpcService = discordRpcService;
             _logger = logger;
         }
 
@@ -42,6 +45,8 @@ namespace PocketMC.Desktop.Infrastructure
                 _logger.LogInformation("Disconnecting Playit.gg tunnels.");
                 _playitAgentService.Stop();
             }
+
+            _discordRpcService.Shutdown();
         }
     }
 }

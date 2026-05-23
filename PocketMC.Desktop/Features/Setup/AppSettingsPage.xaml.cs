@@ -40,6 +40,7 @@ namespace PocketMC.Desktop.Features.Setup
         private readonly UpdateService _updateService;
         private readonly PocketMC.Desktop.Features.Diagnostics.DiagnosticReportingService _diagnosticService;
         private readonly PocketMC.Desktop.Features.Diagnostics.DependencyHealthMonitor _healthMonitor;
+        private readonly IDiscordRpcService _discordRpcService;
         private bool _isInitializing = true;
         private readonly MouseWheelEventHandler _previewMouseWheelHandler;
         private bool _isForwardingMouseWheel;
@@ -54,7 +55,8 @@ namespace PocketMC.Desktop.Features.Setup
             UpdateService updateService,
             PocketMC.Desktop.Features.Diagnostics.DiagnosticReportingService diagnosticService,
             PocketMC.Desktop.Features.Diagnostics.DependencyHealthMonitor healthMonitor,
-            CloudBackupSettingsViewModel cloudBackups)
+            CloudBackupSettingsViewModel cloudBackups,
+            IDiscordRpcService discordRpcService)
         {
             InitializeComponent();
             _previewMouseWheelHandler = OnPagePreviewMouseWheel;
@@ -65,6 +67,7 @@ namespace PocketMC.Desktop.Features.Setup
             _updateService = updateService;
             _diagnosticService = diagnosticService;
             _healthMonitor = healthMonitor;
+            _discordRpcService = discordRpcService;
             CloudBackups = cloudBackups;
 
             Loaded += AppSettingsPage_Loaded;
@@ -143,6 +146,9 @@ namespace PocketMC.Desktop.Features.Setup
 
             _healthMonitor.HealthChanged += UpdateDependencyHealth;
             UpdateDependencyHealth();
+
+            // Discord RPC
+            ToggleDiscordRpc.IsChecked = _applicationState.Settings.EnableDiscordRpc;
 
             _isInitializing = false;
         }
@@ -425,6 +431,22 @@ namespace PocketMC.Desktop.Features.Setup
         private void OpenDiscord_Click(object sender, RoutedEventArgs e)
         {
             // Handled in AboutPage now
+        }
+
+        // ── Discord RPC Toggle ────────────────────────────────────────────
+
+        private void ToggleDiscordRpc_Changed(object sender, RoutedEventArgs e)
+        {
+            if (_isInitializing) return;
+
+            var settings = _applicationState.Settings;
+            settings.EnableDiscordRpc = ToggleDiscordRpc.IsChecked == true;
+            _settingsManager.Save(settings);
+
+            if (settings.EnableDiscordRpc)
+                _discordRpcService.Initialize();
+            else
+                _discordRpcService.Shutdown();
         }
 
         private void CopyDiscordInvite_Click(object sender, RoutedEventArgs e)

@@ -99,6 +99,7 @@ namespace PocketMC.Desktop.Composition
             services.AddSingleton<IResourceMonitorService, ResourceMonitorService>();
             services.AddSingleton<BackupService>();
             services.AddSingleton<BackupSchedulerService>();
+            services.AddSingleton<IDiscordRpcService, DiscordRpcService>();
 
             services.AddSingleton<PocketMC.Desktop.Features.CloudBackups.CloudBackupUploadHistoryStore>();
             services.AddSingleton<PocketMC.Desktop.Features.CloudBackups.CloudBackupService>();

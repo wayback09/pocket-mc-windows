@@ -35,6 +35,7 @@
     <PackageReference Include="Velopack" Version="0.0.1298" />
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.5" />
     <PackageReference Include="WPF-UI" Version="3.0.4" />
+    <PackageReference Include="DiscordRichPresence" Version="1.2.1.24" />
   </ItemGroup>
 
 </Project>

@@ -320,6 +320,40 @@
                     </StackPanel>
                 </ui:CardExpander>
 
+                <ui:CardExpander IsExpanded="False" Icon="{ui:SymbolIcon People24}" Margin="0,0,0,12">
+                    <ui:CardExpander.Header>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="Discord Integration" FontSize="16" FontWeight="SemiBold"/>
+                                <TextBlock Text="Show your active server status on your Discord profile." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
+                            </StackPanel>
+                        </Grid>
+                    </ui:CardExpander.Header>
+
+                    <StackPanel Margin="16,8,16,16">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Discord Rich Presence" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock Text="Display your server type, player count, uptime, and a Join button directly on your Discord profile while a server is running." 
+                                           TextWrapping="Wrap" 
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
+                                           FontSize="12" 
+                                           Margin="0,4,24,0"/>
+                            </StackPanel>
+                            <ui:ToggleSwitch x:Name="ToggleDiscordRpc" Grid.Column="1" VerticalAlignment="Center" 
+                                             Checked="ToggleDiscordRpc_Changed" 
+                                             Unchecked="ToggleDiscordRpc_Changed"/>
+                        </Grid>
+                    </StackPanel>
+                </ui:CardExpander>
+
                 <ui:CardExpander IsExpanded="False" Icon="{ui:SymbolIcon Stethoscope24}">
                     <ui:CardExpander.Header>
                         <Grid>
