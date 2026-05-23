@@ -68,7 +68,7 @@ Key areas to cover in tests:
 
 - **Process Lifecycle**: Crash recovery, orphan process cleanup, and graceful shutdowns.
 - **Path Safety**: Path traversal prevention in mod/plugin imports.
-- **Provisioning**: JRE and PHP runtime download and isolation.
+- **Provisioning**: JRE and PHP runtime download, isolation, and on-demand prompt confirmation/denial flows.
 
 ## 📜 Contribution Guidelines
 

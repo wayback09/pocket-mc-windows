@@ -77,6 +77,7 @@ PocketMC resolves available versions from upstream APIs/manifests where possible
 
 - App-local Java provisioning through Adoptium.
 - Bundled Java runtime targets: **Java 8, 11, 17, 21, and 25**.
+- **Optimized JRE Provisioning**: Background setup downloads only Java 25 by default. Other versions are prompted for on-demand download when a server starts requiring them.
 - Runtime selection is based on the Minecraft version, with optional custom Java path support.
 - PocketMine-MP uses an app-managed PHP 8.2 PM5 runtime from the official PocketMine PHP binaries.
 - Downloads use retries, partial-file handling, safe promotion, and hash verification when upstream hashes are available.
@@ -86,7 +87,8 @@ PocketMC resolves available versions from upstream APIs/manifests where possible
 <details>
 <summary><b>Dashboard, console, and player tracking</b></summary>
 
-- Dashboard cards show instance state and live server context.
+- Dashboard cards show instance state and live server context with dynamic status indicators.
+- Live badges dynamically display cross-play support (Geyser/Floodgate) and simple voice chat (with a premium mic icon) by scanning mod folders.
 - Resource monitoring tracks CPU/RAM usage for running instances.
 - Console output is buffered, sanitized, classified, and written to `logs/pocketmc-session.log`.
 - Player count and online player names are parsed from Java, Bedrock, and PocketMine-style output.
@@ -268,6 +270,7 @@ For packaging, PocketMC uses Velopack. See [`CONTRIBUTING.md`](CONTRIBUTING.md) 
 - External backup replication copies archives to a selected folder. Cloud sync depends on whatever sync tool owns that folder.
 - Forge and NeoForge use installer-based flows, so their setup is more complex than a single vanilla JAR download.
 - Provider availability depends on upstream services such as Mojang, PaperMC, Fabric, Forge, NeoForge, GitHub, Modrinth, CurseForge, Poggit, Adoptium, and Playit.gg.
+- Missing JRE runtimes are prompted for download when starting a server, rather than downloading everything at once during setup.
 
 ---
 
