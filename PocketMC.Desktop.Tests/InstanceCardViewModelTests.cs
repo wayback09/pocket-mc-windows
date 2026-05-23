@@ -34,15 +34,10 @@ public sealed class InstanceCardViewModelTests
     [Fact]
     public void Constructor_WithGeyserEnabled_ShowsCrossPlayBadge()
     {
-        var metadata = new InstanceMetadata
-        {
-            Id = Guid.NewGuid(),
-            Name = "Crossplay Server",
-            ServerType = "Paper",
-            HasGeyser = true
-        };
-
         using var workspace = new PortReliabilityTestWorkspace();
+        var metadata = workspace.CreateInstance("Crossplay Server", serverType: "Paper");
+        metadata.HasGeyser = true;
+        workspace.WriteFile(metadata.Id, Path.Combine("plugins", "Geyser.jar"), "jar");
         var vm = CreateViewModel(workspace, metadata);
 
         Assert.True(vm.ShowCrossPlayBadge);
