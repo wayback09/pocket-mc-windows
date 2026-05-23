@@ -151,6 +151,13 @@
 
                                             <Separator Margin="0,0,0,20" Opacity="0.15"/>
 
+                                            <!-- Startup Auto-Start -->
+                                            <TextBlock Text="Auto-Start on Application Launch" Style="{StaticResource SettingsHeader}" Margin="0,0,0,4"/>
+                                            <TextBlock Text="Automatically start this specific server instance when PocketMC starts." Style="{StaticResource SettingsSubtext}" Margin="0,0,0,8"/>
+                                            <ui:ToggleSwitch IsChecked="{Binding General.AutoStartWithApp, Mode=TwoWay}" Content="Auto-start server at PocketMC startup" Margin="0,0,0,20"/>
+
+                                            <Separator Margin="0,0,0,20" Opacity="0.15"/>
+
                                             <!-- Interactive Dummy Server Card -->
                                             <Border Background="{StaticResource DirtBackground}" BorderThickness="2" BorderBrush="#000000" Padding="4" Margin="0,0,0,16" CornerRadius="0"
                                                     Visibility="{Binding IsJavaSettings, Converter={StaticResource VisibleIfTrue}}">

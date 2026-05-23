@@ -169,6 +169,7 @@ namespace PocketMC.Desktop.Features.Settings
             General.ServerPort = cfg.ServerPort;
             General.ServerIp = cfg.ServerIp;
             General.GeyserBedrockPort = Metadata.GeyserBedrockPort?.ToString() ?? "19132";
+            General.AutoStartWithApp = Metadata.AutoStartWithApp;
             General.LoadIcon();
             Bedrock.ServerPortV6 = cfg.ServerPortV6;
             Bedrock.AllowCheats = cfg.AllowCheats;
@@ -479,6 +480,7 @@ namespace PocketMC.Desktop.Features.Settings
             Metadata.GeyserBedrockPort = int.TryParse(General.GeyserBedrockPort, out int gPort) ? gPort : 19132;
             Metadata.Name = General.InstanceName;
             Metadata.Description = General.InstanceDescription;
+            Metadata.AutoStartWithApp = General.AutoStartWithApp;
 
             _serverConfigurationService.Save(Metadata, currentServerDir, cfg);
             if (Advanced.IsRawServerPropertiesDirty)

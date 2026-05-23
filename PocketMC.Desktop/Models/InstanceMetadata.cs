@@ -50,6 +50,9 @@ namespace PocketMC.Desktop.Models
         public string? SimpleVoiceChatLastWarning { get; set; }
         public string? SimpleVoiceChatStatus { get; set; }
 
+        // Startup behavior
+        public bool AutoStartWithApp { get; set; } = false;
+
         [System.Text.Json.Serialization.JsonIgnore]
         public EngineCompatibility Compatibility => new EngineCompatibility(ServerType);
     }

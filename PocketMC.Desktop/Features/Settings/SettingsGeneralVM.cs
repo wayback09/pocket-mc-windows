@@ -28,6 +28,9 @@ namespace PocketMC.Desktop.Features.Settings
         private string _instanceDescription = string.Empty;
         public string InstanceDescription { get => _instanceDescription; set { if (SetProperty(ref _instanceDescription, value)) _markDirty(); } }
 
+        private bool _autoStartWithApp;
+        public bool AutoStartWithApp { get => _autoStartWithApp; set { if (SetProperty(ref _autoStartWithApp, value)) _markDirty(); } }
+
         private string _serverPort = "25565";
         public string ServerPort { get => _serverPort; set { if (SetProperty(ref _serverPort, value)) _markDirty(); } }
 

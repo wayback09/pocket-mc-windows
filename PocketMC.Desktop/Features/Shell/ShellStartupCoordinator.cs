@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Shell.Interfaces;
@@ -25,6 +26,7 @@ namespace PocketMC.Desktop.Features.Shell
         private readonly PlayitAgentService _playitAgentService;
         private readonly IResourceMonitorService _resourceMonitorService;
         private readonly PocketMC.Desktop.Features.Diagnostics.DependencyHealthMonitor _healthMonitor;
+        private readonly InstanceRegistry _registry;
         private readonly ILogger<ShellStartupCoordinator> _logger;
         private IStartupShellHost? _host;
         private bool _startupServicesStarted;
@@ -40,6 +42,7 @@ namespace PocketMC.Desktop.Features.Shell
             PlayitAgentService playitAgentService,
             IResourceMonitorService resourceMonitorService,
             PocketMC.Desktop.Features.Diagnostics.DependencyHealthMonitor healthMonitor,
+            InstanceRegistry registry,
             ILogger<ShellStartupCoordinator> logger)
         {
             _settingsManager = settingsManager;
@@ -50,6 +53,7 @@ namespace PocketMC.Desktop.Features.Shell
             _playitAgentService = playitAgentService;
             _resourceMonitorService = resourceMonitorService;
             _healthMonitor = healthMonitor;
+            _registry = registry;
             _logger = logger;
         }
 
@@ -149,6 +153,7 @@ namespace PocketMC.Desktop.Features.Shell
             else
             {
                 _host.NavigateToDashboard();
+                TriggerServerAutoStarts();
             }
 
             if (!_playitStartupAttempted)
@@ -207,6 +212,39 @@ namespace PocketMC.Desktop.Features.Shell
             if (_host == null)
             {
                 throw new InvalidOperationException("Shell startup host has not been attached.");
+            }
+        }
+
+        private async void TriggerServerAutoStarts()
+        {
+            try
+            {
+                _logger.LogInformation("Processing auto-start servers on app startup...");
+                var instances = _registry.GetAll();
+                foreach (var meta in instances)
+                {
+                    if (meta.AutoStartWithApp)
+                    {
+                        _logger.LogInformation("Auto-starting server instance: {ServerName} ({InstanceId})", meta.Name, meta.Id);
+                        _ = StartServerInstanceAsync(meta);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred during server auto-start sequence.");
+            }
+        }
+
+        private async Task StartServerInstanceAsync(InstanceMetadata meta)
+        {
+            try
+            {
+                await _serverLifecycleService.StartAsync(meta);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to auto-start server instance {ServerName} ({InstanceId}).", meta.Name, meta.Id);
             }
         }
     }

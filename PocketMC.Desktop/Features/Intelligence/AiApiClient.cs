@@ -130,11 +130,11 @@ public class AiApiClient
         [AiProviderType.Mistral] = new ProviderConfig
         {
             DisplayName = "Mistral AI",
-            DefaultModel = "mistral-small-4",
+            DefaultModel = "mistral-medium-3-5",
             DefaultEndpoint = "https://api.mistral.ai/v1/chat/completions",
             BuildRequest = (apiKey, model, endpoint, systemPrompt, userContent) =>
             {
-                var m = string.IsNullOrWhiteSpace(model) ? "mistral-small-4" : model;
+                var m = string.IsNullOrWhiteSpace(model) ? "mistral-medium-3-5" : model;
                 var url = string.IsNullOrWhiteSpace(endpoint) ? "https://api.mistral.ai/v1/chat/completions" : endpoint;
                 var body = new
                 {
