@@ -111,7 +111,7 @@ public class ServerProcess : IDisposable
 
         try
         {
-            SetState(ServerState.Starting);
+            SetState(ServerState.SettingUp);
             _intentionalStop = false;
 
             var psi = await _launchConfigurator.ConfigureAsync(
@@ -119,9 +119,8 @@ public class ServerProcess : IDisposable
                 l => AppendOutput(l),
                 onStateChange: s => SetState(s));
 
-            // After ConfigureAsync returns (installer done if any), ensure we're in Starting state
-            if (State == ServerState.Installing)
-                SetState(ServerState.Starting);
+            // After ConfigureAsync returns (installer and downloads done), transition to Starting
+            SetState(ServerState.Starting);
 
             _process = new Process { StartInfo = psi, EnableRaisingEvents = true };
             _process.Exited += OnProcessExited;

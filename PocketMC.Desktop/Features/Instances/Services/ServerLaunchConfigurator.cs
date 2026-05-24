@@ -241,7 +241,7 @@ namespace PocketMC.Desktop.Features.Instances.Services;
                     onLog($"[PocketMC] Required Java {requiredVersion} is missing. Starting download...");
                     try
                     {
-                        await _javaProvisioning.EnsureJavaAsync(requiredVersion);
+                        await _javaProvisioning.EnsureJavaAsync(requiredVersion, isManualUserTriggered: true);
                         onLog($"[PocketMC] Java {requiredVersion} installed successfully.");
                     }
                     catch (Exception ex)

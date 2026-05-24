@@ -25,11 +25,33 @@ namespace PocketMC.Desktop.Features.Java
         }
 
         /// <summary>
-        /// Resolves the latest JRE download URL and SHA256 hash for a specific Java version on Windows x64.
+        /// Resolves the latest download URL and SHA256 hash for a specific Java version on Windows x64.
+        /// Tries JRE first, then falls back to JDK if JRE is unavailable.
         /// </summary>
         public async Task<JavaPackageInfo> ResolveRuntimePackageAsync(int version, CancellationToken cancellationToken)
         {
-            string apiUrl = $"https://api.adoptium.net/v3/assets/latest/{version}/hotspot?os=windows&architecture=x64&image_type=jre";
+            try
+            {
+                _logger.LogInformation("Attempting to resolve JRE package for Java {Version}...", version);
+                return await ResolveWithImageTypeAsync(version, "jre", cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to resolve JRE package for Java {Version}. Retrying with JDK...", version);
+                try
+                {
+                    return await ResolveWithImageTypeAsync(version, "jdk", cancellationToken);
+                }
+                catch (Exception jdkEx)
+                {
+                    throw new InvalidOperationException($"Could not resolve package metadata for Java {version} from Adoptium API (tried both JRE and JDK).", jdkEx);
+                }
+            }
+        }
+
+        private async Task<JavaPackageInfo> ResolveWithImageTypeAsync(int version, string imageType, CancellationToken cancellationToken)
+        {
+            string apiUrl = $"https://api.adoptium.net/v3/assets/latest/{version}/hotspot?os=windows&architecture=x64&image_type={imageType}";
             const int maxAttempts = 3;
             Exception? lastException = null;
 
@@ -43,7 +65,12 @@ namespace PocketMC.Desktop.Features.Java
                     string jsonResponse = await client.GetStringAsync(apiUrl, cancellationToken);
 
                     JsonArray? array = JsonNode.Parse(jsonResponse)?.AsArray();
-                    var binary = array?[0]?["binary"];
+                    if (array == null || array.Count == 0)
+                    {
+                        throw new InvalidOperationException($"Adoptium API returned empty response for Java {version} ({imageType}).");
+                    }
+
+                    var binary = array[0]?["binary"];
                     var package = binary?["package"];
                     
                     string? link = package?["link"]?.ToString();
@@ -51,7 +78,7 @@ namespace PocketMC.Desktop.Features.Java
 
                     if (string.IsNullOrWhiteSpace(link))
                     {
-                        throw new InvalidOperationException($"Could not find a valid download link for Java {version}.");
+                        throw new InvalidOperationException($"Could not find a valid download link in Adoptium response for Java {version} ({imageType}).");
                     }
 
                     return new JavaPackageInfo(link, checksum);
@@ -59,7 +86,7 @@ namespace PocketMC.Desktop.Features.Java
                 catch (Exception ex) when (attempt < maxAttempts && IsRetryable(ex))
                 {
                     lastException = ex;
-                    _logger.LogWarning(ex, "Failed to resolve Java {Version} package metadata (attempt {Attempt}/{MaxAttempts}).", version, attempt, maxAttempts);
+                    _logger.LogWarning(ex, "Failed to resolve Java {Version} ({ImageType}) package metadata (attempt {Attempt}/{MaxAttempts}).", version, imageType, attempt, maxAttempts);
                     await Task.Delay(GetRetryDelay(attempt), cancellationToken);
                 }
                 catch (Exception ex)
@@ -69,7 +96,7 @@ namespace PocketMC.Desktop.Features.Java
                 }
             }
 
-            throw new InvalidOperationException($"Could not resolve package metadata for Java {version} from Adoptium API.", lastException);
+            throw lastException ?? new InvalidOperationException($"Could not resolve package metadata for Java {version} ({imageType}) from Adoptium API.");
         }
 
         public bool IsRetryable(Exception ex) =>

@@ -101,7 +101,7 @@ public sealed class ServerLaunchConfiguratorTests : IDisposable
         File.WriteAllText(Path.Combine(_tempDirectory, "server.jar"), "");
 
         _javaMock.Setup(x => x.IsJavaVersionPresent(17)).Returns(false);
-        _javaMock.Setup(x => x.EnsureJavaAsync(17, false, null, It.IsAny<System.Threading.CancellationToken>()))
+        _javaMock.Setup(x => x.EnsureJavaAsync(17, true, null, It.IsAny<System.Threading.CancellationToken>()))
                  .Returns(Task.CompletedTask);
 
         bool promptCalled = false;
@@ -114,7 +114,7 @@ public sealed class ServerLaunchConfiguratorTests : IDisposable
         var psi = await _configurator.ConfigureAsync(meta, _tempDirectory, _tempDirectory, _ => { });
 
         Assert.True(promptCalled);
-        _javaMock.Verify(x => x.EnsureJavaAsync(17, false, null, It.IsAny<System.Threading.CancellationToken>()), Times.Once);
+        _javaMock.Verify(x => x.EnsureJavaAsync(17, true, null, It.IsAny<System.Threading.CancellationToken>()), Times.Once);
     }
 
     [Fact]
