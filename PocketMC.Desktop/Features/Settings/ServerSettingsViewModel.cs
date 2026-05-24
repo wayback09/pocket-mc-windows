@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Shell.Interfaces;
@@ -18,6 +19,7 @@ using PocketMC.Desktop.Infrastructure;
 using PocketMC.Desktop.Features.Settings;
 using PocketMC.Desktop.Features.Mods;
 using PocketMC.Desktop.Features.Instances.Backups;
+using PocketMC.Desktop.Features.Instances.Updates;
 using PocketMC.Desktop.Features.Intelligence;
 using PocketMC.Desktop.Features.Networking;
 using PocketMC.Desktop.Features.CloudBackups;
@@ -48,6 +50,7 @@ namespace PocketMC.Desktop.Features.Settings
         public SettingsBedrockVM Bedrock { get; }
         public SettingsBackupsVM Backups { get; }
         public SettingsAddonsVM Addons { get; }
+        public SettingsVersionUpdatesVM VersionUpdates { get; }
         public SettingsAdvancedVM Advanced { get; }
         public SettingsSummariesVM Summaries { get; }
         public ServerCloudBackupViewModel CloudBackups { get; }
@@ -69,6 +72,9 @@ namespace PocketMC.Desktop.Features.Settings
 
         private bool _isRestartRequired;
         public bool IsRestartRequired { get => _isRestartRequired; set => SetProperty(ref _isRestartRequired, value); }
+
+        private bool _isVersionUpdatesTabActive;
+        public bool IsVersionUpdatesTabActive { get => _isVersionUpdatesTabActive; set => SetProperty(ref _isVersionUpdatesTabActive, value); }
 
         private string _playitAddress = "Resolving tunnel...";
         public string PlayitAddress { get => _playitAddress; set => SetProperty(ref _playitAddress, value); }
@@ -134,6 +140,14 @@ namespace PocketMC.Desktop.Features.Settings
             Bedrock = new SettingsBedrockVM(Profile, MarkChanged);
             Backups = new SettingsBackupsVM(metadata, ServerDir, backupService, dialogService, dispatcher, () => IsRunning, MarkChanged);
             Addons = new SettingsAddonsVM(metadata, ServerDir, modpackService, dialogService, navigationService, serviceProvider, () => IsRunning, MarkChanged);
+            VersionUpdates = new SettingsVersionUpdatesVM(
+                metadata,
+                ServerDir,
+                serviceProvider.GetRequiredService<InstanceUpdateService>(),
+                serviceProvider.GetRequiredService<InstanceVersionTargetService>(),
+                serviceProvider.GetRequiredService<InstanceUpdateJournalStore>(),
+                dialogService,
+                () => IsRunning);
             Advanced = new SettingsAdvancedVM(ServerDir, serverConfigurationService, MarkChanged);
 
             var summaryStorage = (SummaryStorageService)serviceProvider.GetService(typeof(SummaryStorageService))!;
@@ -397,8 +411,14 @@ namespace PocketMC.Desktop.Features.Settings
             World.UpdateServerDir(newDir);
             Backups.UpdateServerDir(newDir);
             Addons.UpdateServerDir(newDir);
+            VersionUpdates.UpdateServerDir(newDir);
             Advanced.UpdateServerDir(newDir);
             Summaries.UpdateServerDir(newDir);
+        }
+
+        public void SetActiveSettingsTab(int selectedIndex)
+        {
+            IsVersionUpdatesTabActive = selectedIndex == 1;
         }
 
         private void SaveConfigurations()

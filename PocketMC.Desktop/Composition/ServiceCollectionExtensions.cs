@@ -11,6 +11,7 @@ using PocketMC.Desktop.Features.Instances.Services;
 using PocketMC.Desktop.Features.Instances.Models;
 using PocketMC.Desktop.Features.Instances.Backups;
 using PocketMC.Desktop.Features.Instances.Providers;
+using PocketMC.Desktop.Features.Instances.Updates;
 using PocketMC.Desktop.Features.Java;
 using PocketMC.Desktop.Features.Marketplace;
 using PocketMC.Desktop.Features.Mods;
@@ -135,6 +136,13 @@ namespace PocketMC.Desktop.Composition
             services.AddHttpClient<PaperProvider>(SetDefaultUserAgent);
             services.AddHttpClient<PocketmineProvider>(SetDefaultUserAgent);
             services.AddHttpClient<BedrockBdsProvider>(SetDefaultUserAgent);
+            services.AddSingleton<IServerSoftwareProvider>(provider => provider.GetRequiredService<VanillaProvider>());
+            services.AddSingleton<IServerSoftwareProvider>(provider => provider.GetRequiredService<FabricProvider>());
+            services.AddSingleton<IServerSoftwareProvider>(provider => provider.GetRequiredService<ForgeProvider>());
+            services.AddSingleton<IServerSoftwareProvider>(provider => provider.GetRequiredService<NeoForgeProvider>());
+            services.AddSingleton<IServerSoftwareProvider>(provider => provider.GetRequiredService<PaperProvider>());
+            services.AddSingleton<IServerSoftwareProvider>(provider => provider.GetRequiredService<PocketmineProvider>());
+            services.AddSingleton<IServerSoftwareProvider>(provider => provider.GetRequiredService<BedrockBdsProvider>());
 
             return services;
         }
@@ -176,9 +184,27 @@ namespace PocketMC.Desktop.Composition
             });
 
             services.AddSingleton<PoggitService>();
+            services.AddSingleton<PocketMC.Desktop.Features.Marketplace.Models.IAddonProvider>(
+                provider => provider.GetRequiredService<ModrinthService>());
+            services.AddSingleton<PocketMC.Desktop.Features.Marketplace.Models.IAddonProvider>(
+                provider => provider.GetRequiredService<CurseForgeService>());
+            services.AddSingleton<PocketMC.Desktop.Features.Marketplace.Models.IAddonProvider>(
+                provider => provider.GetRequiredService<PoggitService>());
             services.AddSingleton<AddonManifestService>();
             services.AddSingleton<AddonUpdateService>();
             services.AddSingleton<DependencyResolverService>();
+
+            services.AddSingleton<AddonMigrationPlanner>();
+            services.AddSingleton<AddonMigrationStager>();
+            services.AddSingleton<AddonMigrationApplier>();
+            services.AddSingleton<InstanceUpdatePlanner>();
+            services.AddSingleton<InstanceVersionTargetService>();
+            services.AddSingleton<InstanceArtifactStager>();
+            services.AddSingleton<InstanceRollbackService>();
+            services.AddSingleton<InstanceUpdateJournalStore>();
+            services.AddSingleton<InstanceUpdateLockService>();
+            services.AddSingleton<InstanceUpdateApplier>();
+            services.AddSingleton<InstanceUpdateService>();
 
             return services;
         }

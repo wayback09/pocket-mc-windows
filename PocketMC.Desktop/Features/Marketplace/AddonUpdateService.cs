@@ -76,7 +76,7 @@ namespace PocketMC.Desktop.Features.Marketplace
         /// <summary>
         /// Check for update given a manifest entry (provider, projectId, installedVersionId).
         /// </summary>
-        public async Task<AddonUpdateCheckResult> CheckForUpdateFromEntryAsync(
+        public virtual async Task<AddonUpdateCheckResult> CheckForUpdateFromEntryAsync(
             AddonManifestEntry entry,
             string mcVersion,
             string loader,

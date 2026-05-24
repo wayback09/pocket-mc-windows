@@ -42,6 +42,7 @@ namespace PocketMC.Desktop.Features.Settings
                 {
                     firstItem.IsActive = true;
                     MainTabControl.SelectedIndex = 0;
+                    ViewModel.SetActiveSettingsTab(MainTabControl.SelectedIndex);
                 }
 
                 // Delay unlocking animations until after the initial UI load executes
@@ -140,6 +141,7 @@ namespace PocketMC.Desktop.Features.Settings
                 _isSynchronizingTabSelection = false;
             }
 
+            ViewModel.SetActiveSettingsTab(MainTabControl.SelectedIndex);
             QueueTabTransitionAnimation();
         }
 
@@ -220,13 +222,14 @@ namespace PocketMC.Desktop.Features.Settings
             return MainTabControl.SelectedIndex switch
             {
                 0 => GeneralScrollViewer,
-                1 => GameplayScrollViewer,
-                2 => WorldScrollViewer,
-                3 => AddonsScrollViewer,
-                4 => BackupsScrollViewer,
-                5 => RestartScrollViewer,
-                6 => AdvancedScrollViewer,
-                7 => SummariesScrollViewer,
+                1 => VersionUpdatesScrollViewer,
+                2 => GameplayScrollViewer,
+                3 => WorldScrollViewer,
+                4 => AddonsScrollViewer,
+                5 => BackupsScrollViewer,
+                6 => RestartScrollViewer,
+                7 => AdvancedScrollViewer,
+                8 => SummariesScrollViewer,
                 _ => null
             };
         }
