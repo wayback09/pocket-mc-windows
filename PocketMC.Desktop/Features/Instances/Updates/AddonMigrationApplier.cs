@@ -44,7 +44,39 @@ public sealed class AddonMigrationApplier
                 ?? throw new InvalidOperationException($"Cannot resolve addon target directory for '{item.TargetFileName}'.");
             Directory.CreateDirectory(targetDirectory);
 
-            await FileUtils.CopyFileAsync(item.StagedFilePath!, targetPath, overwrite: true);
+            string tempFileName = $".pocketmc-addon-apply-{Guid.NewGuid():N}.tmp";
+            string tempPath = Path.Combine(targetDirectory, tempFileName);
+
+            await FileUtils.CopyFileAsync(item.StagedFilePath!, tempPath, overwrite: true);
+
+            try
+            {
+                if (File.Exists(targetPath))
+                {
+                    string backupFileName = $".pocketmc-addon-backup-{Guid.NewGuid():N}.tmp";
+                    string backupPath = Path.Combine(targetDirectory, backupFileName);
+                    try
+                    {
+                        File.Replace(tempPath, targetPath, backupPath, ignoreMetadataErrors: true);
+                    }
+                    catch
+                    {
+                        try { File.Delete(tempPath); } catch { }
+                        throw;
+                    }
+
+                    try { File.Delete(backupPath); } catch { }
+                }
+                else
+                {
+                    File.Move(tempPath, targetPath);
+                }
+            }
+            catch (Exception)
+            {
+                try { if (File.Exists(tempPath)) File.Delete(tempPath); } catch { }
+                throw;
+            }
 
             if (item.Action == AddonMigrationAction.Update &&
                 !string.IsNullOrWhiteSpace(item.CurrentFileName) &&

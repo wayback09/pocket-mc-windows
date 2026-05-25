@@ -30,6 +30,94 @@ public sealed class MarketplaceArchiveInspectorTests : IDisposable
         Assert.Contains(warnings, warning => warning.Contains("client-only", StringComparison.OrdinalIgnoreCase));
     }
 
+    [Fact]
+    public void InspectServerCompatibilityWarnings_WarnsForQuiltClientOnlyEnvironment()
+    {
+        string jarPath = Path.Combine(_tempDirectory, "quilt-client-only.jar");
+        using (ZipArchive archive = ZipFile.Open(jarPath, ZipArchiveMode.Create))
+        {
+            ZipArchiveEntry entry = archive.CreateEntry("quilt.mod.json");
+            using Stream stream = entry.Open();
+            using var writer = new StreamWriter(stream, Encoding.UTF8);
+            writer.Write("""{ "schemaVersion": 1, "quilt_loader": { "id": "clientmod", "intermediate_mappings": "yarn" }, "environment": "client" }""");
+        }
+
+        IReadOnlyList<string> warnings = MarketplaceArchiveInspector.InspectServerCompatibilityWarnings(jarPath);
+
+        Assert.Contains(warnings, warning => warning.Contains("client-only", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void InspectServerCompatibilityWarnings_WarnsForForgeClientSideOnly()
+    {
+        string jarPath = Path.Combine(_tempDirectory, "forge-client.jar");
+        using (ZipArchive archive = ZipFile.Open(jarPath, ZipArchiveMode.Create))
+        {
+            ZipArchiveEntry entry = archive.CreateEntry("META-INF/mods.toml");
+            using Stream stream = entry.Open();
+            using var writer = new StreamWriter(stream, Encoding.UTF8);
+            writer.Write("""
+            modLoader="javafml"
+            loaderVersion="[45,)"
+            clientSideOnly=true
+            """);
+        }
+
+        IReadOnlyList<string> warnings = MarketplaceArchiveInspector.InspectServerCompatibilityWarnings(jarPath);
+
+        Assert.Contains(warnings, warning => warning.Contains("client-only", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void InspectServerCompatibilityWarnings_WarnsForForgeDisplayTestNone()
+    {
+        string jarPath = Path.Combine(_tempDirectory, "forge-displaytest.jar");
+        using (ZipArchive archive = ZipFile.Open(jarPath, ZipArchiveMode.Create))
+        {
+            ZipArchiveEntry entry = archive.CreateEntry("META-INF/neoforge.mods.toml");
+            using Stream stream = entry.Open();
+            using var writer = new StreamWriter(stream, Encoding.UTF8);
+            writer.Write("""
+            modLoader="javafml"
+            [[mods]]
+            modId="test"
+            displayTest="NONE"
+            """);
+        }
+
+        IReadOnlyList<string> warnings = MarketplaceArchiveInspector.InspectServerCompatibilityWarnings(jarPath);
+
+        Assert.Contains(warnings, warning => warning.Contains("client-only", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void InspectServerCompatibilityWarnings_WarnsForMissingPluginYml()
+    {
+        string jarPath = Path.Combine(_tempDirectory, "no-plugin-metadata.jar");
+        using (ZipArchive archive = ZipFile.Open(jarPath, ZipArchiveMode.Create))
+        {
+            ZipArchiveEntry entry = archive.CreateEntry("somefile.txt");
+            using Stream stream = entry.Open();
+            using var writer = new StreamWriter(stream, Encoding.UTF8);
+            writer.Write("hello");
+        }
+
+        IReadOnlyList<string> warnings = MarketplaceArchiveInspector.InspectServerCompatibilityWarnings(jarPath, isPlugin: true);
+
+        Assert.Contains(warnings, warning => warning.Contains("Plugin metadata", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void InspectServerCompatibilityWarnings_UnreadableArchive_DoesNotCrash()
+    {
+        string badPath = Path.Combine(_tempDirectory, "corrupted.jar");
+        File.WriteAllText(badPath, "definitely not a zip file");
+
+        IReadOnlyList<string> warnings = MarketplaceArchiveInspector.InspectServerCompatibilityWarnings(badPath);
+
+        Assert.Empty(warnings);
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_tempDirectory))

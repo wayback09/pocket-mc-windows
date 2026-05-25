@@ -1,12 +1,13 @@
 using System.IO;
 using System.IO.Compression;
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 
 namespace PocketMC.Desktop.Features.Marketplace;
 
 public static class MarketplaceArchiveInspector
 {
-    public static IReadOnlyList<string> InspectServerCompatibilityWarnings(string filePath)
+    public static IReadOnlyList<string> InspectServerCompatibilityWarnings(string filePath, bool isPlugin = false)
     {
         string extension = Path.GetExtension(filePath);
         if (!extension.Equals(".jar", StringComparison.OrdinalIgnoreCase) &&
@@ -22,6 +23,8 @@ public static class MarketplaceArchiveInspector
 
             InspectFabricLikeManifest(archive, "fabric.mod.json", "Fabric", warnings);
             InspectFabricLikeManifest(archive, "quilt.mod.json", "Quilt", warnings);
+            InspectForgeLikeManifest(archive, warnings);
+            InspectPluginManifest(archive, isPlugin, warnings);
 
             return warnings;
         }
@@ -57,6 +60,46 @@ public static class MarketplaceArchiveInspector
         if (environment != null && environment.Equals("client", StringComparison.OrdinalIgnoreCase))
         {
             warnings.Add($"{loaderName} metadata marks this add-on as client-only. It may crash or be ignored by a server.");
+        }
+    }
+
+    private static void InspectForgeLikeManifest(ZipArchive archive, List<string> warnings)
+    {
+        ZipArchiveEntry? modsTomlEntry = archive.GetEntry("META-INF/mods.toml") ?? archive.GetEntry("META-INF/neoforge.mods.toml");
+        if (modsTomlEntry == null)
+        {
+            return;
+        }
+
+        try
+        {
+            using Stream stream = modsTomlEntry.Open();
+            using var reader = new StreamReader(stream);
+            string content = reader.ReadToEnd();
+
+            bool isClientOnly = Regex.IsMatch(content, @"clientSideOnly\s*=\s*true", RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(100));
+            bool isDisplayTestClient = Regex.IsMatch(content, @"displayTest\s*=\s*['""]?(IGNORE_SERVER_VERSION|IGNORE_ALL_VERSION|NONE)['""]?", RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(100));
+
+            if (isClientOnly || isDisplayTestClient)
+            {
+                warnings.Add("Forge/NeoForge metadata suggests this add-on is client-only or not required on the server.");
+            }
+        }
+        catch
+        {
+            // Do not crash on unreadable mods.toml
+        }
+    }
+
+    private static void InspectPluginManifest(ZipArchive archive, bool isPlugin, List<string> warnings)
+    {
+        if (isPlugin)
+        {
+            bool hasPluginYml = archive.GetEntry("plugin.yml") != null || archive.GetEntry("paper-plugin.yml") != null;
+            if (!hasPluginYml)
+            {
+                warnings.Add("Plugin metadata (plugin.yml or paper-plugin.yml) is missing. This file might not be a valid plugin.");
+            }
         }
     }
 }

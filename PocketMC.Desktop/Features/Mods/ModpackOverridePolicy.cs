@@ -68,6 +68,13 @@ public static class ModpackOverridePolicy
         ".jar"
     };
 
+    private static readonly HashSet<string> AllowedScriptsExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".zs",
+        ".js",
+        ".json"
+    };
+
     public static bool TryValidate(string relativePath, out string normalizedPath, out string reason)
     {
         normalizedPath = NormalizePath(relativePath);
@@ -125,6 +132,14 @@ public static class ModpackOverridePolicy
             !AllowedModsExtensions.Contains(extension))
         {
             reason = $"Override mod file extension '{extension}' is not allowed.";
+            return false;
+        }
+
+        if (root.Equals("scripts", StringComparison.OrdinalIgnoreCase) &&
+            !string.IsNullOrEmpty(fileName) &&
+            !AllowedScriptsExtensions.Contains(extension))
+        {
+            reason = $"Override script file extension '{extension}' is not allowed.";
             return false;
         }
 

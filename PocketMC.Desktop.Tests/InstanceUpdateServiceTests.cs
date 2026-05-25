@@ -136,7 +136,8 @@ public sealed class InstanceUpdateServiceTests : IDisposable
             TargetVersionId = "v2"
         });
 
-        var stager = new AddonMigrationStager(new FailingHttpClientFactory());
+        var downloader = new DownloaderService(new FailingHttpClientFactory(), NullLogger<DownloaderService>.Instance);
+        var stager = new AddonMigrationStager(downloader);
 
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             stager.StageAsync(plan, Path.Combine(serverDir, ".pocketmc-updates", "staging", "op", "addons")));
@@ -417,6 +418,176 @@ public sealed class InstanceUpdateServiceTests : IDisposable
 
         Assert.Equal("old-server", File.ReadAllText(Path.Combine(serverDir, "server.jar")));
         Assert.Equal("old-addon", File.ReadAllText(Path.Combine(serverDir, "mods", "tracked.jar")));
+    }
+
+    [Fact]
+    public async Task AddonMigrationPlan_JavaEngine_RejectsNonJarExtensions()
+    {
+        string serverDir = CreateInstanceDirectory("java-rejects");
+        Directory.CreateDirectory(Path.Combine(serverDir, "mods"));
+        await WriteManifestAsync(serverDir, new AddonManifestEntry
+        {
+            Provider = "Modrinth",
+            ProjectId = "badaddon",
+            VersionId = "old",
+            FileName = "badaddon.jar"
+        });
+
+        var updateService = new RecordingAddonUpdateService();
+        updateService.Results["badaddon"] = UpdateResult("new", "badaddon.mcpack"); // invalid for Java
+
+        var planner = CreateAddonMigrationPlanner(updateService, new FakeAddonProvider("Modrinth"));
+
+        await Assert.ThrowsAsync<NotSupportedException>(() => planner.BuildPlanAsync(
+            serverDir,
+            new InstanceMetadata { ServerType = "Fabric", MinecraftVersion = "1.20.1" },
+            "1.21.1",
+            new EngineCompatibility("Fabric"),
+            InstanceUpdateMode.ServerAndCompatibleMarketplaceAddons));
+    }
+
+    [Fact]
+    public async Task AddonMigrationPlan_PocketMineEngine_RejectsNonPharExtensions()
+    {
+        string serverDir = CreateInstanceDirectory("pocketmine-rejects");
+        Directory.CreateDirectory(Path.Combine(serverDir, "plugins"));
+        await WriteManifestAsync(serverDir, new AddonManifestEntry
+        {
+            Provider = "Poggit",
+            ProjectId = "badplugin",
+            VersionId = "old",
+            FileName = "badplugin.phar"
+        });
+
+        var updateService = new RecordingAddonUpdateService();
+        updateService.Results["badplugin"] = UpdateResult("new", "badplugin.jar"); // invalid for PocketMine
+
+        var planner = CreateAddonMigrationPlanner(updateService, new FakeAddonProvider("Poggit"));
+
+        await Assert.ThrowsAsync<NotSupportedException>(() => planner.BuildPlanAsync(
+            serverDir,
+            new InstanceMetadata { ServerType = "Pocketmine-MP", MinecraftVersion = "5.0.0" },
+            "5.1.0",
+            new EngineCompatibility("Pocketmine-MP"),
+            InstanceUpdateMode.ServerAndCompatibleMarketplaceAddons));
+    }
+
+    [Fact]
+    public async Task AddonMigrationStager_RejectsIncompatibleExtensions()
+    {
+        var plan = new AddonMigrationPlan
+        {
+            ServerDir = CreateInstanceDirectory("stager-rejects"),
+            TargetCompatibility = new EngineCompatibility("Fabric")
+        };
+        plan.Items.Add(new AddonMigrationItem
+        {
+            Action = AddonMigrationAction.Update,
+            Provider = "Modrinth",
+            ProjectId = "bad",
+            CurrentFileName = "bad.jar",
+            TargetFileName = "bad.mcpack", // invalid for Fabric
+            TargetSubDirectory = "mods",
+            DownloadUrl = "https://example.invalid/bad.mcpack"
+        });
+
+        var downloader = new DownloaderService(new FailingHttpClientFactory(), NullLogger<DownloaderService>.Instance);
+        var stager = new AddonMigrationStager(downloader);
+
+        await Assert.ThrowsAsync<NotSupportedException>(() =>
+            stager.StageAsync(plan, Path.Combine(plan.ServerDir, "staging")));
+    }
+
+    [Fact]
+    public async Task SameNameMigrationFailure_PreservesExistingFile()
+    {
+        string serverDir = CreateInstanceDirectory("same-name-failure");
+        string modsDir = Path.Combine(serverDir, "mods");
+        Directory.CreateDirectory(modsDir);
+        string targetPath = Path.Combine(modsDir, "same.jar");
+        File.WriteAllText(targetPath, "original-content");
+
+        var plan = new AddonMigrationPlan { ServerDir = serverDir };
+        plan.Items.Add(new AddonMigrationItem
+        {
+            Action = AddonMigrationAction.Update,
+            Provider = "Modrinth",
+            ProjectId = "same",
+            CurrentFileName = "same.jar",
+            TargetFileName = "same.jar",
+            TargetSubDirectory = "mods",
+            TargetVersionId = "v2",
+            StagedFilePath = Path.Combine(serverDir, "nonexistent-staged.jar") // will fail validation/copy
+        });
+
+        var applier = new AddonMigrationApplier(new AddonManifestService());
+
+        await Assert.ThrowsAsync<FileNotFoundException>(() => applier.ApplyAsync(plan));
+        Assert.Equal("original-content", File.ReadAllText(targetPath));
+    }
+
+    [Fact]
+    public async Task RenamedMigrationFailure_DoesNotDeleteOldFile()
+    {
+        string serverDir = CreateInstanceDirectory("renamed-failure");
+        string modsDir = Path.Combine(serverDir, "mods");
+        Directory.CreateDirectory(modsDir);
+        string currentPath = Path.Combine(modsDir, "old.jar");
+        File.WriteAllText(currentPath, "original-content");
+
+        var plan = new AddonMigrationPlan { ServerDir = serverDir };
+        plan.Items.Add(new AddonMigrationItem
+        {
+            Action = AddonMigrationAction.Update,
+            Provider = "Modrinth",
+            ProjectId = "renamed",
+            CurrentFileName = "old.jar",
+            TargetFileName = "new.jar",
+            TargetSubDirectory = "mods",
+            TargetVersionId = "v2",
+            StagedFilePath = Path.Combine(serverDir, "nonexistent-staged.jar") // will fail validation/copy
+        });
+
+        var applier = new AddonMigrationApplier(new AddonManifestService());
+
+        await Assert.ThrowsAsync<FileNotFoundException>(() => applier.ApplyAsync(plan));
+        Assert.True(File.Exists(currentPath));
+        Assert.Equal("original-content", File.ReadAllText(currentPath));
+    }
+
+    [Fact]
+    public async Task SuccessfulRenamedMigration_InstallsNewFileAndDeletesOldFile()
+    {
+        string serverDir = CreateInstanceDirectory("renamed-success");
+        string modsDir = Path.Combine(serverDir, "mods");
+        Directory.CreateDirectory(modsDir);
+        string currentPath = Path.Combine(modsDir, "old.jar");
+        File.WriteAllText(currentPath, "original-content");
+
+        string stagedPath = Path.Combine(serverDir, "staged.jar");
+        File.WriteAllText(stagedPath, "staged-content");
+
+        var plan = new AddonMigrationPlan { ServerDir = serverDir };
+        plan.Items.Add(new AddonMigrationItem
+        {
+            Action = AddonMigrationAction.Update,
+            Provider = "Modrinth",
+            ProjectId = "renamed",
+            CurrentFileName = "old.jar",
+            TargetFileName = "new.jar",
+            TargetSubDirectory = "mods",
+            TargetVersionId = "v2",
+            StagedFilePath = stagedPath
+        });
+
+        var applier = new AddonMigrationApplier(new AddonManifestService());
+
+        await applier.ApplyAsync(plan);
+
+        Assert.False(File.Exists(currentPath));
+        string targetPath = Path.Combine(modsDir, "new.jar");
+        Assert.True(File.Exists(targetPath));
+        Assert.Equal("staged-content", File.ReadAllText(targetPath));
     }
 
     private AddonMigrationPlanner CreateAddonMigrationPlanner(

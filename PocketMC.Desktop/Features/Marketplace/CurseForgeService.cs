@@ -1,4 +1,6 @@
 using System;
+using System.Text.RegularExpressions;
+using System.IO;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Json;
@@ -40,24 +42,36 @@ namespace PocketMC.Desktop.Features.Marketplace
             _ => 0
         };
 
+        private static bool FileNameMentionsLoaderSafely(string fileName, string loader)
+        {
+            string normalized = Path.GetFileNameWithoutExtension(fileName).ToLowerInvariant();
+
+            return loader.ToLowerInvariant() switch
+            {
+                "forge" => Regex.IsMatch(normalized, @"(^|[-_.])forge($|[-_.])", RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(100))
+                           && !normalized.Contains("neoforge", StringComparison.OrdinalIgnoreCase),
+                "neoforge" => Regex.IsMatch(normalized, @"(^|[-_.])neoforge($|[-_.])", RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(100)),
+                "fabric" => Regex.IsMatch(normalized, @"(^|[-_.])fabric($|[-_.])", RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(100)),
+                "quilt" => Regex.IsMatch(normalized, @"(^|[-_.])quilt($|[-_.])", RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(100)),
+                _ => false
+            };
+        }
+
         private static bool FileSupportsLoader(JsonNode fileNode, string loader)
         {
             if (string.IsNullOrWhiteSpace(loader)) return true;
 
             var normalizedLoader = loader.ToLowerInvariant();
+            
+            // Gather all game version names from metadata
+            var allVersions = new List<string>();
             var gameVersions = fileNode["gameVersions"]?.AsArray();
-            if (gameVersions == null || gameVersions.Count == 0) return false;
-
-            foreach (var gameVersion in gameVersions)
+            if (gameVersions != null)
             {
-                var value = gameVersion?.ToString();
-                if (string.IsNullOrWhiteSpace(value)) continue;
-
-                if (value.Equals(normalizedLoader, StringComparison.OrdinalIgnoreCase) ||
-                    value.Contains($"-{normalizedLoader}", StringComparison.OrdinalIgnoreCase) ||
-                    value.Contains($"{normalizedLoader}-", StringComparison.OrdinalIgnoreCase))
+                foreach (var gv in gameVersions)
                 {
-                    return true;
+                    var val = gv?.ToString();
+                    if (!string.IsNullOrWhiteSpace(val)) allVersions.Add(val);
                 }
             }
 
@@ -66,22 +80,44 @@ namespace PocketMC.Desktop.Features.Marketplace
             {
                 foreach (var sortable in sortableVersions)
                 {
-                    var value = sortable?["gameVersionName"]?.ToString();
-                    if (string.IsNullOrWhiteSpace(value)) continue;
-                    if (value.Equals(normalizedLoader, StringComparison.OrdinalIgnoreCase) ||
-                        value.Contains($"-{normalizedLoader}", StringComparison.OrdinalIgnoreCase) ||
-                        value.Contains($"{normalizedLoader}-", StringComparison.OrdinalIgnoreCase))
-                    {
-                        return true;
-                    }
+                    var val = sortable?["gameVersionName"]?.ToString();
+                    if (!string.IsNullOrWhiteSpace(val)) allVersions.Add(val);
                 }
             }
 
-            var fileName = fileNode["fileName"]?.ToString();
-            if (!string.IsNullOrWhiteSpace(fileName) &&
-                fileName.Contains(normalizedLoader, StringComparison.OrdinalIgnoreCase))
+            // Check if the requested loader is directly supported in metadata
+            bool metaMatches = allVersions.Any(v => 
+                v.Equals(normalizedLoader, StringComparison.OrdinalIgnoreCase) ||
+                v.Contains($"-{normalizedLoader}", StringComparison.OrdinalIgnoreCase) ||
+                v.Contains($"{normalizedLoader}-", StringComparison.OrdinalIgnoreCase)
+            );
+
+            if (metaMatches)
             {
                 return true;
+            }
+
+            // Prefer API metadata: if any loader metadata is present but it didn't match the requested one,
+            // we should NOT fall back to filename matching.
+            var knownLoaders = new[] { "forge", "neoforge", "fabric", "quilt" };
+            bool hasAnyLoaderMetadata = allVersions.Any(v =>
+                knownLoaders.Any(l =>
+                    v.Equals(l, StringComparison.OrdinalIgnoreCase) ||
+                    v.Contains($"-{l}", StringComparison.OrdinalIgnoreCase) ||
+                    v.Contains($"{l}-", StringComparison.OrdinalIgnoreCase)
+                )
+            );
+
+            if (hasAnyLoaderMetadata)
+            {
+                return false;
+            }
+
+            // Last-resort heuristic filename matching
+            var fileName = fileNode["fileName"]?.ToString();
+            if (!string.IsNullOrWhiteSpace(fileName))
+            {
+                return FileNameMentionsLoaderSafely(fileName, loader);
             }
 
             return false;

@@ -571,12 +571,10 @@ namespace PocketMC.Desktop.Features.Settings
                     // Update available — confirm with user
                     setStatus($"Update available: {result.LatestVersionName}");
 
+                    var confirmMessage = BuildUpdateConfirmationMessage(displayName, manifestEntry.VersionId, result.LatestVersionName ?? "Unknown", result.Warnings);
                     var confirm = await _dialogService.ShowDialogAsync(
                         "Update Available",
-                        $"A new version of '{displayName}' is available.\n\n" +
-                        $"Installed: {manifestEntry.VersionId}\n" +
-                        $"Latest: {result.LatestVersionName}\n\n" +
-                        "Do you want to update now?",
+                        confirmMessage,
                         DialogType.Question);
 
                     if (confirm != DialogResult.Yes)
@@ -607,10 +605,10 @@ namespace PocketMC.Desktop.Features.Settings
                     // No update available — offer reinstall
                     setStatus("Up to date");
 
+                    var reinstallMessage = BuildReinstallConfirmationMessage(displayName, result.LatestVersionName ?? "Unknown", result.Warnings);
                     var reinstall = await _dialogService.ShowDialogAsync(
                         "Already Up To Date",
-                        $"'{displayName}' is already on the latest version ({result.LatestVersionName}).\n\n" +
-                        "Would you like to reinstall (re-download) the current version anyway?",
+                        reinstallMessage,
                         DialogType.Question);
 
                     if (reinstall != DialogResult.Yes)
@@ -730,12 +728,13 @@ namespace PocketMC.Desktop.Features.Settings
 
                 UpdateAllStatusText = $"{updateResults.Count} update(s) available";
 
-                var nameList = string.Join("\n", updateResults.Select(u =>
-                    $"  • {u.Name}  →  {u.Result.LatestVersionName}"));
+                var allWarnings = updateResults.SelectMany(u => u.Result.Warnings).Distinct().ToList();
+                var updatesList = updateResults.Select(u => (u.Name, LatestVersionName: u.Result.LatestVersionName ?? "Unknown")).ToList();
+                var confirmMessage = BuildBatchUpdateSummaryMessage(updateResults.Count, trackedItems.Count, updatesList, allWarnings);
 
                 var confirm = await _dialogService.ShowDialogAsync(
                     "Updates Available",
-                    $"{updateResults.Count} of {trackedItems.Count} addon(s) have updates:\n\n{nameList}\n\nDo you want to install all updates now?",
+                    confirmMessage,
                     DialogType.Question);
 
                 if (confirm != DialogResult.Yes)
@@ -827,6 +826,38 @@ namespace PocketMC.Desktop.Features.Settings
             {
                 foreach (var m in Mods) { m.UpdateStatusText = ""; m.IsUpdating = false; }
             }
+        }
+
+        public static string FormatAddonUpdateWarningText(List<string> warnings)
+        {
+            if (warnings == null || warnings.Count == 0) return "";
+            return "\n\nWarnings:\n" + string.Join("\n", warnings.Select(w => "• " + w));
+        }
+
+        public static string BuildUpdateConfirmationMessage(string displayName, string installedVersion, string latestVersion, List<string> warnings)
+        {
+            string warningText = FormatAddonUpdateWarningText(warnings);
+            return $"A new version of '{displayName}' is available.\n\n" +
+                   $"Installed: {installedVersion}\n" +
+                   $"Latest: {latestVersion}\n\n" +
+                   "Do you want to update now?" + warningText;
+        }
+
+        public static string BuildReinstallConfirmationMessage(string displayName, string latestVersion, List<string> warnings)
+        {
+            string warningText = FormatAddonUpdateWarningText(warnings);
+            return $"'{displayName}' is already on the latest version ({latestVersion}).\n\n" +
+                   "Would you like to reinstall (re-download) the current version anyway?" + warningText;
+        }
+
+        public static string BuildBatchUpdateSummaryMessage(int updateCount, int totalTrackedCount, List<(string Name, string LatestVersionName)> updates, List<string> allWarnings)
+        {
+            var nameList = string.Join("\n", updates.Select(u =>
+                $"  • {u.Name}  →  {u.LatestVersionName}"));
+
+            string warningText = FormatAddonUpdateWarningText(allWarnings);
+
+            return $"{updateCount} of {totalTrackedCount} addon(s) have updates:\n\n{nameList}\n\nDo you want to install all updates now?" + warningText;
         }
     }
 

@@ -133,8 +133,9 @@ public sealed class AddonMigrationPlanner
                 });
             }
 
-            string safeTargetFileName = MarketplaceFileNameSanitizer.RequireSafeFileName(
-                update.LatestFileName ?? entry.FileName);
+            string safeTargetFileName = MarketplaceDownloadPolicy.RequireCompatibleFileName(
+                update.LatestFileName ?? entry.FileName,
+                targetCompatibility);
             string subDirectory = filesByName.TryGetValue(entry.FileName, out AddonFileInfo? installedFile)
                 ? installedFile.SubDirectory
                 : ResolveDefaultAddonSubDirectory(targetCompatibility, safeTargetFileName);
@@ -234,7 +235,7 @@ public sealed class AddonMigrationPlanner
                     continue;
                 }
 
-                string safeFileName = MarketplaceFileNameSanitizer.RequireSafeFileName(dependency.FileName);
+                string safeFileName = MarketplaceDownloadPolicy.RequireCompatibleFileName(dependency.FileName, targetCompatibility);
                 plan.Items.Add(new AddonMigrationItem
                 {
                     Action = AddonMigrationAction.AddDependency,

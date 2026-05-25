@@ -114,6 +114,107 @@ public sealed class CurseForgeServiceSecurityTests
         Assert.Equal("release", version.ReleaseType);
     }
 
+    [Fact]
+    public async Task ForgeRequest_DoesNotMatchNeoForgeFilename()
+    {
+        CurseForgeService service = CreateService("""
+        [
+          {
+            "id": 106,
+            "modId": 200,
+            "displayName": "NeoForge Mod",
+            "fileName": "mymod-neoforge-1.20.1.jar",
+            "downloadUrl": "https://cdn.example/mymod-neoforge.jar",
+            "gameVersions": ["1.20.1"],
+            "releaseType": 1
+          }
+        ]
+        """);
+
+        MarketplaceVersion? version = await ((IAddonProvider)service)
+            .GetLatestVersionAsync("200", "1.20.1", "forge");
+
+        Assert.Null(version);
+    }
+
+    [Fact]
+    public async Task NeoForgeRequest_DoesNotMatchForgeFilename()
+    {
+        CurseForgeService service = CreateService("""
+        [
+          {
+            "id": 107,
+            "modId": 200,
+            "displayName": "Forge Mod",
+            "fileName": "mymod-forge-1.20.1.jar",
+            "downloadUrl": "https://cdn.example/mymod-forge.jar",
+            "gameVersions": ["1.20.1"],
+            "releaseType": 1
+          }
+        ]
+        """);
+
+        MarketplaceVersion? version = await ((IAddonProvider)service)
+            .GetLatestVersionAsync("200", "1.20.1", "neoforge");
+
+        Assert.Null(version);
+    }
+
+    [Fact]
+    public async Task FabricRequest_DoesNotMatchForgeOrNeoForgeFilename()
+    {
+        CurseForgeService service = CreateService("""
+        [
+          {
+            "id": 108,
+            "modId": 200,
+            "displayName": "Forge Mod",
+            "fileName": "mymod-forge-1.20.1.jar",
+            "downloadUrl": "https://cdn.example/mymod-forge.jar",
+            "gameVersions": ["1.20.1"],
+            "releaseType": 1
+          },
+          {
+            "id": 109,
+            "modId": 200,
+            "displayName": "NeoForge Mod",
+            "fileName": "mymod-neoforge-1.20.1.jar",
+            "downloadUrl": "https://cdn.example/mymod-neoforge.jar",
+            "gameVersions": ["1.20.1"],
+            "releaseType": 1
+          }
+        ]
+        """);
+
+        MarketplaceVersion? version = await ((IAddonProvider)service)
+            .GetLatestVersionAsync("200", "1.20.1", "fabric");
+
+        Assert.Null(version);
+    }
+
+    [Fact]
+    public async Task RequestedLoader_WithNoMatch_ReturnsNull()
+    {
+        CurseForgeService service = CreateService("""
+        [
+          {
+            "id": 110,
+            "modId": 200,
+            "displayName": "Plain Mod",
+            "fileName": "mymod-1.20.1.jar",
+            "downloadUrl": "https://cdn.example/mymod.jar",
+            "gameVersions": ["1.20.1"],
+            "releaseType": 1
+          }
+        ]
+        """);
+
+        MarketplaceVersion? version = await ((IAddonProvider)service)
+            .GetLatestVersionAsync("200", "1.20.1", "quilt");
+
+        Assert.Null(version);
+    }
+
     private static CurseForgeService CreateService(string filesJson)
     {
         var appState = new ApplicationState();

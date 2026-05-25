@@ -106,6 +106,25 @@ public sealed class ModpackOverridePolicyTests : IDisposable
         Assert.False(string.IsNullOrWhiteSpace(skipped.Reason));
     }
 
+    [Theory]
+    [InlineData("scripts/file.js", true)]
+    [InlineData("scripts/file.zs", true)]
+    [InlineData("scripts/file.json", true)]
+    [InlineData("scripts/file.py", false)]
+    [InlineData("scripts/file.ps1", false)]
+    [InlineData("kubejs/server_scripts/file.js", true)]
+    [InlineData("kubejs/server_scripts/file.py", true)]
+    [InlineData("kubejs/server_scripts/file.exe", false)]
+    public void ModpackOverridePolicy_ValidatesScriptsCorrectly(string relativePath, bool expectedAllowed)
+    {
+        bool allowed = ModpackOverridePolicy.TryValidate(relativePath, out _, out string reason);
+        Assert.Equal(expectedAllowed, allowed);
+        if (!expectedAllowed)
+        {
+            Assert.False(string.IsNullOrWhiteSpace(reason));
+        }
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_tempDirectory))

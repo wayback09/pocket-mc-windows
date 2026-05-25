@@ -355,7 +355,7 @@ namespace PocketMC.Desktop.Features.Marketplace
             }
 
             await _fileInstaller.InstallAsync(url, destFile, hash, hashType);
-            IReadOnlyList<string> metadataWarnings = MarketplaceArchiveInspector.InspectServerCompatibilityWarnings(destFile);
+            IReadOnlyList<string> metadataWarnings = MarketplaceArchiveInspector.InspectServerCompatibilityWarnings(destFile, isPlugin: _projectType.Contains("plugin"));
             if (metadataWarnings.Count > 0)
             {
                 PocketMC.Desktop.Infrastructure.AppDialog.ShowWarning(

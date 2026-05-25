@@ -11,9 +11,9 @@ public sealed class AddonMigrationStager
 {
     private readonly DownloaderService _downloader;
 
-    public AddonMigrationStager(IHttpClientFactory httpClientFactory)
+    public AddonMigrationStager(DownloaderService downloader)
     {
-        _downloader = new DownloaderService(httpClientFactory, NullLogger<DownloaderService>.Instance);
+        _downloader = downloader;
     }
 
     public async Task StageAsync(
@@ -36,7 +36,7 @@ public sealed class AddonMigrationStager
                 throw new InvalidOperationException($"Addon '{item.ProjectId}' does not include a download URL.");
             }
 
-            string safeFileName = MarketplaceFileNameSanitizer.RequireSafeFileName(item.TargetFileName);
+            string safeFileName = MarketplaceDownloadPolicy.RequireCompatibleFileName(item.TargetFileName, plan.TargetCompatibility);
             string? stagedPath = PathSafety.ValidateContainedPath(stagingRoot, safeFileName)
                 ?? throw new InvalidOperationException($"Invalid staged addon file path for '{safeFileName}'.");
 
