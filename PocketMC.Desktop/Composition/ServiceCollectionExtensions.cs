@@ -85,6 +85,7 @@ namespace PocketMC.Desktop.Composition
 
             services.AddSingleton<ServerProcessManager>();
             services.AddSingleton<PlayerListParser>();
+            services.AddSingleton<ConsoleLogHistoryService>();
             services.AddSingleton<ServerStateFileService>();
             services.AddSingleton<BanSidecarService>();
             services.AddSingleton<ServerLifecycleService>();

@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using PocketMC.Desktop.Features.Console;
 using PocketMC.Desktop.Features.Instances.Services;
 using PocketMC.Desktop.Features.Shell;
 
@@ -126,8 +127,16 @@ public class DiagnosticReportingService
                     string outLogs = Path.Combine(instanceDir, "logs");
                     Directory.CreateDirectory(outLogs);
 
-                    string sessionLog = Path.Combine(logsDir, "pocketmc-session.log");
-                    if (File.Exists(sessionLog)) File.Copy(sessionLog, Path.Combine(outLogs, "pocketmc-session.log"));
+                    foreach (string sessionLogName in new[]
+                    {
+                        ConsoleLogHistoryService.CurrentSessionLogName,
+                        ConsoleLogHistoryService.LastSessionLogName,
+                        ConsoleLogHistoryService.LegacySessionLogName
+                    })
+                    {
+                        string sessionLog = Path.Combine(logsDir, sessionLogName);
+                        if (File.Exists(sessionLog)) File.Copy(sessionLog, Path.Combine(outLogs, sessionLogName));
+                    }
 
                     string latestLog = Path.Combine(logsDir, "latest.log");
                     if (File.Exists(latestLog)) File.Copy(latestLog, Path.Combine(outLogs, "latest.log"));

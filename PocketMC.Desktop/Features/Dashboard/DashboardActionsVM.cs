@@ -320,9 +320,13 @@ namespace PocketMC.Desktop.Features.Dashboard
 
         public void OpenConsole(InstanceCardViewModel vm)
         {
+            string? instancePath = _registry.GetPath(vm.Id);
+            if (string.IsNullOrWhiteSpace(instancePath) || !Directory.Exists(instancePath)) return;
+
             var process = _lifecycleService.GetProcess(vm.Id);
-            if (process == null) return;
-            var consolePage = ActivatorUtilities.CreateInstance<ServerConsolePage>(_serviceProvider, vm.Metadata, process);
+            var consolePage = process != null
+                ? ActivatorUtilities.CreateInstance<ServerConsolePage>(_serviceProvider, vm.Metadata, process, instancePath)
+                : ActivatorUtilities.CreateInstance<ServerConsolePage>(_serviceProvider, vm.Metadata, instancePath);
             _navigationService.NavigateToDetailPage(consolePage, $"Console: {vm.Name}", DetailRouteKind.ServerConsole, DetailBackNavigation.Dashboard, true);
         }
 

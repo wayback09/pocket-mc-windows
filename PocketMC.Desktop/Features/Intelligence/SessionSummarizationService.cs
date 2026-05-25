@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using PocketMC.Desktop.Features.Console;
 using PocketMC.Desktop.Models;
 
 namespace PocketMC.Desktop.Features.Intelligence;
@@ -17,6 +18,7 @@ public class SessionSummarizationService
 {
     private readonly AiApiClient _aiClient;
     private readonly SummaryStorageService _storageService;
+    private readonly ConsoleLogHistoryService _logHistoryService;
     private readonly ILogger<SessionSummarizationService> _logger;
 
     private const string SystemPrompt = @"You are an expert Minecraft server analyst. Summarize the entire session log provided earlier. 
@@ -36,10 +38,12 @@ If the logs include sensitive data (IPs, emails), DO NOT include them in the sum
     public SessionSummarizationService(
         AiApiClient aiClient,
         SummaryStorageService storageService,
+        ConsoleLogHistoryService logHistoryService,
         ILogger<SessionSummarizationService> logger)
     {
         _aiClient = aiClient;
         _storageService = storageService;
+        _logHistoryService = logHistoryService;
         _logger = logger;
     }
 
@@ -60,8 +64,8 @@ If the logs include sensitive data (IPs, emails), DO NOT include them in the sum
         try
         {
             // 1. Read session log (use FileShare.ReadWrite since the log writer may still hold the file)
-            var logPath = Path.Combine(serverDir, "logs", "pocketmc-session.log");
-            if (!File.Exists(logPath))
+            var logPath = _logHistoryService.GetSessionLogPath(serverDir, preferCurrentSession: true);
+            if (logPath == null || !File.Exists(logPath))
                 return SummarizationResult.Fail("No session log found. The server may not have generated any output.");
 
             string rawLog;

@@ -33,6 +33,7 @@ public class ServerProcess : IDisposable
     private readonly JobObject _jobObject;
     private readonly ServerLaunchConfigurator _launchConfigurator;
     private readonly PlayerListParser _playerListParser;
+    private readonly ConsoleLogHistoryService _consoleLogHistoryService;
     private readonly ILogger<ServerProcess> _logger;
     private bool _disposed;
     private volatile bool _intentionalStop;
@@ -89,12 +90,14 @@ public class ServerProcess : IDisposable
         JobObject jobObject,
         ServerLaunchConfigurator launchConfigurator,
         PlayerListParser playerListParser,
+        ConsoleLogHistoryService consoleLogHistoryService,
         ILogger<ServerProcess> logger)
     {
         InstanceId = instanceId;
         _jobObject = jobObject;
         _launchConfigurator = launchConfigurator;
         _playerListParser = playerListParser;
+        _consoleLogHistoryService = consoleLogHistoryService;
         _logger = logger;
     }
 
@@ -144,11 +147,7 @@ public class ServerProcess : IDisposable
     {
         try
         {
-            string logDir = Path.Combine(workingDir, "logs");
-            Directory.CreateDirectory(logDir);
-            string sessionLogPath = Path.Combine(logDir, "pocketmc-session.log");
-            var stream = new FileStream(sessionLogPath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
-            _sessionLogWriter = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true };
+            _sessionLogWriter = _consoleLogHistoryService.OpenCurrentSessionWriter(workingDir);
         }
         catch (Exception ex) { _logger.LogWarning(ex, "Failed to initialize session log."); }
     }

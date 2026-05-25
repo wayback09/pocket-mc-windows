@@ -4,6 +4,7 @@ using System.Net.Sockets;
 using System.Linq;
 using Microsoft.Extensions.Logging.Abstractions;
 using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Desktop.Features.Console;
 using PocketMC.Desktop.Features.Diagnostics;
 using PocketMC.Desktop.Features.Instances.Services;
 using PocketMC.Desktop.Features.Instances.Providers;
@@ -141,6 +142,7 @@ internal sealed class PortReliabilityTestWorkspace : IDisposable
             Registry,
             CreateServerLaunchConfigurator(),
             new PlayerListParser(),
+            new ConsoleLogHistoryService(NullLogger<ConsoleLogHistoryService>.Instance),
             NullLogger<ServerProcessManager>.Instance,
             NullLoggerFactory.Instance);
     }

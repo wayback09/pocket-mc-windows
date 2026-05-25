@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using PocketMC.Desktop.Features.Console;
 using PocketMC.Desktop.Infrastructure.FileSystem;
 
 namespace PocketMC.Desktop.Features.Networking;
@@ -201,7 +202,9 @@ public static class SimpleVoiceChatDetector
     private static IEnumerable<string> EnumerateLogFallbackPaths(string logsDir)
     {
         yield return Path.Combine(logsDir, "latest.log");
-        yield return Path.Combine(logsDir, "pocketmc-session.log");
+        yield return Path.Combine(logsDir, ConsoleLogHistoryService.CurrentSessionLogName);
+        yield return Path.Combine(logsDir, ConsoleLogHistoryService.LastSessionLogName);
+        yield return Path.Combine(logsDir, ConsoleLogHistoryService.LegacySessionLogName);
     }
 }
 

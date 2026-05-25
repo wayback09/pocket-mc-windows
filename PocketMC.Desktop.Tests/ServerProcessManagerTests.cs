@@ -1,6 +1,7 @@
 using PocketMC.Desktop.Features.Instances;
 using PocketMC.Desktop.Features.Instances.Services;
 using PocketMC.Desktop.Features.Instances.Models;
+using PocketMC.Desktop.Features.Console;
 using PocketMC.Desktop.Models;
 using System.Text.Json;
 
@@ -31,7 +32,7 @@ public class ServerProcessManagerTests
         ServerProcess process = await processManager.StartProcessAsync(metadata, workspace.RootPath);
         System.Diagnostics.Process? internalProcess = process.GetInternalProcess();
 
-        string sessionLogPath = Path.Combine(instancePath, "logs", "pocketmc-session.log");
+        string sessionLogPath = Path.Combine(instancePath, "logs", ConsoleLogHistoryService.CurrentSessionLogName);
         try
         {
             processManager.KillProcess(metadata.Id);

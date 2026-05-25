@@ -57,14 +57,16 @@
 
             <ui:Button Grid.Column="6" Content="{Binding PlayerStatus}" Appearance="Secondary"
                        Icon="{ui:SymbolIcon People24}" Click="BtnPlayers_Click" Cursor="Hand" Margin="0,0,8,0"
-                       ToolTip="Manage online players"/>
+                       ToolTip="Manage online players"
+                       IsEnabled="{Binding CanUseLiveServerControls}"/>
 
             <ui:Button Grid.Column="7" Content="Stop Server" Appearance="Danger"
                        Icon="{ui:SymbolIcon Stop24}" Click="BtnStop_Click" Cursor="Hand" Margin="0,0,8,0"
                        IsEnabled="{Binding CanStopServer}"/>
 
             <ui:Button Grid.Column="8" Content="Restart" Appearance="Secondary"
-                       Icon="{ui:SymbolIcon ArrowSync24}" Click="BtnRestart_Click" Cursor="Hand" Margin="0,0,8,0"/>
+                       Icon="{ui:SymbolIcon ArrowSync24}" Click="BtnRestart_Click" Cursor="Hand" Margin="0,0,8,0"
+                       IsEnabled="{Binding CanUseLiveServerControls}"/>
 
             <ui:Button Grid.Column="9" Content="AI Summary" Appearance="Info"
                        Icon="{ui:SymbolIcon Sparkle24}" Click="BtnAiSummary_Click" Cursor="Hand"
@@ -83,10 +85,18 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
-                <ui:InfoBar Grid.Row="0" x:Name="ResourceWarningBar"
+                <ui:InfoBar Grid.Row="0" x:Name="ReadOnlyLogInfoBar"
+                             Title="Read-only console"
+                             Message="Showing last session log. Start the server to create a new live session."
+                             Severity="Informational" Margin="0,0,0,10"
+                             IsClosable="False"
+                             Visibility="Collapsed"/>
+
+                <ui:InfoBar Grid.Row="1" x:Name="ResourceWarningBar"
                              Title="High Resource Usage"
                              Message="Your server is using over 80% of its assigned RAM. Performance may be impacted."
                              Severity="Warning" Margin="0,0,0,10"
@@ -96,7 +106,7 @@
                                Margin="0,0,12,0" HorizontalAlignment="Right" VerticalAlignment="Center"/>
                 </ui:InfoBar>
 
-                <Border Grid.Row="1" x:Name="CrashBanner" Background="#EE1A1A1A" BorderBrush="#FF4444" BorderThickness="1,1,1,2" CornerRadius="8" Padding="0" Margin="0,0,0,12" Visibility="Collapsed">
+                <Border Grid.Row="2" x:Name="CrashBanner" Background="#EE1A1A1A" BorderBrush="#FF4444" BorderThickness="1,1,1,2" CornerRadius="8" Padding="0" Margin="0,0,0,12" Visibility="Collapsed">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -124,7 +134,7 @@
                 </Border>
 
                 <!-- Virtualized Log View -->
-                <ListView x:Name="LogView" Grid.Row="2" ItemsSource="{Binding FilteredLogs}"
+                <ListView x:Name="LogView" Grid.Row="3" ItemsSource="{Binding FilteredLogs}"
                             Background="Transparent" BorderThickness="0"
                             ScrollViewer.VerticalScrollBarVisibility="Auto"
                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
@@ -222,9 +232,11 @@
 
             <ui:TextBox x:Name="TxtCommand" Grid.Column="0" PlaceholderText="Type a command..."
                         Margin="0,0,8,0"
+                        IsEnabled="{Binding CanUseLiveServerControls}"
                         KeyDown="TxtCommand_KeyDown"/>
             <ui:Button Grid.Column="1" Content="Send" Appearance="Primary"
-                       Icon="{ui:SymbolIcon Send24}" Click="BtnSend_Click" Cursor="Hand"/>
+                       Icon="{ui:SymbolIcon Send24}" Click="BtnSend_Click" Cursor="Hand"
+                       IsEnabled="{Binding CanUseLiveServerControls}"/>
         </Grid>
     </Grid>
 </Page>

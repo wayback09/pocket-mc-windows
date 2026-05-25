@@ -57,7 +57,8 @@ namespace PocketMC.Desktop.Features.Console
     {
         private readonly IAppNavigationService _navigationService;
         private readonly InstanceMetadata _metadata;
-        private readonly ServerProcess _serverProcess;
+        private readonly ServerProcess? _serverProcess;
+        private readonly string _instancePath;
         private readonly IServerLifecycleService _lifecycleService;
         private readonly InstanceTunnelOrchestrator _tunnelOrchestrator;
         private readonly AgentProvisioningService _agentProvisioning;
@@ -67,6 +68,7 @@ namespace PocketMC.Desktop.Features.Console
         private readonly SessionSummarizationService _summarizationService;
         private readonly AiApiClient _aiClient;
         private readonly IResourceMonitorService _resourceMonitor;
+        private readonly ConsoleLogHistoryService _logHistoryService;
         private readonly ConcurrentQueue<LogLine> _pendingLines = new();
         private readonly DispatcherTimer _flushTimer;
         private int _maxLogLines = 5000;
@@ -83,16 +85,21 @@ namespace PocketMC.Desktop.Features.Console
         private string _pendingCommandText = string.Empty;
 
         public string ServerName => _metadata.Name;
-        public string StatusText => _serverProcess.State switch
+        private bool IsLiveProcess => _serverProcess != null &&
+                                      _serverProcess.State != ServerState.Stopped &&
+                                      _serverProcess.State != ServerState.Crashed;
+
+        public string StatusText => _serverProcess?.State switch
         {
             ServerState.Online => "● Online",
             ServerState.Installing => "◉ Installing...",
             ServerState.Starting => "◉ Starting...",
             ServerState.Stopping => "◉ Stopping...",
             ServerState.Crashed => "✖ Crashed",
+            null => "● Last session",
             _ => "● Stopped"
         };
-        public Brush StatusColor => _serverProcess.State switch
+        public Brush StatusColor => _serverProcess?.State switch
         {
             ServerState.Online => Brushes.LimeGreen,
             ServerState.Installing => Brushes.DeepSkyBlue,
@@ -119,8 +126,10 @@ namespace PocketMC.Desktop.Features.Console
         public bool IsFilterSystem { get => _isFilterSystem; set { if (SetProperty(ref _isFilterSystem, value)) ApplyFilters(); } }
         public bool IsRegexEnabled { get => _isRegexEnabled; set { if (SetProperty(ref _isRegexEnabled, value)) ApplyFilters(); } }
 
-        public bool CanStopServer => _serverProcess.State == ServerState.Online || _serverProcess.State == ServerState.Starting || _serverProcess.State == ServerState.Installing;
-        public string PlayerStatus => $"{_serverProcess.PlayerCount} / {_metadata.MaxPlayers}";
+        public bool CanStopServer => _serverProcess?.State == ServerState.Online || _serverProcess?.State == ServerState.Starting || _serverProcess?.State == ServerState.Installing;
+        public bool CanUseLiveServerControls => IsLiveProcess;
+        public bool IsReadOnlySessionLog => !IsLiveProcess;
+        public string PlayerStatus => $"{(_serverProcess?.PlayerCount ?? 0)} / {_metadata.MaxPlayers}";
         public event Action? TitleBarContextChanged;
 
         public ServerConsolePage(
@@ -129,12 +138,46 @@ namespace PocketMC.Desktop.Features.Console
             InstanceTunnelOrchestrator tunnelOrchestrator,
             AgentProvisioningService agentProvisioning,
             InstanceMetadata metadata,
-            ServerProcess serverProcess,
+            string instancePath,
             ApplicationState applicationState,
             IServiceProvider serviceProvider,
             SessionSummarizationService summarizationService,
             AiApiClient aiClient,
             IResourceMonitorService resourceMonitor,
+            ConsoleLogHistoryService logHistoryService,
+            ILogger<ServerConsolePage> logger)
+            : this(
+                navigationService,
+                lifecycleService,
+                tunnelOrchestrator,
+                agentProvisioning,
+                metadata,
+                null,
+                instancePath,
+                applicationState,
+                serviceProvider,
+                summarizationService,
+                aiClient,
+                resourceMonitor,
+                logHistoryService,
+                logger)
+        {
+        }
+
+        public ServerConsolePage(
+            IAppNavigationService navigationService,
+            IServerLifecycleService lifecycleService,
+            InstanceTunnelOrchestrator tunnelOrchestrator,
+            AgentProvisioningService agentProvisioning,
+            InstanceMetadata metadata,
+            ServerProcess? serverProcess,
+            string instancePath,
+            ApplicationState applicationState,
+            IServiceProvider serviceProvider,
+            SessionSummarizationService summarizationService,
+            AiApiClient aiClient,
+            IResourceMonitorService resourceMonitor,
+            ConsoleLogHistoryService logHistoryService,
             ILogger<ServerConsolePage> logger)
         {
             _navigationService = navigationService;
@@ -143,11 +186,13 @@ namespace PocketMC.Desktop.Features.Console
             _agentProvisioning = agentProvisioning;
             _metadata = metadata;
             _serverProcess = serverProcess;
+            _instancePath = instancePath;
             _applicationState = applicationState;
             _serviceProvider = serviceProvider;
             _summarizationService = summarizationService;
             _aiClient = aiClient;
             _resourceMonitor = resourceMonitor;
+            _logHistoryService = logHistoryService;
             _logger = logger;
 
             _maxLogLines = _applicationState.Settings.ConsoleBufferSize;
@@ -157,11 +202,14 @@ namespace PocketMC.Desktop.Features.Console
             DataContext = this;
 
             // Subscribe to output events
-            _serverProcess.OnOutputLine += OnOutputReceived;
-            _serverProcess.OnErrorLine += OnErrorReceived;
-            _serverProcess.OnStateChanged += OnStateChanged;
-            _serverProcess.OnServerCrashed += OnServerCrashed;
-            _serverProcess.OnOnlinePlayersUpdated += OnOnlinePlayersUpdated;
+            if (_serverProcess != null)
+            {
+                _serverProcess.OnOutputLine += OnOutputReceived;
+                _serverProcess.OnErrorLine += OnErrorReceived;
+                _serverProcess.OnStateChanged += OnStateChanged;
+                _serverProcess.OnServerCrashed += OnServerCrashed;
+                _serverProcess.OnOnlinePlayersUpdated += OnOnlinePlayersUpdated;
+            }
 
             // Flush timer: 100ms interval for batched UI updates
             _flushTimer = new DispatcherTimer
@@ -176,15 +224,20 @@ namespace PocketMC.Desktop.Features.Console
             // Resource monitoring
             _resourceMonitor.InstanceMetricsUpdated += OnMetricsUpdated;
 
-            // 1. Load full session history from the log file (NET-15)
-            LoadSessionLogHistory();
+            ReadOnlyLogInfoBar.Visibility = IsReadOnlySessionLog ? Visibility.Visible : Visibility.Collapsed;
+
+            // 1. Load the configured tail of session history without blocking the UI.
+            _ = LoadSessionLogHistoryAsync();
 
             // 2. Drain and CLEAR the transient buffer
             // We clear it because the log file already contains these lines (autoflush is on)
-            while (_serverProcess.OutputBuffer.TryDequeue(out _)) { }
+            if (_serverProcess != null)
+            {
+                while (_serverProcess.OutputBuffer.TryDequeue(out _)) { }
+            }
 
             // 3. If in crashed state, show the crash banner immediately (NET-10)
-            if (_serverProcess.State == ServerState.Crashed && !string.IsNullOrEmpty(_serverProcess.CrashContext))
+            if (_serverProcess?.State == ServerState.Crashed && !string.IsNullOrEmpty(_serverProcess.CrashContext))
             {
                 TxtCrashLog.Text = _serverProcess.CrashContext;
                 CrashBanner.Visibility = Visibility.Visible;
@@ -230,7 +283,10 @@ namespace PocketMC.Desktop.Features.Console
                 OnPropertyChanged(nameof(StatusText));
                 OnPropertyChanged(nameof(StatusColor));
                 OnPropertyChanged(nameof(CanStopServer));
+                OnPropertyChanged(nameof(CanUseLiveServerControls));
+                OnPropertyChanged(nameof(IsReadOnlySessionLog));
                 OnPropertyChanged(nameof(PlayerStatus));
+                ReadOnlyLogInfoBar.Visibility = IsReadOnlySessionLog ? Visibility.Visible : Visibility.Collapsed;
                 TitleBarContextChanged?.Invoke();
 
                 if (state == ServerState.Starting)
@@ -345,47 +401,37 @@ namespace PocketMC.Desktop.Features.Console
                 LogView.ScrollIntoView(FilteredLogs[^1]);
         }
 
-        private void LoadSessionLogHistory()
+        private async System.Threading.Tasks.Task LoadSessionLogHistoryAsync()
         {
             try
             {
-                string logFile = System.IO.Path.Combine(_serverProcess.WorkingDirectory, "logs", "pocketmc-session.log");
-                if (System.IO.File.Exists(logFile))
+                ConsoleLogReadResult result = await _logHistoryService.LoadSessionTailAsync(
+                    _instancePath,
+                    _maxLogLines,
+                    preferCurrentSession: true,
+                    isLive: IsLiveProcess);
+
+                int autoListSuppressCounter = 0;
+                bool suppressingListResponse = false;
+
+                int? pendingMultilinePlayerCount = null;
+                var pendingMultilinePlayerNames = new System.Collections.Generic.List<string>();
+                var pendingMultilineStyle = PlayerListContinuationStyle.None;
+                var playerListParser = new PlayerListParser();
+
+                foreach (string line in result.Lines)
                 {
-                    // Read the session log with shared access to avoid locking errors
-                    using var stream = new System.IO.FileStream(logFile, System.IO.FileMode.Open, System.IO.FileAccess.Read, System.IO.FileShare.ReadWrite);
-                    using var reader = new System.IO.StreamReader(stream);
+                    string sanitizedLine = LogSanitizer.SanitizeConsoleLine(line);
+                    bool shouldSuppress = false;
 
-                    int autoListSuppressCounter = 0;
-                    bool suppressingListResponse = false;
-
-                    int? pendingMultilinePlayerCount = null;
-                    var pendingMultilinePlayerNames = new System.Collections.Generic.List<string>();
-                    var pendingMultilineStyle = PlayerListContinuationStyle.None;
-                    var playerListParser = new PlayerListParser();
-
-                    string? line;
-                    while ((line = reader.ReadLine()) != null)
+                    if (suppressingListResponse && pendingMultilinePlayerCount.HasValue)
                     {
-                        string sanitizedLine = LogSanitizer.SanitizeConsoleLine(line);
-                        bool shouldSuppress = false;
-
-                        if (suppressingListResponse && pendingMultilinePlayerCount.HasValue)
+                        if (playerListParser.TryParseContinuationLine(sanitizedLine, pendingMultilineStyle, out string playerName))
                         {
-                            if (playerListParser.TryParseContinuationLine(sanitizedLine, pendingMultilineStyle, out string playerName))
-                            {
-                                pendingMultilinePlayerNames.Add(playerName);
-                                shouldSuppress = true;
+                            pendingMultilinePlayerNames.Add(playerName);
+                            shouldSuppress = true;
 
-                                if (pendingMultilinePlayerNames.Count >= pendingMultilinePlayerCount.Value)
-                                {
-                                    pendingMultilinePlayerCount = null;
-                                    pendingMultilinePlayerNames.Clear();
-                                    pendingMultilineStyle = PlayerListContinuationStyle.None;
-                                    suppressingListResponse = false;
-                                }
-                            }
-                            else
+                            if (pendingMultilinePlayerNames.Count >= pendingMultilinePlayerCount.Value)
                             {
                                 pendingMultilinePlayerCount = null;
                                 pendingMultilinePlayerNames.Clear();
@@ -393,59 +439,39 @@ namespace PocketMC.Desktop.Features.Console
                                 suppressingListResponse = false;
                             }
                         }
-
-                        if (!shouldSuppress)
+                        else
                         {
-                            bool isListResponse = ServerProcess.IsListResponseLine(sanitizedLine);
-                            if (isListResponse)
+                            pendingMultilinePlayerCount = null;
+                            pendingMultilinePlayerNames.Clear();
+                            pendingMultilineStyle = PlayerListContinuationStyle.None;
+                            suppressingListResponse = false;
+                        }
+                    }
+
+                    if (!shouldSuppress)
+                    {
+                        bool isListResponse = ServerProcess.IsListResponseLine(sanitizedLine);
+                        if (isListResponse)
+                        {
+                            autoListSuppressCounter++;
+
+                            if (autoListSuppressCounter >= 100)
                             {
-                                autoListSuppressCounter++;
-
-                                if (autoListSuppressCounter >= 100)
-                                {
-                                    autoListSuppressCounter = 0;
-                                    suppressingListResponse = false;
-                                    shouldSuppress = false;
-                                }
-                                else
-                                {
-                                    suppressingListResponse = true;
-                                    shouldSuppress = true;
-
-                                    var parseResult = playerListParser.ParseLine(sanitizedLine, _metadata.ServerType);
-                                    if (parseResult != null && !parseResult.IsComplete)
-                                    {
-                                        pendingMultilinePlayerCount = parseResult.OnlinePlayerCount;
-                                        pendingMultilinePlayerNames.Clear();
-                                        pendingMultilineStyle = parseResult.ContinuationStyle;
-                                    }
-                                    else
-                                    {
-                                        pendingMultilinePlayerCount = null;
-                                        pendingMultilinePlayerNames.Clear();
-                                        pendingMultilineStyle = PlayerListContinuationStyle.None;
-                                    }
-                                }
+                                autoListSuppressCounter = 0;
+                                suppressingListResponse = false;
+                                shouldSuppress = false;
                             }
                             else
                             {
-                                suppressingListResponse = false;
-                            }
-                        }
+                                suppressingListResponse = true;
+                                shouldSuppress = true;
 
-                        if (!shouldSuppress)
-                        {
-                            if (pendingMultilinePlayerCount.HasValue)
-                            {
-                                if (playerListParser.TryParseContinuationLine(sanitizedLine, pendingMultilineStyle, out string playerName))
+                                var parseResult = playerListParser.ParseLine(sanitizedLine, _metadata.ServerType);
+                                if (parseResult != null && !parseResult.IsComplete)
                                 {
-                                    pendingMultilinePlayerNames.Add(playerName);
-                                    if (pendingMultilinePlayerNames.Count >= pendingMultilinePlayerCount.Value)
-                                    {
-                                        pendingMultilinePlayerCount = null;
-                                        pendingMultilinePlayerNames.Clear();
-                                        pendingMultilineStyle = PlayerListContinuationStyle.None;
-                                    }
+                                    pendingMultilinePlayerCount = parseResult.OnlinePlayerCount;
+                                    pendingMultilinePlayerNames.Clear();
+                                    pendingMultilineStyle = parseResult.ContinuationStyle;
                                 }
                                 else
                                 {
@@ -454,22 +480,49 @@ namespace PocketMC.Desktop.Features.Console
                                     pendingMultilineStyle = PlayerListContinuationStyle.None;
                                 }
                             }
-                            else
+                        }
+                        else
+                        {
+                            suppressingListResponse = false;
+                        }
+                    }
+
+                    if (!shouldSuppress)
+                    {
+                        if (pendingMultilinePlayerCount.HasValue)
+                        {
+                            if (playerListParser.TryParseContinuationLine(sanitizedLine, pendingMultilineStyle, out string playerName))
                             {
-                                var parseResult = playerListParser.ParseLine(sanitizedLine, _metadata.ServerType);
-                                if (parseResult != null && !parseResult.IsComplete)
+                                pendingMultilinePlayerNames.Add(playerName);
+                                if (pendingMultilinePlayerNames.Count >= pendingMultilinePlayerCount.Value)
                                 {
-                                    pendingMultilinePlayerCount = parseResult.OnlinePlayerCount;
+                                    pendingMultilinePlayerCount = null;
                                     pendingMultilinePlayerNames.Clear();
-                                    pendingMultilineStyle = parseResult.ContinuationStyle;
+                                    pendingMultilineStyle = PlayerListContinuationStyle.None;
                                 }
                             }
+                            else
+                            {
+                                pendingMultilinePlayerCount = null;
+                                pendingMultilinePlayerNames.Clear();
+                                pendingMultilineStyle = PlayerListContinuationStyle.None;
+                            }
                         }
-
-                        if (!shouldSuppress)
+                        else
                         {
-                            _pendingLines.Enqueue(ColorizeLogLine(line));
+                            var parseResult = playerListParser.ParseLine(sanitizedLine, _metadata.ServerType);
+                            if (parseResult != null && !parseResult.IsComplete)
+                            {
+                                pendingMultilinePlayerCount = parseResult.OnlinePlayerCount;
+                                pendingMultilinePlayerNames.Clear();
+                                pendingMultilineStyle = parseResult.ContinuationStyle;
+                            }
                         }
+                    }
+
+                    if (!shouldSuppress)
+                    {
+                        _pendingLines.Enqueue(ColorizeLogLine(sanitizedLine));
                     }
                 }
             }
@@ -599,6 +652,8 @@ namespace PocketMC.Desktop.Features.Console
 
         private async System.Threading.Tasks.Task SendCommand()
         {
+            if (!IsLiveProcess || _serverProcess == null) return;
+
             string command = TxtCommand.Text.Trim();
             if (string.IsNullOrEmpty(command)) return;
 
@@ -629,6 +684,8 @@ namespace PocketMC.Desktop.Features.Console
 
         private void BtnPlayers_Click(object sender, RoutedEventArgs e)
         {
+            if (!IsLiveProcess || _serverProcess == null) return;
+
             var viewModel = ActivatorUtilities.CreateInstance<PlayerManagementViewModel>(_serviceProvider, _metadata, _serverProcess);
             var page = ActivatorUtilities.CreateInstance<PlayerManagementPage>(_serviceProvider, viewModel);
             _navigationService.NavigateToDetailPage(page, $"Players: {_metadata.Name}", DetailRouteKind.PlayerManagement, DetailBackNavigation.PreviousDetail);
@@ -636,6 +693,8 @@ namespace PocketMC.Desktop.Features.Console
 
         private async void BtnStop_Click(object sender, RoutedEventArgs e)
         {
+            if (!IsLiveProcess || _serverProcess == null) return;
+
             try
             {
                 await _serverProcess.StopAsync();
@@ -648,6 +707,8 @@ namespace PocketMC.Desktop.Features.Console
 
         private async void BtnRestart_Click(object sender, RoutedEventArgs e)
         {
+            if (!IsLiveProcess) return;
+
             try
             {
                 var agentState = await _agentProvisioning.GetConnectionStateAsync();
@@ -682,11 +743,14 @@ namespace PocketMC.Desktop.Features.Console
         private void DetachHandlers()
         {
             _flushTimer.Stop();
-            _serverProcess.OnOutputLine -= OnOutputReceived;
-            _serverProcess.OnErrorLine -= OnErrorReceived;
-            _serverProcess.OnStateChanged -= OnStateChanged;
-            _serverProcess.OnServerCrashed -= OnServerCrashed;
-            _serverProcess.OnOnlinePlayersUpdated -= OnOnlinePlayersUpdated;
+            if (_serverProcess != null)
+            {
+                _serverProcess.OnOutputLine -= OnOutputReceived;
+                _serverProcess.OnErrorLine -= OnErrorReceived;
+                _serverProcess.OnStateChanged -= OnStateChanged;
+                _serverProcess.OnServerCrashed -= OnServerCrashed;
+                _serverProcess.OnOnlinePlayersUpdated -= OnOnlinePlayersUpdated;
+            }
         }
 
         private void OnOnlinePlayersUpdated(System.Collections.Generic.IReadOnlyList<string> names, DateTime updatedAtUtc)
@@ -857,8 +921,8 @@ Logs:
 
         private async System.Threading.Tasks.Task SummarizeSessionAsync()
         {
-            var logPath = System.IO.Path.Combine(_serverProcess.WorkingDirectory, "logs", "pocketmc-session.log");
-            if (System.IO.File.Exists(logPath))
+            var logPath = _logHistoryService.GetSessionLogPath(_instancePath, preferCurrentSession: true);
+            if (logPath != null && System.IO.File.Exists(logPath))
             {
                 var fileInfo = new System.IO.FileInfo(logPath);
                 // ~1.5MB threshold (roughly 15k-20k lines depending on log format)
@@ -893,13 +957,13 @@ Logs:
                 var provider = AiApiClient.ParseProvider(_applicationState.Settings.AiProvider);
 
                 var result = await _summarizationService.SummarizeAsync(
-                    _serverProcess.WorkingDirectory,
+                    _instancePath,
                     _metadata.Name,
                     provider,
                     apiKey,
                     _applicationState.Settings.GetCurrentAiModel(),
                     _applicationState.Settings.GetCurrentAiEndpoint(),
-                    _serverProcess.StartTime ?? DateTime.UtcNow.AddHours(-1),
+                    _serverProcess?.StartTime ?? DateTime.UtcNow.AddHours(-1),
                     DateTime.UtcNow);
 
                 if (result.Success && result.Summary != null)
@@ -940,6 +1004,8 @@ Logs:
 
         private async void BtnOptimize_Click(object sender, RoutedEventArgs e)
         {
+            if (!IsLiveProcess || _serverProcess == null) return;
+
             try
             {
                 var proc = _serverProcess.GetInternalProcess();
