@@ -155,13 +155,27 @@ namespace PocketMC.Desktop.Features.Mods
                 {
                     metadata.Description = descProp.GetString();
                 }
+                metadata.SideSupport = ModSideSupport.ClientAndServer;
+                metadata.SideLabel = "Client + Server";
+
                 if (root.TryGetProperty("environment", out var envProp) && envProp.ValueKind == JsonValueKind.String)
                 {
                     string env = envProp.GetString() ?? "";
                     if (env.Equals("client", StringComparison.OrdinalIgnoreCase))
                     {
-                        metadata.IsClientOnly = true;
-                        metadata.Warnings.Add("Fabric metadata marks this add-on as client-only. It may crash or be ignored by a server.");
+                        metadata.SideSupport = ModSideSupport.ClientOnly;
+                        metadata.SideLabel = "Client-only";
+                        metadata.Warnings.Add("Fabric metadata marks this mod as client-only.");
+                    }
+                    else if (env.Equals("server", StringComparison.OrdinalIgnoreCase))
+                    {
+                        metadata.SideSupport = ModSideSupport.ServerOnly;
+                        metadata.SideLabel = "Server-only";
+                    }
+                    else if (env.Equals("*", StringComparison.OrdinalIgnoreCase))
+                    {
+                        metadata.SideSupport = ModSideSupport.ClientAndServer;
+                        metadata.SideLabel = "Client + Server";
                     }
                 }
 
@@ -230,13 +244,27 @@ namespace PocketMC.Desktop.Features.Mods
                     {
                         metadata.Version = versionProp.GetString();
                     }
+                    metadata.SideSupport = ModSideSupport.ClientAndServer;
+                    metadata.SideLabel = "Client + Server";
+
                     if (quiltLoader.TryGetProperty("environment", out var envProp) && envProp.ValueKind == JsonValueKind.String)
                     {
                         string env = envProp.GetString() ?? "";
                         if (env.Equals("client", StringComparison.OrdinalIgnoreCase))
                         {
-                            metadata.IsClientOnly = true;
-                            metadata.Warnings.Add("Quilt metadata marks this add-on as client-only. It may crash or be ignored by a server.");
+                            metadata.SideSupport = ModSideSupport.ClientOnly;
+                            metadata.SideLabel = "Client-only";
+                            metadata.Warnings.Add("Quilt metadata marks this mod as client-only.");
+                        }
+                        else if (env.Equals("server", StringComparison.OrdinalIgnoreCase))
+                        {
+                            metadata.SideSupport = ModSideSupport.ServerOnly;
+                            metadata.SideLabel = "Server-only";
+                        }
+                        else if (env.Equals("*", StringComparison.OrdinalIgnoreCase))
+                        {
+                            metadata.SideSupport = ModSideSupport.ClientAndServer;
+                            metadata.SideLabel = "Client + Server";
                         }
                     }
 
@@ -388,11 +416,24 @@ namespace PocketMC.Desktop.Features.Mods
                 }
 
                 bool isClientOnly = Regex.IsMatch(toml, @"clientSideOnly\s*=\s*true", RegexOptions.IgnoreCase, regexTimeout);
-                bool isDisplayTestClient = Regex.IsMatch(toml, @"displayTest\s*=\s*['""]?(IGNORE_SERVER_VERSION|IGNORE_ALL_VERSION|NONE)['""]?", RegexOptions.IgnoreCase, regexTimeout);
-                if (isClientOnly || isDisplayTestClient)
+                bool hasDisplayTest = Regex.IsMatch(toml, @"displayTest\s*=\s*", RegexOptions.IgnoreCase, regexTimeout);
+
+                if (isClientOnly)
                 {
-                    metadata.IsClientOnly = true;
-                    metadata.Warnings.Add("Forge/NeoForge metadata suggests this add-on is client-only or not required on the server.");
+                    metadata.SideSupport = ModSideSupport.ClientOnly;
+                    metadata.SideLabel = "Client-only";
+                    metadata.Warnings.Add("Forge metadata marks this mod as client-only.");
+                }
+                else if (hasDisplayTest)
+                {
+                    metadata.SideSupport = ModSideSupport.OptionalOnServer;
+                    metadata.SideLabel = "Optional on server";
+                    metadata.Warnings.Add("Forge displayTest is set; server/client version enforcement may be relaxed.");
+                }
+                else
+                {
+                    metadata.SideSupport = ModSideSupport.Unknown;
+                    metadata.SideLabel = "Unknown";
                 }
             }
             catch
@@ -479,6 +520,9 @@ namespace PocketMC.Desktop.Features.Mods
 
         private static void ParsePluginMetadata(ZipArchive archive, ZipArchiveEntry entry, JavaModMetadata metadata)
         {
+            metadata.SideSupport = ModSideSupport.ServerOnly;
+            metadata.SideLabel = "Server-only";
+
             try
             {
                 using var stream = entry.Open();

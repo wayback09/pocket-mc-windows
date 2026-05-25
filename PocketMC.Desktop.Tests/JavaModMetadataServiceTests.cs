@@ -272,7 +272,8 @@ displayTest=""IGNORE_SERVER_VERSION""
             Assert.Equal("neoforgemod", metadata.ModId);
             Assert.Equal("NeoForge Test", metadata.DisplayName);
             Assert.Equal("NeoForge", metadata.LoaderType);
-            Assert.True(metadata.IsClientOnly);
+            Assert.False(metadata.IsClientOnly);
+            Assert.Equal(ModSideSupport.OptionalOnServer, metadata.SideSupport);
         }
 
         [Fact]
@@ -415,6 +416,133 @@ description: A plugin description
 
             Assert.Equal("Oversized Mod", metadata.DisplayName);
             Assert.Null(metadata.IconBytes);
+        }
+
+        [Fact]
+        public void ScanJar_FabricEnvironment_MapsCorrectly()
+        {
+            // client environment
+            string jsonClient = @"{ ""id"": ""c"", ""environment"": ""client"" }";
+            string jarClient = CreateTempJar("fabric-env-client.jar", a => {
+                using var w = new StreamWriter(a.CreateEntry("fabric.mod.json").Open());
+                w.Write(jsonClient);
+            });
+            var metaClient = JavaModMetadataService.ScanJar(jarClient);
+            Assert.Equal(ModSideSupport.ClientOnly, metaClient.SideSupport);
+            Assert.True(metaClient.IsClientOnly);
+            Assert.Single(metaClient.Warnings);
+
+            // server environment
+            string jsonServer = @"{ ""id"": ""s"", ""environment"": ""server"" }";
+            string jarServer = CreateTempJar("fabric-env-server.jar", a => {
+                using var w = new StreamWriter(a.CreateEntry("fabric.mod.json").Open());
+                w.Write(jsonServer);
+            });
+            var metaServer = JavaModMetadataService.ScanJar(jarServer);
+            Assert.Equal(ModSideSupport.ServerOnly, metaServer.SideSupport);
+            Assert.False(metaServer.IsClientOnly);
+
+            // '*' environment
+            string jsonStar = @"{ ""id"": ""star"", ""environment"": ""*"" }";
+            string jarStar = CreateTempJar("fabric-env-star.jar", a => {
+                using var w = new StreamWriter(a.CreateEntry("fabric.mod.json").Open());
+                w.Write(jsonStar);
+            });
+            var metaStar = JavaModMetadataService.ScanJar(jarStar);
+            Assert.Equal(ModSideSupport.ClientAndServer, metaStar.SideSupport);
+
+            // missing environment
+            string jsonMissing = @"{ ""id"": ""m"" }";
+            string jarMissing = CreateTempJar("fabric-env-missing.jar", a => {
+                using var w = new StreamWriter(a.CreateEntry("fabric.mod.json").Open());
+                w.Write(jsonMissing);
+            });
+            var metaMissing = JavaModMetadataService.ScanJar(jarMissing);
+            Assert.Equal(ModSideSupport.ClientAndServer, metaMissing.SideSupport);
+        }
+
+        [Fact]
+        public void ScanJar_QuiltEnvironment_MapsCorrectly()
+        {
+            // Quilt client environment
+            string jsonClient = @"{ ""quilt_loader"": { ""id"": ""qc"", ""environment"": ""client"", ""metadata"": { ""name"": ""QClient"" } } }";
+            string jarClient = CreateTempJar("quilt-env-client.jar", a => {
+                using var w = new StreamWriter(a.CreateEntry("quilt.mod.json").Open());
+                w.Write(jsonClient);
+            });
+            var metaClient = JavaModMetadataService.ScanJar(jarClient);
+            Assert.Equal(ModSideSupport.ClientOnly, metaClient.SideSupport);
+            Assert.True(metaClient.IsClientOnly);
+
+            // Quilt server environment
+            string jsonServer = @"{ ""quilt_loader"": { ""id"": ""qs"", ""environment"": ""server"", ""metadata"": { ""name"": ""QServer"" } } }";
+            string jarServer = CreateTempJar("quilt-env-server.jar", a => {
+                using var w = new StreamWriter(a.CreateEntry("quilt.mod.json").Open());
+                w.Write(jsonServer);
+            });
+            var metaServer = JavaModMetadataService.ScanJar(jarServer);
+            Assert.Equal(ModSideSupport.ServerOnly, metaServer.SideSupport);
+            Assert.False(metaServer.IsClientOnly);
+
+            // Quilt missing environment
+            string jsonMissing = @"{ ""quilt_loader"": { ""id"": ""qm"", ""metadata"": { ""name"": ""QMissing"" } } }";
+            string jarMissing = CreateTempJar("quilt-env-missing.jar", a => {
+                using var w = new StreamWriter(a.CreateEntry("quilt.mod.json").Open());
+                w.Write(jsonMissing);
+            });
+            var metaMissing = JavaModMetadataService.ScanJar(jarMissing);
+            Assert.Equal(ModSideSupport.ClientAndServer, metaMissing.SideSupport);
+        }
+
+        [Fact]
+        public void ScanJar_ForgeDisplayTestAndClientSideOnly_MapsCorrectly()
+        {
+            // displayTest = IGNORE_SERVER_VERSION
+            string toml1 = @"[[mods]]
+modId=""test1""
+displayTest=""IGNORE_SERVER_VERSION""";
+            string jar1 = CreateTempJar("forge-display-test-1.jar", a => {
+                using var w = new StreamWriter(a.CreateEntry("META-INF/mods.toml").Open());
+                w.Write(toml1);
+            });
+            var meta1 = JavaModMetadataService.ScanJar(jar1);
+            Assert.Equal(ModSideSupport.OptionalOnServer, meta1.SideSupport);
+            Assert.False(meta1.IsClientOnly);
+
+            // displayTest = NONE
+            string toml2 = @"[[mods]]
+modId=""test2""
+displayTest=""NONE""";
+            string jar2 = CreateTempJar("forge-display-test-2.jar", a => {
+                using var w = new StreamWriter(a.CreateEntry("META-INF/mods.toml").Open());
+                w.Write(toml2);
+            });
+            var meta2 = JavaModMetadataService.ScanJar(jar2);
+            Assert.Equal(ModSideSupport.OptionalOnServer, meta2.SideSupport);
+            Assert.False(meta2.IsClientOnly);
+
+            // clientSideOnly = true
+            string toml3 = @"[[mods]]
+modId=""test3""
+clientSideOnly=true";
+            string jar3 = CreateTempJar("forge-clientsideonly.jar", a => {
+                using var w = new StreamWriter(a.CreateEntry("META-INF/mods.toml").Open());
+                w.Write(toml3);
+            });
+            var meta3 = JavaModMetadataService.ScanJar(jar3);
+            Assert.Equal(ModSideSupport.ClientOnly, meta3.SideSupport);
+            Assert.True(meta3.IsClientOnly);
+
+            // No side info
+            string toml4 = @"[[mods]]
+modId=""test4""";
+            string jar4 = CreateTempJar("forge-noside.jar", a => {
+                using var w = new StreamWriter(a.CreateEntry("META-INF/mods.toml").Open());
+                w.Write(toml4);
+            });
+            var meta4 = JavaModMetadataService.ScanJar(jar4);
+            Assert.Equal(ModSideSupport.Unknown, meta4.SideSupport);
+            Assert.False(meta4.IsClientOnly);
         }
     }
 }

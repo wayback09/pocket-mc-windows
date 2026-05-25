@@ -31,6 +31,8 @@ namespace PocketMC.Desktop.Features.Marketplace.Models
         public string ReleaseType { get; set; } = "release";
         public List<string> Warnings { get; set; } = new();
         public List<MarketplaceDependency> Dependencies { get; set; } = new();
+        public string? ClientSide { get; set; }
+        public string? ServerSide { get; set; }
     }
 
     public interface IAddonProvider
@@ -47,5 +49,7 @@ namespace PocketMC.Desktop.Features.Marketplace.Models
         public string Title { get; set; } = "";
         public string Slug { get; set; } = "";
         public string? IconUrl { get; set; }
+        public string? ClientSide { get; set; }
+        public string? ServerSide { get; set; }
     }
 }

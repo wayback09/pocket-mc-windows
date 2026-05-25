@@ -527,6 +527,26 @@ namespace PocketMC.Desktop.Features.Settings
                     warnings.Add("This mod is currently disabled.");
                 }
 
+                var sideSupport = metadata.SideSupport;
+                if (entry != null && (!string.IsNullOrEmpty(entry.ClientSide) || !string.IsNullOrEmpty(entry.ServerSide)))
+                {
+                    var providerSide = MapModrinthSide(entry.ClientSide, entry.ServerSide);
+                    if (providerSide != ModSideSupport.Unknown)
+                    {
+                        sideSupport = providerSide;
+                    }
+                }
+
+                string sideLabel = sideSupport switch
+                {
+                    ModSideSupport.ClientOnly => "Client-only",
+                    ModSideSupport.ServerOnly => "Server-only",
+                    ModSideSupport.ClientAndServer => "Client + Server",
+                    ModSideSupport.OptionalOnServer => "Optional on server",
+                    ModSideSupport.OptionalOnClient => "Optional on client",
+                    _ => "Side unknown"
+                };
+
                 result.Add(new ModItemViewModel
                 {
                     Name = displayName,
@@ -542,7 +562,9 @@ namespace PocketMC.Desktop.Features.Settings
                     Icon = icon,
                     HasWarnings = warnings.Count > 0,
                     WarningText = string.Join(Environment.NewLine, warnings),
-                    IsClientOnly = metadata.IsClientOnly,
+                    SideSupport = sideSupport,
+                    SideLabel = sideLabel,
+                    IsClientOnly = sideSupport == ModSideSupport.ClientOnly,
                     IsMetadataUnknown = metadata.LoaderType == "Unknown",
                     IsDisabled = isDisabled
                 });
@@ -1138,6 +1160,34 @@ namespace PocketMC.Desktop.Features.Settings
                 _dialogService.ShowMessage("Error", ex.Message, DialogType.Error);
             }
         }
+
+        private static ModSideSupport MapModrinthSide(string? clientSide, string? serverSide)
+        {
+            if (string.IsNullOrEmpty(clientSide) && string.IsNullOrEmpty(serverSide))
+                return ModSideSupport.Unknown;
+
+            string client = clientSide?.ToLowerInvariant() ?? "";
+            string server = serverSide?.ToLowerInvariant() ?? "";
+
+            bool clientReqOrSup = client == "required" || client == "supported";
+            bool serverReqOrSup = server == "required" || server == "supported";
+            bool clientUnsupported = client == "unsupported";
+            bool serverUnsupported = server == "unsupported";
+
+            if (clientReqOrSup && serverReqOrSup)
+                return ModSideSupport.ClientAndServer;
+            
+            if (clientReqOrSup && serverUnsupported)
+                return ModSideSupport.ClientOnly;
+                
+            if (clientUnsupported && serverReqOrSup)
+                return ModSideSupport.ServerOnly;
+
+            if (server == "optional")
+                return ModSideSupport.OptionalOnServer;
+
+            return ModSideSupport.Unknown;
+        }
     }
 
     // ── View models ───────────────────────────────────────────────────────
@@ -1226,6 +1276,41 @@ namespace PocketMC.Desktop.Features.Settings
         public bool IsMetadataUnknown { get; set; }
         public bool IsDisabled { get; set; }
         public bool HasVersion => !string.IsNullOrEmpty(Version);
+
+        public string SideLabel { get; set; } = "Unknown";
+        public ModSideSupport SideSupport { get; set; }
+
+        public Brush SideBadgeBackground
+        {
+            get
+            {
+                string hex = SideSupport switch
+                {
+                    ModSideSupport.ClientOnly => "#2D1E24",
+                    ModSideSupport.ServerOnly => "#1E2838",
+                    ModSideSupport.ClientAndServer => "#1E382A",
+                    ModSideSupport.OptionalOnServer => "#38351E",
+                    _ => "#282828"
+                };
+                return (SolidColorBrush)new BrushConverter().ConvertFromString(hex)!;
+            }
+        }
+
+        public Brush SideBadgeForeground
+        {
+            get
+            {
+                string hex = SideSupport switch
+                {
+                    ModSideSupport.ClientOnly => "#F38BA8",
+                    ModSideSupport.ServerOnly => "#89B4FA",
+                    ModSideSupport.ClientAndServer => "#A6E3A1",
+                    ModSideSupport.OptionalOnServer => "#F9E2AF",
+                    _ => "#A6ADC8"
+                };
+                return (SolidColorBrush)new BrushConverter().ConvertFromString(hex)!;
+            }
+        }
     }
 
 }

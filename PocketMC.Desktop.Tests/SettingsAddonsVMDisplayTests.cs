@@ -253,6 +253,104 @@ namespace PocketMC.Desktop.Tests
             Assert.True(_dialogService.ShowMessageCalled);
             Assert.Equal("Server is Running", _dialogService.LastMessageTitle);
         }
+
+        [Fact]
+        public void LoadAddons_MapsSideSupportCorrectlyFromJarAndManifest()
+        {
+            // 1. Mod with environment client in fabric.mod.json
+            string clientMod = "client-mod.jar";
+            CreateDummyJar($"mods/{clientMod}", @"{
+                ""id"": ""client-mod"",
+                ""name"": ""Client Mod"",
+                ""version"": ""1.0.0"",
+                ""environment"": ""client""
+            }");
+
+            // 2. Mod with no environment (default ClientAndServer)
+            string hybridMod = "hybrid-mod.jar";
+            CreateDummyJar($"mods/{hybridMod}", @"{
+                ""id"": ""hybrid-mod"",
+                ""name"": ""Hybrid Mod"",
+                ""version"": ""1.0.0""
+            }");
+
+            // 3. Mod with no side in jar, but side in manifest (from Modrinth metadata)
+            string manifestMod = "manifest-mod.jar";
+            File.WriteAllText(Path.Combine(_tempDir, "mods", manifestMod), "dummy jar content");
+
+            var manifest = new AddonManifest();
+            manifest.Entries.Add(new AddonManifestEntry
+            {
+                Provider = "Modrinth",
+                ProjectId = "mod-123",
+                VersionId = "ver-123",
+                FileName = manifestMod,
+                ProjectTitle = "Manifest Mod",
+                DisplayName = "Manifest Mod",
+                ClientSide = "required",
+                ServerSide = "unsupported" // client_side required, server_side unsupported => ClientOnly
+            });
+
+            // 4. Mod with server_side optional (OptionalOnServer) in manifest
+            string optionalMod = "optional-mod.jar";
+            File.WriteAllText(Path.Combine(_tempDir, "mods", optionalMod), "dummy jar content");
+            manifest.Entries.Add(new AddonManifestEntry
+            {
+                Provider = "Modrinth",
+                ProjectId = "mod-456",
+                VersionId = "ver-456",
+                FileName = optionalMod,
+                ProjectTitle = "Optional Mod",
+                DisplayName = "Optional Mod",
+                ClientSide = "required",
+                ServerSide = "optional" // server_side optional => OptionalOnServer
+            });
+
+            WriteJsonFile("addon_manifest.json", System.Text.Json.JsonSerializer.Serialize(manifest));
+
+            var metadata = new InstanceMetadata
+            {
+                ServerType = "Fabric",
+                MinecraftVersion = "1.20.4"
+            };
+
+            var vm = new SettingsAddonsVM(
+                metadata,
+                _tempDir,
+                null!,
+                _dialogService,
+                null!,
+                _serviceProvider,
+                () => false,
+                () => {}
+            );
+
+            // Act
+            vm.LoadAddonsSync();
+
+            // Assert
+            Assert.Equal(4, vm.Mods.Count);
+
+            var item1 = vm.Mods.First(m => m.FileName == clientMod);
+            Assert.Equal(ModSideSupport.ClientOnly, item1.SideSupport);
+            Assert.True(item1.IsClientOnly);
+            Assert.Equal("Client-only", item1.SideLabel);
+
+            var item2 = vm.Mods.First(m => m.FileName == hybridMod);
+            Assert.Equal(ModSideSupport.ClientAndServer, item2.SideSupport);
+            Assert.False(item2.IsClientOnly);
+            Assert.Equal("Client + Server", item2.SideLabel);
+
+            var item3 = vm.Mods.First(m => m.FileName == manifestMod);
+            Assert.Equal(ModSideSupport.ClientOnly, item3.SideSupport);
+            Assert.True(item3.IsClientOnly);
+            Assert.Equal("Client-only", item3.SideLabel);
+
+            var item4 = vm.Mods.First(m => m.FileName == optionalMod);
+            Assert.Equal(ModSideSupport.OptionalOnServer, item4.SideSupport);
+            Assert.False(item4.IsClientOnly);
+            Assert.Equal("Optional on server", item4.SideLabel);
+        }
     }
 
     public class TestServiceProvider : IServiceProvider

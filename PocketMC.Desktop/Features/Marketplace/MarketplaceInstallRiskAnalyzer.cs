@@ -28,7 +28,7 @@ public static class MarketplaceInstallRiskAnalyzer
                                projectType.Contains("mod", StringComparison.OrdinalIgnoreCase);
         if (isCurseForgeMod)
         {
-            warnings.Add("CurseForge does not provide reliable server-side compatibility metadata here. Some mods may be client-only and can crash servers.");
+            warnings.Add("CurseForge does not provide reliable server-side metadata here.");
         }
 
         string searchable = $"{projectTitle} {fileName}";

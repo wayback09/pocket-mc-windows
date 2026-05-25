@@ -23,6 +23,8 @@ namespace PocketMC.Desktop.Features.Marketplace
         public string? ProjectSlug { get; set; }
         public string? IconUrl { get; set; }
         public string? DisplayName { get; set; }
+        public string? ClientSide { get; set; }
+        public string? ServerSide { get; set; }
     }
 
     public class AddonManifest
@@ -90,7 +92,9 @@ namespace PocketMC.Desktop.Features.Marketplace
             string fileName,
             string? projectTitle,
             string? iconUrl,
-            string? displayName)
+            string? displayName,
+            string? clientSide = null,
+            string? serverSide = null)
         {
             var manifest = await LoadManifestAsync(serverDir);
             string safeFileName = MarketplaceFileNameSanitizer.RequireSafeFileName(fileName);
@@ -102,6 +106,8 @@ namespace PocketMC.Desktop.Features.Marketplace
             projectTitle ??= existing?.ProjectTitle;
             iconUrl ??= existing?.IconUrl;
             displayName ??= existing?.DisplayName;
+            clientSide ??= existing?.ClientSide;
+            serverSide ??= existing?.ServerSide;
 
             // Remove any existing entry for this project to avoid duplicates (effectively an "update")
             manifest.Entries.RemoveAll(e => e.ProjectId == projectId && e.Provider == provider);
@@ -116,7 +122,9 @@ namespace PocketMC.Desktop.Features.Marketplace
                 ProjectTitle = projectTitle,
                 ProjectSlug = projectSlug,
                 IconUrl = iconUrl,
-                DisplayName = displayName
+                DisplayName = displayName,
+                ClientSide = clientSide,
+                ServerSide = serverSide
             });
 
             await SaveManifestAsync(serverDir, manifest);

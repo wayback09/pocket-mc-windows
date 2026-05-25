@@ -101,6 +101,12 @@ namespace PocketMC.Desktop.Features.Marketplace
 
         [JsonPropertyName("icon_url")]
         public string? IconUrl { get; set; }
+
+        [JsonPropertyName("client_side")]
+        public string ClientSide { get; set; } = "unknown";
+
+        [JsonPropertyName("server_side")]
+        public string ServerSide { get; set; } = "unknown";
     }
 
     public class ModrinthService : IAddonProvider
@@ -155,7 +161,7 @@ namespace PocketMC.Desktop.Features.Marketplace
             // We need project title for the UI summary
             var projectInfo = await GetProjectInfoAsync(slug);
 
-            return MapToMarketplaceVersion(mVersion, projectInfo?.Title ?? slug);
+            return MapToMarketplaceVersion(mVersion, projectInfo);
         }
 
         public async Task<MarketplaceVersion?> GetVersionByIdAsync(string versionId)
@@ -167,7 +173,7 @@ namespace PocketMC.Desktop.Features.Marketplace
                 if (mVersion == null) return null;
 
                 var projectInfo = await GetProjectInfoAsync(mVersion.ProjectId);
-                return MapToMarketplaceVersion(mVersion, projectInfo?.Title ?? mVersion.ProjectId);
+                return MapToMarketplaceVersion(mVersion, projectInfo);
             }
             catch
             {
@@ -204,7 +210,9 @@ namespace PocketMC.Desktop.Features.Marketplace
                     Id = project.Id,
                     Title = project.Title,
                     Slug = project.Slug,
-                    IconUrl = project.IconUrl
+                    IconUrl = project.IconUrl,
+                    ClientSide = project.ClientSide,
+                    ServerSide = project.ServerSide
                 };
             }
             catch
@@ -213,7 +221,7 @@ namespace PocketMC.Desktop.Features.Marketplace
             }
         }
 
-        private MarketplaceVersion MapToMarketplaceVersion(ModrinthVersion v, string projectTitle)
+        private MarketplaceVersion MapToMarketplaceVersion(ModrinthVersion v, MarketplaceProjectInfo? projectInfo)
         {
             var primaryFile = v.Files.FirstOrDefault(f => f.IsPrimary) ?? v.Files.FirstOrDefault() ?? new ModrinthFile();
             
@@ -222,12 +230,14 @@ namespace PocketMC.Desktop.Features.Marketplace
                 Id = v.Id,
                 Name = v.Name,
                 ProjectId = v.ProjectId,
-                ProjectTitle = projectTitle,
+                ProjectTitle = projectInfo?.Title ?? v.ProjectId,
                 FileName = primaryFile.FileName,
                 DownloadUrl = primaryFile.Url,
                 Hash = GetPreferredHash(primaryFile, out string? hashType),
                 HashType = hashType,
-                ReleaseType = string.IsNullOrWhiteSpace(v.VersionType) ? "release" : v.VersionType
+                ReleaseType = string.IsNullOrWhiteSpace(v.VersionType) ? "release" : v.VersionType,
+                ClientSide = projectInfo?.ClientSide,
+                ServerSide = projectInfo?.ServerSide
             };
 
             if (!result.ReleaseType.Equals("release", StringComparison.OrdinalIgnoreCase))

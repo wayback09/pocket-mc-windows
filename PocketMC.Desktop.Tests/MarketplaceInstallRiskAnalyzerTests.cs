@@ -13,7 +13,7 @@ public sealed class MarketplaceInstallRiskAnalyzerTests
             projectTitle: "Example Mod",
             fileName: "example.jar");
 
-        Assert.Contains(risk.Warnings, warning => warning.Contains("CurseForge does not provide reliable server-side compatibility metadata", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(risk.Warnings, warning => warning.Contains("CurseForge does not provide reliable server-side metadata", StringComparison.OrdinalIgnoreCase));
         Assert.True(risk.RequiresConfirmation);
     }
 

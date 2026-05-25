@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using PocketMC.Desktop.Features.Marketplace.Models;
 using PocketMC.Desktop.Models;
@@ -30,6 +33,8 @@ namespace PocketMC.Desktop.Features.Marketplace
         public string? Warning { get; set; }
         public string? IdAlias { get; set; }
         public bool IsCheckboxEnabled { get; set; }
+        public string? ClientSide { get; set; }
+        public string? ServerSide { get; set; }
     }
 
     public class DependencyResolverService
@@ -161,7 +166,9 @@ namespace PocketMC.Desktop.Features.Marketplace
                 IsSelected = isSelected,
                 IsCheckboxEnabled = isCheckboxEnabled,
                 IdAlias = normalizedId,
-                Warning = version.Warnings.FirstOrDefault()
+                Warning = version.Warnings.FirstOrDefault(),
+                ClientSide = version.ClientSide,
+                ServerSide = version.ServerSide
             };
 
             results.Add(resolved);

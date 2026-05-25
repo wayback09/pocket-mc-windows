@@ -302,7 +302,7 @@ namespace PocketMC.Desktop.Features.Marketplace
                     string? icon = isRoot ? vm.IconUrl : null;
                     string? disp = isRoot ? vm.Title : item.ProjectTitle;
 
-                    await InstallSingleFileAsync(item.DownloadUrl, item.FileName, vm.Provider, item.ProjectId, item.VersionId ?? "", item.Hash, item.HashType, title, icon, disp);
+                    await InstallSingleFileAsync(item.DownloadUrl, item.FileName, vm.Provider, item.ProjectId, item.VersionId ?? "", item.Hash, item.HashType, title, icon, disp, item.ClientSide, item.ServerSide);
                 }
 
                 vm.State = InstallState.Installed;
@@ -342,7 +342,9 @@ namespace PocketMC.Desktop.Features.Marketplace
             string? hashType,
             string? projectTitle = null,
             string? iconUrl = null,
-            string? displayName = null)
+            string? displayName = null,
+            string? clientSide = null,
+            string? serverSide = null)
         {
             if (_serverDir == null && !_isModpackMode) return;
             string safeFileName = MarketplaceDownloadPolicy.RequireCompatibleFileName(fileName, _compat, _isModpackMode);
@@ -381,7 +383,7 @@ namespace PocketMC.Desktop.Features.Marketplace
             // Register in manifest if not modpack
             if (_serverDir != null)
             {
-                await _manifestService.RegisterInstallAsync(_serverDir, providerName, projectId, versionId, safeFileName, projectTitle, iconUrl, displayName);
+                await _manifestService.RegisterInstallAsync(_serverDir, providerName, projectId, versionId, safeFileName, projectTitle, iconUrl, displayName, clientSide, serverSide);
             }
         }
     }

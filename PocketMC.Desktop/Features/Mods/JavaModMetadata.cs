@@ -3,6 +3,16 @@ using System.Collections.Generic;
 
 namespace PocketMC.Desktop.Features.Mods
 {
+    public enum ModSideSupport
+    {
+        Unknown,
+        ClientOnly,
+        ServerOnly,
+        ClientAndServer,
+        OptionalOnServer,
+        OptionalOnClient
+    }
+
     public sealed class JavaModMetadata
     {
         public string ModId { get; set; } = "";
@@ -13,7 +23,22 @@ namespace PocketMC.Desktop.Features.Mods
         public string LoaderType { get; set; } = "Unknown"; // Fabric, Quilt, Forge, NeoForge, Plugin, Unknown
         public string? IconEntryPath { get; set; }
         public byte[]? IconBytes { get; set; }
-        public bool IsClientOnly { get; set; }
+        
+        public ModSideSupport SideSupport { get; set; } = ModSideSupport.Unknown;
+        public string SideLabel { get; set; } = "Unknown";
+
+        public bool IsClientOnly
+        {
+            get => SideSupport == ModSideSupport.ClientOnly;
+            set
+            {
+                if (value)
+                    SideSupport = ModSideSupport.ClientOnly;
+                else if (SideSupport == ModSideSupport.ClientOnly)
+                    SideSupport = ModSideSupport.Unknown;
+            }
+        }
+
         public bool IsPluginInModsFolder { get; set; }
         public List<string> Dependencies { get; set; } = new();
         public List<string> Warnings { get; set; } = new();
