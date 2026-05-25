@@ -53,6 +53,7 @@ namespace PocketMC.Desktop.Features.Setup
         private readonly PocketMC.Desktop.Features.Diagnostics.DiagnosticReportingService _diagnosticService;
         private readonly PocketMC.Desktop.Features.Diagnostics.DependencyHealthMonitor _healthMonitor;
         private readonly IDiscordRpcService _discordRpcService;
+        private readonly WindowsStartupService _windowsStartupService;
         private bool _isInitializing = true;
         private readonly MouseWheelEventHandler _previewMouseWheelHandler;
         private bool _isForwardingMouseWheel;
@@ -68,6 +69,7 @@ namespace PocketMC.Desktop.Features.Setup
             PocketMC.Desktop.Features.Diagnostics.DiagnosticReportingService diagnosticService,
             PocketMC.Desktop.Features.Diagnostics.DependencyHealthMonitor healthMonitor,
             CloudBackupSettingsViewModel cloudBackups,
+            WindowsStartupService windowsStartupService,
             IDiscordRpcService discordRpcService)
         {
             InitializeComponent();
@@ -79,6 +81,7 @@ namespace PocketMC.Desktop.Features.Setup
             _updateService = updateService;
             _diagnosticService = diagnosticService;
             _healthMonitor = healthMonitor;
+            _windowsStartupService = windowsStartupService;
             _discordRpcService = discordRpcService;
             CloudBackups = cloudBackups;
 
@@ -130,6 +133,9 @@ namespace PocketMC.Desktop.Features.Setup
 
             // Set initial state
             ExternalBackupPathInput.Text = _applicationState.Settings.ExternalBackupDirectory ?? "";
+            ToggleStartWithWindows.IsChecked = _applicationState.Settings.StartWithWindows;
+            ToggleStartMinimizedToTray.IsChecked = _applicationState.Settings.StartMinimizedToTray;
+            ToggleMinimizeToTrayOnClose.IsChecked = _applicationState.Settings.MinimizeToTrayOnClose;
 
             // AI Settings
             AiApiKeyInput.Text = _applicationState.Settings.GetCurrentAiKey() ?? "";
@@ -172,6 +178,99 @@ namespace PocketMC.Desktop.Features.Setup
         {
             RemoveHandler(UIElement.PreviewMouseWheelEvent, _previewMouseWheelHandler);
             _healthMonitor.HealthChanged -= UpdateDependencyHealth;
+        }
+
+        private void ToggleStartWithWindows_Changed(object sender, RoutedEventArgs e)
+        {
+            if (_isInitializing) return;
+            SaveStartupBehaviorSettings();
+        }
+
+        private void ToggleStartMinimizedToTray_Changed(object sender, RoutedEventArgs e)
+        {
+            if (_isInitializing) return;
+            SaveStartupBehaviorSettings();
+        }
+
+        private void ToggleMinimizeToTrayOnClose_Changed(object sender, RoutedEventArgs e)
+        {
+            if (_isInitializing) return;
+
+            var settings = _applicationState.Settings;
+            bool previousMinimizeToTrayOnClose = settings.MinimizeToTrayOnClose;
+            settings.MinimizeToTrayOnClose = ToggleMinimizeToTrayOnClose.IsChecked == true;
+
+            try
+            {
+                _settingsManager.Save(settings);
+            }
+            catch (Exception ex)
+            {
+                settings.MinimizeToTrayOnClose = previousMinimizeToTrayOnClose;
+                RevertAppBehaviorToggles(
+                    settings.StartWithWindows,
+                    settings.StartMinimizedToTray,
+                    previousMinimizeToTrayOnClose);
+                _dialogService.ShowMessage(
+                    "Settings Error",
+                    $"Could not update app behavior settings:\n{ex.Message}",
+                    DialogType.Error);
+            }
+        }
+
+        private void SaveStartupBehaviorSettings()
+        {
+            var settings = _applicationState.Settings;
+            bool previousStartWithWindows = settings.StartWithWindows;
+            bool previousStartMinimizedToTray = settings.StartMinimizedToTray;
+            bool previousMinimizeToTrayOnClose = settings.MinimizeToTrayOnClose;
+
+            settings.StartWithWindows = ToggleStartWithWindows.IsChecked == true;
+            settings.StartMinimizedToTray = ToggleStartMinimizedToTray.IsChecked == true;
+            settings.MinimizeToTrayOnClose = ToggleMinimizeToTrayOnClose.IsChecked == true;
+
+            try
+            {
+                _windowsStartupService.Apply(settings);
+                _settingsManager.Save(settings);
+            }
+            catch (Exception ex)
+            {
+                settings.StartWithWindows = previousStartWithWindows;
+                settings.StartMinimizedToTray = previousStartMinimizedToTray;
+                settings.MinimizeToTrayOnClose = previousMinimizeToTrayOnClose;
+
+                try
+                {
+                    _windowsStartupService.Apply(settings);
+                }
+                catch
+                {
+                    // The visible toggle state still rolls back even if Windows rejects rollback too.
+                }
+
+                RevertAppBehaviorToggles(
+                    previousStartWithWindows,
+                    previousStartMinimizedToTray,
+                    previousMinimizeToTrayOnClose);
+                _dialogService.ShowMessage(
+                    "Windows Startup",
+                    $"Could not update Windows startup settings:\n{ex.Message}",
+                    DialogType.Error);
+            }
+        }
+
+        private void RevertAppBehaviorToggles(
+            bool startWithWindows,
+            bool startMinimizedToTray,
+            bool minimizeToTrayOnClose)
+        {
+            bool wasInitializing = _isInitializing;
+            _isInitializing = true;
+            ToggleStartWithWindows.IsChecked = startWithWindows;
+            ToggleStartMinimizedToTray.IsChecked = startMinimizedToTray;
+            ToggleMinimizeToTrayOnClose.IsChecked = minimizeToTrayOnClose;
+            _isInitializing = wasInitializing;
         }
 
         private void UpdateDependencyHealth()

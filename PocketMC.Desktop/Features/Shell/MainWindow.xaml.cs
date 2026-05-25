@@ -29,6 +29,7 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
     private Type _lastShellPageType = typeof(DashboardPage);
     private ITitleBarContextSource? _titleBarContextSource;
     private readonly Dictionary<Type, Page> _shellPageCache = new();
+    private bool _explicitExitRequested;
 
     public MainWindow(
         IServiceProvider serviceProvider,
@@ -296,11 +297,32 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
     public void ShowError(string title, string message) =>
         Infrastructure.AppDialog.ShowError(title, message);
 
-    public void ShutdownApplication() => Application.Current.Shutdown();
-    public void CloseApp() => Application.Current.Shutdown();
+    public void ShowMinimizedToTray()
+    {
+        ShowInTaskbar = false;
+        WindowState = WindowState.Minimized;
+        Show();
+        HideToTray();
+    }
+
+    public void ShutdownApplication() => RequestApplicationShutdown();
+    public void CloseApp() => RequestApplicationShutdown();
+
+    private void RequestApplicationShutdown()
+    {
+        _explicitExitRequested = true;
+        Application.Current.Shutdown();
+    }
+
+    private void HideToTray()
+    {
+        Hide();
+        _serviceProvider.GetRequiredService<TrayIconViewModel>().EnsureVisible();
+    }
 
     private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
+        bool downloadExitConfirmed = false;
         if (PocketMC.Desktop.Features.InstanceCreation.NewInstancePage.InstanceCreatePageIsOpen && 
             PocketMC.Desktop.Features.InstanceCreation.NewInstancePage.IsDownloadInProgress)
         {
@@ -313,14 +335,26 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
                 e.Cancel = true;
                 return;
             }
+
+            downloadExitConfirmed = true;
         }
 
         var processManager = _serviceProvider.GetRequiredService<ServerProcessManager>();
-        if (processManager.ActiveProcesses.Count > 0)
+        bool hasRunningServers = processManager.ActiveProcesses.Count > 0;
+        bool appShutdownStarted = Application.Current?.Dispatcher.HasShutdownStarted == true;
+        bool explicitExitRequested = _explicitExitRequested ||
+                                     appShutdownStarted ||
+                                     (downloadExitConfirmed && !hasRunningServers);
+        bool minimizeToTrayOnClose = _serviceProvider
+            .GetRequiredService<ApplicationState>()
+            .Settings
+            .MinimizeToTrayOnClose;
+
+        if (MainWindowCloseBehavior.Decide(explicitExitRequested, hasRunningServers, minimizeToTrayOnClose)
+            == MainWindowCloseAction.HideToTray)
         {
             e.Cancel = true;
-            Hide();
-            _serviceProvider.GetRequiredService<TrayIconViewModel>().EnsureVisible();
+            HideToTray();
             return;
         }
 
@@ -336,6 +370,7 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
     private void TrayOpen_Click(object sender, RoutedEventArgs e)
     {
         _serviceProvider.GetRequiredService<TrayIconViewModel>().Hide();
+        ShowInTaskbar = true;
         Show();
         if (WindowState == WindowState.Minimized) WindowState = WindowState.Normal;
         Activate();
@@ -343,6 +378,7 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
 
     private async void TrayExit_Click(object sender, RoutedEventArgs e)
     {
+        _explicitExitRequested = true;
         var lifecycle = _serviceProvider.GetRequiredService<IApplicationLifecycleService>();
         await lifecycle.GracefulShutdownAsync();
         Application.Current.Shutdown();

@@ -19,6 +19,9 @@ namespace PocketMC.Desktop.Models
         public string? PlayitConfigDirectory { get; set; }
         public PlayitPartnerConnection? PlayitPartnerConnection { get; set; }
         public bool HasCompletedFirstLaunch { get; set; }
+        public bool StartWithWindows { get; set; }
+        public bool StartMinimizedToTray { get; set; }
+        public bool MinimizeToTrayOnClose { get; set; }
         public string WindowBackdrop { get; set; } = "Acrylic";
         public string? CustomBackgroundImagePath { get; set; }
         public string? CurseForgeApiKey { get; set; }

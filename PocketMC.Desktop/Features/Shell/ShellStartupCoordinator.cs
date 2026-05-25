@@ -28,6 +28,7 @@ namespace PocketMC.Desktop.Features.Shell
         private readonly PocketMC.Desktop.Features.Diagnostics.DependencyHealthMonitor _healthMonitor;
         private readonly InstanceRegistry _registry;
         private readonly IDiscordRpcService _discordRpcService;
+        private readonly AppStartupOptions _startupOptions;
         private readonly ILogger<ShellStartupCoordinator> _logger;
         private IStartupShellHost? _host;
         private bool _startupServicesStarted;
@@ -45,6 +46,7 @@ namespace PocketMC.Desktop.Features.Shell
             PocketMC.Desktop.Features.Diagnostics.DependencyHealthMonitor healthMonitor,
             InstanceRegistry registry,
             IDiscordRpcService discordRpcService,
+            AppStartupOptions startupOptions,
             ILogger<ShellStartupCoordinator> logger)
         {
             _settingsManager = settingsManager;
@@ -57,6 +59,7 @@ namespace PocketMC.Desktop.Features.Shell
             _healthMonitor = healthMonitor;
             _registry = registry;
             _discordRpcService = discordRpcService;
+            _startupOptions = startupOptions;
             _logger = logger;
         }
 
@@ -158,7 +161,14 @@ namespace PocketMC.Desktop.Features.Shell
             else
             {
                 _host.NavigateToDashboard();
-                TriggerServerAutoStarts();
+                if (!_startupOptions.IsWindowsStartup)
+                {
+                    TriggerServerAutoStarts();
+                }
+                else
+                {
+                    _logger.LogInformation("Skipping server auto-start during Windows startup launch.");
+                }
             }
 
             if (!_playitStartupAttempted)

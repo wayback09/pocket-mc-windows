@@ -54,6 +54,82 @@
                     </StackPanel>
                 </ui:CardExpander>
 
+                <ui:CardExpander IsExpanded="False" Icon="{ui:SymbolIcon Settings24}" Margin="0,0,0,12">
+                    <ui:CardExpander.Header>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="App Behavior" FontSize="16" FontWeight="SemiBold"/>
+                                <TextBlock Text="Control startup and tray behavior." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
+                            </StackPanel>
+                        </Grid>
+                    </ui:CardExpander.Header>
+
+                    <StackPanel Margin="16,8,16,16">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Start PocketMC with Windows" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock Text="Register PocketMC in your current Windows account startup apps."
+                                           TextWrapping="Wrap"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                           FontSize="12"
+                                           Margin="0,4,24,0"/>
+                            </StackPanel>
+                            <ui:ToggleSwitch x:Name="ToggleStartWithWindows"
+                                             Grid.Column="1"
+                                             VerticalAlignment="Center"
+                                             Checked="ToggleStartWithWindows_Changed"
+                                             Unchecked="ToggleStartWithWindows_Changed"/>
+                        </Grid>
+
+                        <Grid Margin="0,12,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Start minimized to tray" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock Text="When Windows starts PocketMC, keep the dashboard hidden and show the tray icon."
+                                           TextWrapping="Wrap"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                           FontSize="12"
+                                           Margin="0,4,24,0"/>
+                            </StackPanel>
+                            <ui:ToggleSwitch x:Name="ToggleStartMinimizedToTray"
+                                             Grid.Column="1"
+                                             VerticalAlignment="Center"
+                                             Checked="ToggleStartMinimizedToTray_Changed"
+                                             Unchecked="ToggleStartMinimizedToTray_Changed"/>
+                        </Grid>
+
+                        <Grid Margin="0,12,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Minimize to tray on close" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock Text="Keep PocketMC running in the tray when the main window is closed."
+                                           TextWrapping="Wrap"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                           FontSize="12"
+                                           Margin="0,4,24,0"/>
+                            </StackPanel>
+                            <ui:ToggleSwitch x:Name="ToggleMinimizeToTrayOnClose"
+                                             Grid.Column="1"
+                                             VerticalAlignment="Center"
+                                             Checked="ToggleMinimizeToTrayOnClose_Changed"
+                                             Unchecked="ToggleMinimizeToTrayOnClose_Changed"/>
+                        </Grid>
+                    </StackPanel>
+                </ui:CardExpander>
+
                 <ui:CardExpander IsExpanded="False" Icon="{ui:SymbolIcon Color24}" Margin="0,0,0,12">
                     <ui:CardExpander.Header>
                         <Grid>

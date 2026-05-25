@@ -2,6 +2,7 @@ using System;
 using System.Net;
 using System.Net.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Dashboard;
@@ -47,7 +48,9 @@ namespace PocketMC.Desktop.Composition
             services.AddSingleton<IFileSystem, PhysicalFileSystem>();
             services.AddSingleton<IAssetProvider, WpfAssetProvider>();
             services.AddSingleton<IAppNavigationService, AppNavigationService>();
+            services.TryAddSingleton<AppStartupOptions>(AppStartupOptions.NormalLaunch);
             services.AddSingleton<SettingsManager>();
+            services.AddSingleton<WindowsStartupService>();
             services.AddSingleton<ApplicationState>();
             services.AddSingleton<JobObject>();
             services.AddSingleton<WindowsToastNotificationService>();

@@ -40,6 +40,7 @@ public partial class App : Application
     protected override async void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        AppStartupOptions startupOptions = AppStartupOptions.Parse(e.Args);
         WindowsToastNotificationService.RegisterApplication();
 
         _host = Host.CreateDefaultBuilder()
@@ -50,6 +51,7 @@ public partial class App : Application
             })
             .ConfigureServices(services =>
             {
+                services.AddSingleton<AppStartupOptions>(startupOptions);
                 services.AddCoreInfrastructure()
                         .AddInstanceManagement()
                         .AddTunneling()
@@ -70,7 +72,15 @@ public partial class App : Application
             appNavigationService.Initialize(mainWindow);
         }
         MainWindow = mainWindow;
-        mainWindow.Show();
+
+        if (startupOptions.ShouldStartMinimizedToTray)
+        {
+            mainWindow.ShowMinimizedToTray();
+        }
+        else
+        {
+            mainWindow.Show();
+        }
     }
 
     protected override async void OnExit(ExitEventArgs e)
