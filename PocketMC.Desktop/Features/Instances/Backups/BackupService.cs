@@ -465,16 +465,129 @@ public class BackupService
 
         var worldDir = Path.Combine(serverDir, worldFolderName);
 
-        onProgress?.Invoke("Removing current world...");
-        if (Directory.Exists(worldDir))
+        if (string.IsNullOrWhiteSpace(backupZipPath) || !File.Exists(backupZipPath))
         {
-            await FileUtils.CleanDirectoryAsync(worldDir);
+            throw new FileNotFoundException($"Backup ZIP file not found at '{backupZipPath}'");
         }
 
-        onProgress?.Invoke("Extracting backup...");
-        await SafeZipExtractor.ExtractAsync(backupZipPath, worldDir);
+        onProgress?.Invoke("Verifying backup integrity...");
+        try
+        {
+            using var archive = ZipFile.OpenRead(backupZipPath);
+            _ = archive.Entries.Count; // Force reading ZIP contents to ensure it is not corrupt
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidDataException("Backup ZIP file is corrupt or cannot be read.", ex);
+        }
+
+        var fileName = Path.GetFileName(backupZipPath);
+        var integrity = VerifyBackupIntegrity(serverDir, fileName, backupZipPath);
+        if (integrity == false)
+        {
+            throw new InvalidDataException("Backup ZIP file is corrupt (checksum mismatch).");
+        }
+
+        var stageDir = Path.Combine(serverDir, $".restore-stage-{Guid.NewGuid():N}");
+        if (Directory.Exists(stageDir))
+        {
+            await FileUtils.CleanDirectoryAsync(stageDir);
+        }
+
+        onProgress?.Invoke("Extracting backup to staging area...");
+        try
+        {
+            await SafeZipExtractor.ExtractAsync(backupZipPath, stageDir);
+        }
+        catch (Exception ex)
+        {
+            try { await FileUtils.CleanDirectoryAsync(stageDir); } catch { }
+            throw new InvalidDataException($"Failed to extract backup ZIP: {ex.Message}", ex);
+        }
+
+        onProgress?.Invoke("Validating world structure...");
+        if (!HasLevelDat(stageDir))
+        {
+            try { await FileUtils.CleanDirectoryAsync(stageDir); } catch { }
+            throw new InvalidDataException("Could not find level.dat in the backup. This doesn't appear to be a valid Minecraft world backup.");
+        }
+
+        var backupWorldDir = Path.Combine(serverDir, $".restore-backup-{DateTime.Now:yyyyMMddHHmmss}");
+        if (Directory.Exists(backupWorldDir))
+        {
+            try { await FileUtils.CleanDirectoryAsync(backupWorldDir); } catch { }
+        }
+
+        bool oldWorldExisted = Directory.Exists(worldDir);
+        if (oldWorldExisted)
+        {
+            onProgress?.Invoke("Backing up current world...");
+            try
+            {
+                Directory.Move(worldDir, backupWorldDir);
+            }
+            catch (Exception ex)
+            {
+                try { await FileUtils.CleanDirectoryAsync(stageDir); } catch { }
+                throw new IOException($"Failed to backup current world: {ex.Message}", ex);
+            }
+        }
+
+        onProgress?.Invoke("Applying restored world...");
+        try
+        {
+            Directory.Move(stageDir, worldDir);
+        }
+        catch (Exception ex)
+        {
+            onProgress?.Invoke("Restore failed, rolling back to original world...");
+            if (oldWorldExisted && Directory.Exists(backupWorldDir))
+            {
+                try
+                {
+                    if (Directory.Exists(worldDir))
+                    {
+                        try { await FileUtils.CleanDirectoryAsync(worldDir); } catch { }
+                    }
+                    Directory.Move(backupWorldDir, worldDir);
+                }
+                catch (Exception rollbackEx)
+                {
+                    _logger.LogCritical(rollbackEx, "CRITICAL: Failed to roll back original world after restore failure.");
+                }
+            }
+            try { await FileUtils.CleanDirectoryAsync(stageDir); } catch { }
+            throw new IOException($"Failed to move restored world into place: {ex.Message}", ex);
+        }
+
+        if (oldWorldExisted && Directory.Exists(backupWorldDir))
+        {
+            onProgress?.Invoke("Cleaning up backup...");
+            try
+            {
+                await FileUtils.CleanDirectoryAsync(backupWorldDir);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to clean up backup world directory at {BackupWorldDir}", backupWorldDir);
+            }
+        }
 
         onProgress?.Invoke("World restored successfully!");
+    }
+
+    private bool HasLevelDat(string dir)
+    {
+        if (File.Exists(Path.Combine(dir, "level.dat")))
+            return true;
+
+        foreach (var subDir in Directory.GetDirectories(dir))
+        {
+            if (HasLevelDat(subDir))
+                return true;
+        }
+
+        return false;
     }
 
     private void PruneOldBackups(string backupDirectory, int maxToKeep)
