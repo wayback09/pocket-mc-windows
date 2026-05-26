@@ -2,7 +2,7 @@
 
 This file summarizes the Pocket MC Desktop release line from `v1.0.0` to `v1.8.0`.
 
-## PocketMC Windows v1.8.0
+## v1.8.0
 
 ### Highlights
 
