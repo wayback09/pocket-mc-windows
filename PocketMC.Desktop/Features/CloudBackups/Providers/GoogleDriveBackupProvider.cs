@@ -228,11 +228,23 @@ public class GoogleDriveBackupProvider : ICloudBackupProvider
         }
     }
 
+    private static string EscapeDriveQueryStringLiteral(string value)
+    {
+        if (value == null) throw new ArgumentNullException(nameof(value));
+        return value.Replace("\\", "\\\\", StringComparison.Ordinal)
+            .Replace("'", "\\'", StringComparison.Ordinal);
+    }
+
+    private static string FolderNameEqualsQuery(string folderName)
+    {
+        return $"mimeType='application/vnd.google-apps.folder' and name='{EscapeDriveQueryStringLiteral(folderName)}' and trashed=false";
+    }
+
     private async Task<string> GetOrCreateFolderAsync(DriveService service, string folderName, string? parentId = null)
     {
         var request = service.Files.List();
-        request.Q = $"mimeType='application/vnd.google-apps.folder' and name='{folderName}' and trashed=false";
-        if (parentId != null) request.Q += $" and '{parentId}' in parents";
+        request.Q = FolderNameEqualsQuery(folderName);
+        if (parentId != null) request.Q += $" and '{EscapeDriveQueryStringLiteral(parentId)}' in parents";
         else request.Q += " and 'root' in parents";
 
         var result = await request.ExecuteAsync();
@@ -324,7 +336,7 @@ public class GoogleDriveBackupProvider : ICloudBackupProvider
         string instanceFolderName = $"{CloudPathSanitizer.SanitizeFolderName(instanceName)}-{instanceId}";
         
         var folderReq = service.Files.List();
-        folderReq.Q = $"mimeType='application/vnd.google-apps.folder' and name='{instanceFolderName}' and trashed=false";
+        folderReq.Q = FolderNameEqualsQuery(instanceFolderName);
         var folderRes = await folderReq.ExecuteAsync(ct);
         
         if (folderRes.Files == null || folderRes.Files.Count == 0) return Array.Empty<CloudRemoteBackupItem>();
@@ -332,7 +344,7 @@ public class GoogleDriveBackupProvider : ICloudBackupProvider
         string folderId = folderRes.Files[0].Id;
 
         var listReq = service.Files.List();
-        listReq.Q = $"'{folderId}' in parents and trashed=false";
+        listReq.Q = $"'{EscapeDriveQueryStringLiteral(folderId)}' in parents and trashed=false";
         listReq.Fields = "files(id, name, size, createdTime)";
         
         var listRes = await listReq.ExecuteAsync(ct);

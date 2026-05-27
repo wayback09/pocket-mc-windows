@@ -110,7 +110,7 @@ public class ServerProcess : IDisposable
         WorkingDirectory = workingDir;
         CloseSessionLog();
         InitializeSessionLog(workingDir);
-        CleanSessionLock(workingDir);
+        InspectSessionLock(workingDir);
 
         try
         {
@@ -152,20 +152,23 @@ public class ServerProcess : IDisposable
         catch (Exception ex) { _logger.LogWarning(ex, "Failed to initialize session log."); }
     }
 
-    private void CleanSessionLock(string workingDir)
+    private void InspectSessionLock(string workingDir)
     {
         try
         {
             string lockPath = Path.Combine(workingDir, "world", "session.lock");
-            if (File.Exists(lockPath))
+            if (!File.Exists(lockPath))
             {
-                _logger.LogInformation("Found stale session.lock for instance {InstanceId}. Cleaning up...", InstanceId);
-                File.Delete(lockPath);
+                return;
             }
+
+            string warning = "[PocketMC] Warning: world/session.lock already exists. PocketMC will not delete it automatically because that can hide an active world lock and risk corruption. If startup fails, stop any other server using this world or remove the stale lock manually only after verifying the world is not in use.";
+            _logger.LogWarning("Detected existing Minecraft session.lock for instance {InstanceId} at {LockPath}. PocketMC will not delete it automatically.", InstanceId, lockPath);
+            AppendOutput(warning);
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to clean session.lock for instance {InstanceId}. Launch might fail.", InstanceId);
+            _logger.LogWarning(ex, "Failed to inspect session.lock for instance {InstanceId}. Launch will continue without deleting lock files.", InstanceId);
         }
     }
 
@@ -277,7 +280,18 @@ public class ServerProcess : IDisposable
                 }
             }
         }
-        catch { }
+        catch (ObjectDisposedException)
+        {
+            _logger.LogDebug("Server process stream closed for instance {InstanceId}.", InstanceId);
+        }
+        catch (IOException ex)
+        {
+            _logger.LogDebug(ex, "Server process stream ended for instance {InstanceId}.", InstanceId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Server process stream reader failed for instance {InstanceId}. IsErrorStream={IsErrorStream}", InstanceId, isError);
+        }
     }
 
     private void AppendOutput(string line, bool isError = false)
