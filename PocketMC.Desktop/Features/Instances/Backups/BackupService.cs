@@ -240,27 +240,21 @@ public class BackupService
 
     private async Task<LocalBackupResult> CreateLocalBackupAsync(InstanceMetadata metadata, string serverDir, Action<string>? onProgress)
     {
-        string worldFolderName = "world";
-        if (metadata.ServerType?.StartsWith("Pocketmine", StringComparison.OrdinalIgnoreCase) == true)
+        string worldDir;
+        string worldDisplayName;
+        try
         {
-            worldFolderName = "worlds";
+            worldDir = ResolveWorldDirectory(metadata, serverDir);
+            worldDisplayName = Path.GetRelativePath(serverDir, worldDir);
         }
-        else if (metadata.ServerType?.StartsWith("Bedrock", StringComparison.OrdinalIgnoreCase) == true)
+        catch (Exception ex)
         {
-            if (_configService.TryGetProperty(serverDir, "level-name", out var levelName) && !string.IsNullOrWhiteSpace(levelName))
-            {
-                worldFolderName = Path.Combine("worlds", levelName.Trim());
-            }
-            else
-            {
-                worldFolderName = Path.Combine("worlds", "Bedrock level");
-            }
+            return new LocalBackupResult { Success = false, Error = ex };
         }
 
-        var worldDir = Path.Combine(serverDir, worldFolderName);
         if (!Directory.Exists(worldDir))
         {
-            return new LocalBackupResult { Success = false, Error = new DirectoryNotFoundException($"World folder '{worldFolderName}' not found in server directory.") };
+            return new LocalBackupResult { Success = false, Error = new DirectoryNotFoundException($"World folder '{worldDisplayName}' not found in server directory.") };
         }
 
         var backupDir = GetBackupDirectory(serverDir, metadata);
@@ -356,6 +350,55 @@ public class BackupService
         }
     }
 
+    private string ResolveWorldDirectory(InstanceMetadata metadata, string serverDir)
+    {
+        if (metadata.ServerType?.StartsWith("Pocketmine", StringComparison.OrdinalIgnoreCase) == true)
+        {
+            return Path.Combine(serverDir, "worlds");
+        }
+
+        if (metadata.ServerType?.StartsWith("Bedrock", StringComparison.OrdinalIgnoreCase) == true)
+        {
+            string levelName = "Bedrock level";
+            if (_configService.TryGetProperty(serverDir, "level-name", out var configuredLevelName) &&
+                !string.IsNullOrWhiteSpace(configuredLevelName))
+            {
+                levelName = configuredLevelName.Trim();
+            }
+
+            string safeLevelName = ValidateBedrockLevelName(levelName);
+            string worldsRoot = Path.Combine(serverDir, "worlds");
+            string? resolved = PathSafety.ValidateContainedPath(worldsRoot, safeLevelName);
+            if (resolved == null)
+            {
+                throw new InvalidDataException("Bedrock level-name resolves outside the worlds directory. Refusing backup/restore for safety.");
+            }
+
+            return resolved;
+        }
+
+        return Path.Combine(serverDir, "world");
+    }
+
+    internal static string ValidateBedrockLevelName(string levelName)
+    {
+        string trimmed = levelName.Trim();
+        if (string.IsNullOrWhiteSpace(trimmed))
+        {
+            throw new InvalidDataException("Bedrock level-name cannot be empty.");
+        }
+
+        if (trimmed.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 ||
+            trimmed.IndexOfAny(new[] { '/', '\\', ':', '\0', '\r', '\n', '\t' }) >= 0 ||
+            PathSafety.ContainsTraversal(trimmed) ||
+            Path.IsPathRooted(trimmed))
+        {
+            throw new InvalidDataException($"Bedrock level-name '{trimmed}' is not safe to use as a world folder name.");
+        }
+
+        return trimmed;
+    }
+
     private async Task ReplicateToExternalDirectoryAsync(InstanceMetadata metadata, string zipPath, Action<string>? onProgress)
     {
         var appSettings = _settingsManager.Load();
@@ -446,24 +489,7 @@ public class BackupService
 
     public async Task RestoreBackupAsync(InstanceMetadata metadata, string backupZipPath, string serverDir, Action<string>? onProgress = null)
     {
-        string worldFolderName = "world";
-        if (metadata.ServerType?.StartsWith("Pocketmine", StringComparison.OrdinalIgnoreCase) == true)
-        {
-            worldFolderName = "worlds";
-        }
-        else if (metadata.ServerType?.StartsWith("Bedrock", StringComparison.OrdinalIgnoreCase) == true)
-        {
-            if (_configService.TryGetProperty(serverDir, "level-name", out var levelName) && !string.IsNullOrWhiteSpace(levelName))
-            {
-                worldFolderName = Path.Combine("worlds", levelName.Trim());
-            }
-            else
-            {
-                worldFolderName = Path.Combine("worlds", "Bedrock level");
-            }
-        }
-
-        var worldDir = Path.Combine(serverDir, worldFolderName);
+        string worldDir = ResolveWorldDirectory(metadata, serverDir);
 
         if (string.IsNullOrWhiteSpace(backupZipPath) || !File.Exists(backupZipPath))
         {
