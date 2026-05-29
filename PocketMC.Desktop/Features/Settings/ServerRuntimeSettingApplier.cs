@@ -59,23 +59,27 @@ public sealed class ServerRuntimeSettingApplier
     /// <summary>
     /// Add a player to the whitelist/allowlist by name. Requires server online.
     /// Java/PocketMine: "whitelist add". BDS: "allowlist add".
-    /// Player name is always quoted to handle names with spaces (e.g., Bedrock gamertags).
+    /// Player name is quoted only for Bedrock to handle spaces (e.g., gamertags).
     /// </summary>
     public Task ApplyWhitelistAddAsync(Guid instanceId, string playerName)
     {
-        string prefix = GetWhitelistCommandPrefix(instanceId);
-        return SendIfOnlineAsync(instanceId, $"{prefix} add {QuotePlayerName(playerName)}");
+        bool isBedrock = IsBedrock(instanceId);
+        string prefix = isBedrock ? "allowlist" : "whitelist";
+        string formattedName = isBedrock ? QuotePlayerName(playerName) : playerName;
+        return SendIfOnlineAsync(instanceId, $"{prefix} add {formattedName}");
     }
 
     /// <summary>
     /// Remove a player from the whitelist/allowlist by name. Requires server online.
     /// Java/PocketMine: "whitelist remove". BDS: "allowlist remove".
-    /// Player name is always quoted to handle names with spaces (e.g., Bedrock gamertags).
+    /// Player name is quoted only for Bedrock to handle spaces (e.g., gamertags).
     /// </summary>
     public Task ApplyWhitelistRemoveAsync(Guid instanceId, string playerName)
     {
-        string prefix = GetWhitelistCommandPrefix(instanceId);
-        return SendIfOnlineAsync(instanceId, $"{prefix} remove {QuotePlayerName(playerName)}");
+        bool isBedrock = IsBedrock(instanceId);
+        string prefix = isBedrock ? "allowlist" : "whitelist";
+        string formattedName = isBedrock ? QuotePlayerName(playerName) : playerName;
+        return SendIfOnlineAsync(instanceId, $"{prefix} remove {formattedName}");
     }
 
 
@@ -86,18 +90,18 @@ public sealed class ServerRuntimeSettingApplier
     public Task ApplyDefaultGamemodeAsync(Guid instanceId, string gamemode)
         => SendIfOnlineAsync(instanceId, $"defaultgamemode {gamemode}");
 
+    private bool IsBedrock(Guid instanceId)
+    {
+        InstanceMetadata? metadata = _instanceRegistry.GetById(instanceId);
+        return metadata != null && CommandFormatter.IsBedrock(metadata.ServerType);
+    }
+
     /// <summary>
     /// Returns "allowlist" for Bedrock Dedicated Server, "whitelist" for all other engines.
     /// </summary>
     private string GetWhitelistCommandPrefix(Guid instanceId)
     {
-        InstanceMetadata? metadata = _instanceRegistry.GetById(instanceId);
-        if (metadata != null && CommandFormatter.IsBedrock(metadata.ServerType))
-        {
-            return "allowlist";
-        }
-
-        return "whitelist";
+        return IsBedrock(instanceId) ? "allowlist" : "whitelist";
     }
 
     /// <summary>

@@ -684,9 +684,10 @@ namespace PocketMC.Desktop.Features.Console
 
         private void BtnPlayers_Click(object sender, RoutedEventArgs e)
         {
-            if (!IsLiveProcess || _serverProcess == null) return;
-
-            var viewModel = ActivatorUtilities.CreateInstance<PlayerManagementViewModel>(_serviceProvider, _metadata, _serverProcess);
+            var viewModel = _serverProcess != null
+                ? ActivatorUtilities.CreateInstance<PlayerManagementViewModel>(_serviceProvider, _metadata, _serverProcess)
+                : ActivatorUtilities.CreateInstance<PlayerManagementViewModel>(_serviceProvider, _metadata);
+                
             var page = ActivatorUtilities.CreateInstance<PlayerManagementPage>(_serviceProvider, viewModel);
             _navigationService.NavigateToDetailPage(page, $"Players: {_metadata.Name}", DetailRouteKind.PlayerManagement, DetailBackNavigation.PreviousDetail);
         }

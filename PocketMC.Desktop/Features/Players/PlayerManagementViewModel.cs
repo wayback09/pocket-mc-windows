@@ -43,7 +43,7 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
     private readonly ServerRuntimeSettingApplier _runtimeApplier;
     private readonly ServerConfigurationService _configService;
     private readonly InstanceMetadata _metadata;
-    private readonly ServerProcess _serverProcess;
+    private readonly ServerProcess? _serverProcess;
     private readonly ILogger<PlayerManagementViewModel> _logger;
     private readonly PlayerDataService _playerDataService;
     private readonly BedrockPlayerDataService _bedrockPlayerDataService;
@@ -65,6 +65,7 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
     private string _lastUpdatedText = "Waiting for player list";
     private bool _isWhitelistEnabled;
     private string _whitelistAddUsername = string.Empty;
+    private readonly string _workingDirectory;
 
     public PlayerManagementViewModel(
         IAppNavigationService navigationService,
@@ -76,8 +77,26 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
         ServerRuntimeSettingApplier runtimeApplier,
         ServerConfigurationService configService,
         ApplicationState applicationState,
+        InstanceRegistry registry,
         InstanceMetadata metadata,
-        ServerProcess serverProcess,
+        ILogger<PlayerManagementViewModel> logger)
+        : this(navigationService, dialogService, dispatcher, stateFileService, banSidecarService, whitelistService, runtimeApplier, configService, applicationState, registry, metadata, null, logger)
+    {
+    }
+
+    public PlayerManagementViewModel(
+        IAppNavigationService navigationService,
+        IDialogService dialogService,
+        IAppDispatcher dispatcher,
+        ServerStateFileService stateFileService,
+        BanSidecarService banSidecarService,
+        WhitelistService whitelistService,
+        ServerRuntimeSettingApplier runtimeApplier,
+        ServerConfigurationService configService,
+        ApplicationState applicationState,
+        InstanceRegistry registry,
+        InstanceMetadata metadata,
+        ServerProcess? serverProcess,
         ILogger<PlayerManagementViewModel> logger)
     {
         _navigationService = navigationService;
@@ -91,15 +110,16 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
         _metadata = metadata;
         _serverProcess = serverProcess;
         _logger = logger;
-        _playerDataService = new PlayerDataService(_serverProcess.WorkingDirectory);
+        _workingDirectory = registry.GetPath(metadata.Id) ?? string.Empty;
+        _playerDataService = new PlayerDataService(_workingDirectory);
         _bedrockPlayerDataService = new BedrockPlayerDataService(
             applicationState.GetRequiredAppRootPath(),
-            _serverProcess.WorkingDirectory);
+            _workingDirectory);
 
         // Read initial whitelist state from config (Java uses "white-list", Bedrock uses "allow-list")
-        if (configService.TryGetProperty(_serverProcess.WorkingDirectory, "white-list", out string? wlValue))
+        if (configService.TryGetProperty(_workingDirectory, "white-list", out string? wlValue))
             _isWhitelistEnabled = string.Equals(wlValue, "true", StringComparison.OrdinalIgnoreCase);
-        else if (configService.TryGetProperty(_serverProcess.WorkingDirectory, "allow-list", out string? alValue))
+        else if (configService.TryGetProperty(_workingDirectory, "allow-list", out string? alValue))
             _isWhitelistEnabled = string.Equals(alValue, "true", StringComparison.OrdinalIgnoreCase);
 
         BackCommand = new RelayCommand(_ => NavigateBack());
@@ -109,9 +129,12 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
         RemoveFromWhitelistCommand = new AsyncRelayCommand(param => RemoveFromWhitelistAsync(param as string));
         ReloadWhitelistCommand = new AsyncRelayCommand(_ => ReloadWhitelistAsync(), _ => IsServerOnline);
 
-        _serverProcess.OnOnlinePlayersUpdated += OnOnlinePlayersUpdated;
-        _serverProcess.OnOutputLine += OnOutputLine;
-        _serverProcess.OnStateChanged += OnServerStateChanged;
+        if (_serverProcess != null)
+        {
+            _serverProcess.OnOnlinePlayersUpdated += OnOnlinePlayersUpdated;
+            _serverProcess.OnOutputLine += OnOutputLine;
+            _serverProcess.OnStateChanged += OnServerStateChanged;
+        }
         _stateWatcher = IsBedrock
             ? EmptyDisposable.Instance
             : _stateFileService.WatchForChanges(_metadata, () => _ = RefreshPersistentStateAsync());
@@ -127,7 +150,7 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
         _lastUpdatedTimer.Start();
 
         _ = ImportBedrockPlayerMapFromOutputBufferAsync();
-        ApplyOnlinePlayers(_serverProcess.OnlinePlayerNames, _serverProcess.LastPlayerListUpdatedUtc);
+        ApplyOnlinePlayers(_serverProcess?.OnlinePlayerNames ?? Array.Empty<string>(), _serverProcess?.LastPlayerListUpdatedUtc ?? DateTime.UtcNow);
         _ = RefreshPersistentStateAsync();
         _ = LoadWhitelistAsync();
         _ = RequestPlayerListAsync();
@@ -149,7 +172,7 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
     public bool IsPocketMine => CommandFormatter.IsPocketMine(_metadata.ServerType);
     private bool UsesJavaNativePlayerData => !IsBedrock && !IsPocketMine;
     private bool UsesSidecarGamemode => IsBedrock || IsPocketMine;
-    public bool IsServerOnline => _serverProcess.State == ServerState.Online;
+    public bool IsServerOnline => _serverProcess?.State == ServerState.Online;
     public bool HasOnlinePlayers => OnlinePlayers.Count > 0;
     public bool HasBannedPlayers => BannedPlayers.Count > 0;
     public bool HasWhitelistedPlayers => WhitelistedPlayers.Count > 0;
@@ -197,9 +220,9 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
         private set => SetProperty(ref _lastUpdatedText, value);
     }
 
-    public string ServerStatusText => _serverProcess.State switch
+    public string ServerStatusText => _serverProcess?.State switch
     {
-        ServerState.Online => "Online",
+        ServerState.Online => "● Online",
         ServerState.Installing => "Installing",
         ServerState.Starting => "Starting",
         ServerState.Stopping => "Stopping",
@@ -207,7 +230,7 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
         _ => "Stopped"
     };
 
-    public Brush ServerStatusBrush => _serverProcess.State switch
+    public Brush ServerStatusBrush => _serverProcess?.State switch
     {
         ServerState.Online => Brushes.LimeGreen,
         ServerState.Installing => Brushes.DeepSkyBlue,
@@ -231,7 +254,7 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
 
         try
         {
-            await _serverProcess.WriteListCommandAsync();
+            await _serverProcess!.WriteListCommandAsync();
         }
         catch (Exception ex)
         {
@@ -683,7 +706,7 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
 
         try
         {
-            await _bedrockPlayerDataService.ImportPlayerMapFromLogLinesAsync(_serverProcess.OutputBuffer.ToArray());
+            await _bedrockPlayerDataService.ImportPlayerMapFromLogLinesAsync(_serverProcess?.OutputBuffer.ToArray() ?? Array.Empty<string>());
         }
         catch (Exception ex)
         {
@@ -908,7 +931,7 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
     {
         try
         {
-            await _serverProcess.WriteInputAsync(command);
+            await _serverProcess!.WriteInputAsync(command);
         }
         catch (Exception ex)
         {
@@ -1139,7 +1162,7 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
 
         // Bedrock uses "allow-list", Java/PocketMine use "white-list"
         string propertyKey = IsBedrock ? "allow-list" : "white-list";
-        _configService.SaveProperty(_serverProcess.WorkingDirectory, propertyKey, newValue ? "true" : "false");
+        _configService.SaveProperty(_workingDirectory, propertyKey, newValue ? "true" : "false");
 
         if (IsServerOnline)
         {
@@ -1238,9 +1261,12 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
 
         _pendingGamemodePlayers.Clear();
         _stateRefreshLock.Dispose();
-        _serverProcess.OnOnlinePlayersUpdated -= OnOnlinePlayersUpdated;
-        _serverProcess.OnOutputLine -= OnOutputLine;
-        _serverProcess.OnStateChanged -= OnServerStateChanged;
+        if (_serverProcess != null)
+        {
+            _serverProcess.OnOnlinePlayersUpdated -= OnOnlinePlayersUpdated;
+            _serverProcess.OnOutputLine -= OnOutputLine;
+            _serverProcess.OnStateChanged -= OnServerStateChanged;
+        }
     }
 
     private sealed class PendingGamemodeChange : IDisposable

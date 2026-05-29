@@ -333,9 +333,11 @@ namespace PocketMC.Desktop.Features.Dashboard
         public void OpenPlayers(InstanceCardViewModel vm)
         {
             var process = _lifecycleService.GetProcess(vm.Id);
-            if (process == null) return;
-
-            var viewModel = ActivatorUtilities.CreateInstance<PlayerManagementViewModel>(_serviceProvider, vm.Metadata, process);
+            
+            var viewModel = process != null
+                ? ActivatorUtilities.CreateInstance<PlayerManagementViewModel>(_serviceProvider, vm.Metadata, process)
+                : ActivatorUtilities.CreateInstance<PlayerManagementViewModel>(_serviceProvider, vm.Metadata);
+                
             var page = ActivatorUtilities.CreateInstance<PlayerManagementPage>(_serviceProvider, viewModel);
             _navigationService.NavigateToDetailPage(page, $"Players: {vm.Name}", DetailRouteKind.PlayerManagement, DetailBackNavigation.Dashboard, true);
         }
