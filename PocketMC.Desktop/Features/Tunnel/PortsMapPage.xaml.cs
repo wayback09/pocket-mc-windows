@@ -125,12 +125,13 @@ namespace PocketMC.Desktop.Features.Tunnel
             if (parameter is Guid serverId)
             {
                 var server = _instanceRegistry.GetById(serverId);
-                if (server == null) return;
+                var instancePath = _instanceRegistry.GetPath(serverId);
+                if (server == null || string.IsNullOrEmpty(instancePath)) return;
 
                 var process = _lifecycleService.GetProcess(serverId);
                 if (process != null)
                 {
-                    var consolePage = ActivatorUtilities.CreateInstance<ServerConsolePage>(_serviceProvider, server, process);
+                    var consolePage = ActivatorUtilities.CreateInstance<ServerConsolePage>(_serviceProvider, server, process, instancePath);
                     _navigationService.NavigateToDetailPage(consolePage, $"Console: {server.Name}", DetailRouteKind.ServerConsole, DetailBackNavigation.Tunnel, true);
                 }
                 else
