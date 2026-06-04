@@ -661,7 +661,7 @@ public sealed class InstanceImportService : IInstanceImportService
 
     /// <summary>
     /// Attempts to restore a Java addon from its packaged file in the extracted ZIP.
-    /// Returns true if the file was found and restored, false if it needs to be downloaded.
+    /// Returns true if the packaged file was found and restored; otherwise false.
     /// </summary>
     private async Task<bool> TryRestorePackagedJavaAddonAsync(
         InstanceImportStagingResult stagingResult,
@@ -728,7 +728,7 @@ public sealed class InstanceImportService : IInstanceImportService
         if (addon.Size.HasValue && addon.Size.Value > 0 && fileInfo.Length != addon.Size.Value)
         {
             _logger.LogWarning(
-                "Packaged file size mismatch for {AddonName}: expected {Expected} bytes, got {Actual} bytes. Falling back to download.",
+                "Packaged file size mismatch for {AddonName}: expected {Expected} bytes, got {Actual} bytes. Marking packaged add-on restore as failed.",
                 addon.Name, addon.Size.Value, fileInfo.Length);
             return false;
         }
@@ -930,25 +930,7 @@ public sealed class InstanceImportService : IInstanceImportService
         return directory;
     }
 
-    private static string RequireSafeAddonFileName(string fileName, params string[] allowedExtensions)
-    {
-        string safeName = Path.GetFileName(fileName);
-        if (string.IsNullOrWhiteSpace(safeName) ||
-            !safeName.Equals(fileName, StringComparison.Ordinal) ||
-            safeName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 ||
-            safeName.Contains(':', StringComparison.Ordinal))
-        {
-            throw new InvalidDataException($"Add-on file name '{fileName}' is unsafe.");
-        }
 
-        string extension = Path.GetExtension(safeName);
-        if (!allowedExtensions.Any(allowed => extension.Equals(allowed, StringComparison.OrdinalIgnoreCase)))
-        {
-            throw new InvalidDataException($"Add-on file '{fileName}' has an unsupported extension.");
-        }
-
-        return safeName;
-    }
 
     private static bool IsInstallerBasedJavaServer(string serverType) =>
         serverType.Equals("Forge", StringComparison.OrdinalIgnoreCase) ||
@@ -996,36 +978,7 @@ public sealed class InstanceImportService : IInstanceImportService
         });
     }
 
-    private static double CalculateAddonOverallProgress(int completed, int total)
-    {
-        if (total <= 0)
-        {
-            return 100;
-        }
 
-        return 40 + Math.Clamp(completed * 60d / total, 0, 60);
-    }
-
-    private static HashSpec ResolveHash(string? versionHash, string? versionHashType, string? manifestHash)
-    {
-        if (!string.IsNullOrWhiteSpace(versionHash))
-        {
-            return new HashSpec(versionHash, versionHashType);
-        }
-
-        if (string.IsNullOrWhiteSpace(manifestHash))
-        {
-            return new HashSpec(null, null);
-        }
-
-        int separatorIndex = manifestHash.IndexOf('-', StringComparison.Ordinal);
-        if (separatorIndex > 0 && separatorIndex < manifestHash.Length - 1)
-        {
-            return new HashSpec(manifestHash[(separatorIndex + 1)..], manifestHash[..separatorIndex]);
-        }
-
-        return new HashSpec(manifestHash, null);
-    }
 
     private static string FirstNonEmpty(params string?[] values)
     {
@@ -1277,15 +1230,11 @@ public sealed class InstanceImportService : IInstanceImportService
                     throw new InvalidDataException($"Java add-on '{addon.Name}' cannot be imported into a Bedrock server.");
                 }
 
-                if (!addon.Provider.Equals("Local", StringComparison.OrdinalIgnoreCase) &&
-                    string.IsNullOrWhiteSpace(java.ProjectId) &&
-                    string.IsNullOrWhiteSpace(java.VersionId) &&
-                    string.IsNullOrWhiteSpace(java.Hash) &&
-                    string.IsNullOrWhiteSpace(addon.PackagedPath) &&
-                    string.IsNullOrWhiteSpace(java.DownloadUrl) &&
-                    (addon.ProviderIdentities == null || addon.ProviderIdentities.Count == 0))
+                if (string.IsNullOrWhiteSpace(addon.PackagedPath) &&
+                    string.IsNullOrWhiteSpace(addon.RelativePath) &&
+                    string.IsNullOrWhiteSpace(addon.FileName))
                 {
-                    throw new InvalidDataException($"Remote Java add-on '{addon.Name}' is missing projectId, versionId, hash, packagedPath, or providerIdentities.");
+                    throw new InvalidDataException($"Java add-on '{addon.Name}' is missing packagedPath, relativePath, or fileName.");
                 }
 
                 break;
@@ -1418,5 +1367,5 @@ public sealed class InstanceImportService : IInstanceImportService
 
 
 
-    private sealed record HashSpec(string? Hash, string? HashType);
+
 }
