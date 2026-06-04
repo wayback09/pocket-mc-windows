@@ -194,3 +194,51 @@ jobs:
          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # 🚀 Post Release to Discord Webhook
+      - name: Send Discord Release Notification
+        if: steps.compare.outputs.skip == 'false'
+        shell: pwsh
+        run: |
+          $webhookUrl = "${{ secrets.DISCORD_RELEASE_WEBHOOK }}"
+          if (-not $webhookUrl) {
+            Write-Warning "DISCORD_RELEASE_WEBHOOK secret is not set. Skipping notification."
+            exit 0
+          }
+          
+          # Clean notes body for JSON compatibility (replace quotes, limits, etc.)
+          $body = @"
+          ${{ steps.notes.outputs.body }}
+          "@
+          if ($body.Length -gt 1000) {
+            $body = $body.Substring(0, 1000) + "..."
+          }
+          
+          $payload = @{
+            embeds = @(
+              @{
+                title = "🚀 New PocketMC Release: v${{ env.VERSION }}!"
+                description = "PocketMC version **${{ env.VERSION }}** has been successfully released and is now available for download!"
+                color = 3066993  # Green
+                fields = @(
+                  @{
+                    name = "📦 Release Notes"
+                    value = $body
+                    inline = $false
+                  },
+                  @{
+                    name = "⬇️ Downloads"
+                    value = "[GitHub Releases](https://github.com/PocketMC/pocket-mc-windows/releases/tag/v${{ env.VERSION }})"
+                    inline = $false
+                  }
+                )
+                footer = @{
+                  text = "PocketMC Build System"
+                }
+              }
+            )
+          }
+          
+          $json = $payload | ConvertTo-Json -Depth 5
+          Invoke-RestMethod -Uri $webhookUrl -Method Post -Body $json -ContentType "application/json"
+
