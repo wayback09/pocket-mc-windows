@@ -20,6 +20,10 @@ using PocketMC.Desktop.Features.Mods;
 using PocketMC.Desktop.Features.Networking;
 using PocketMC.Desktop.Features.Players;
 using PocketMC.Desktop.Features.Players.Services;
+using PocketMC.Desktop.Features.RemoteControl.Auth;
+using PocketMC.Desktop.Features.RemoteControl.Hosting;
+using PocketMC.Desktop.Features.RemoteControl.Services;
+using PocketMC.Desktop.Features.RemoteControl.Tunnels;
 using PocketMC.Desktop.Features.Settings;
 using PocketMC.Desktop.Features.Setup;
 using PocketMC.Desktop.Features.Shell;
@@ -172,6 +176,25 @@ namespace PocketMC.Desktop.Composition
             // Tunnel resolution is orchestrated from singleton services and keeps no
             // per-request state, so it should share the same app-wide lifetime.
             services.AddSingleton<TunnelService>();
+            return services;
+        }
+
+        public static IServiceCollection AddRemoteControl(this IServiceCollection services)
+        {
+            services.AddSingleton<RemoteTokenHasher>();
+            services.AddSingleton<RemoteAuthService>();
+            services.AddSingleton<RemoteStatusService>();
+            services.AddSingleton<RemoteInstanceControlService>();
+            services.AddSingleton<RemotePlayerActionService>();
+            services.AddSingleton<RemoteAuditLogService>();
+            services.AddSingleton<LocalNetworkAddressService>();
+            services.AddSingleton<RemoteRequestLimiter>();
+            services.AddSingleton<RemoteConsoleWebSocketHandler>();
+            services.AddSingleton<RemoteDashboardHost>();
+            services.AddSingleton<RemoteControlCoordinator>();
+            services.AddSingleton<IRemoteTunnelProvider, CloudflaredQuickTunnelProvider>();
+            services.AddSingleton<RemoteTunnelManager>();
+            services.AddHostedService<RemoteControlHostedService>();
             return services;
         }
 

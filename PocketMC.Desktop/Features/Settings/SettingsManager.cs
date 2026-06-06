@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using PocketMC.Desktop.Models;
 using PocketMC.Desktop.Infrastructure.Security;
 using PocketMC.Desktop.Infrastructure.FileSystem;
+using PocketMC.Desktop.Features.RemoteControl.Models;
 
 namespace PocketMC.Desktop.Features.Settings
 {
@@ -127,6 +128,19 @@ namespace PocketMC.Desktop.Features.Settings
             }
             settings.UserRemovedJavaVersions ??= new System.Collections.Generic.HashSet<int>();
             settings.CloudBackups ??= new CloudBackupSettings();
+            settings.RemoteControl ??= new RemoteControlSettings();
+            settings.RemoteControl.PairedDevices ??= new System.Collections.Generic.List<RemoteDeviceSession>();
+            settings.RemoteControl.PairedDevices.RemoveAll(static device => device == null);
+            if (settings.RemoteControl.Port <= 0 || settings.RemoteControl.Port > 65535)
+            {
+                settings.RemoteControl.Port = 25580;
+            }
+
+            if (string.IsNullOrWhiteSpace(settings.RemoteControl.TunnelProviderId))
+            {
+                settings.RemoteControl.TunnelProviderId = "cloudflared-quick";
+            }
+
             settings.PlayitConfigDirectory ??= Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "playit_gg");

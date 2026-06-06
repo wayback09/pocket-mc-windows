@@ -1,4 +1,5 @@
 using System;
+using PocketMC.Desktop.Features.RemoteControl.Models;
 
 namespace PocketMC.Desktop.Models
 {
@@ -56,5 +57,8 @@ namespace PocketMC.Desktop.Models
         // Cloud Backups
         public CloudBackupSettings CloudBackups { get; set; } = new();
         public System.Collections.Generic.Dictionary<string, CloudOAuthTokenSet> CloudTokens { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
+        // Remote Control
+        public RemoteControlSettings RemoteControl { get; set; } = new();
     }
 }

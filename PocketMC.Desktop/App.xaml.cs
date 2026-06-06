@@ -56,6 +56,7 @@ public partial class App : Application
                 services.AddCoreInfrastructure()
                         .AddInstanceManagement()
                         .AddTunneling()
+                        .AddRemoteControl()
                         .AddMarketplace()
                         .AddPresentation();
             })
