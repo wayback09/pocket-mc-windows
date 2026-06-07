@@ -106,6 +106,8 @@ public sealed class RemoteControlCoordinator
 
     public void RevokeAllDevices() => _authService.RevokeAllDevices();
 
+    public void RevokeDevice(string deviceId) => _authService.RevokeDevice(deviceId);
+
     public async Task StopAllAsync(CancellationToken cancellationToken = default)
     {
         await _tunnelManager.StopAsync(cancellationToken);

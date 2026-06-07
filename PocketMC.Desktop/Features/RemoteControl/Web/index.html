@@ -5,8 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>PocketMC Remote</title>
   <link rel="stylesheet" href="/remote/styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 </head>
 <body>
+  <div class="background-effects"></div>
   <main class="app-shell">
     <header class="topbar">
       <div class="brand-block">
@@ -15,7 +18,7 @@
         </span>
         <div class="brand-copy">
           <h1>PocketMC Remote</h1>
-          <p>Manage your server from this paired browser.</p>
+          <p>Manage your server securely from your browser.</p>
         </div>
       </div>
       <div class="topbar-actions">
@@ -74,34 +77,54 @@
           <select id="instanceSelect" aria-label="Server"></select>
         </label>
 
-        <div class="metrics-grid">
+        <div class="server-ips" id="serverIpsContainer" hidden>
+          <p class="eyebrow">Server IPs</p>
+          <div id="serverIpsList" class="ips-list"></div>
+        </div>
+
+        <nav class="tabs-nav">
+          <button class="tab-button active" data-tab="overview" type="button">Overview</button>
+          <button class="tab-button" data-tab="console" type="button">Console</button>
+          <button class="tab-button" data-tab="players" type="button">Players</button>
+        </nav>
+
+        <div id="tab-overview" class="tab-content active">
+          <div class="metrics-grid">
           <div class="metric-tile">
             <span class="metric-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-8 0v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M20 21v-2a3 3 0 0 0-2-2.8M18 4.4a4 4 0 0 1 0 7.2"/></svg>
             </span>
-            <span>Players</span>
-            <strong id="playerCount">0 / 0</strong>
+            <div>
+              <span>Players</span>
+              <strong id="playerCount">0 / 0</strong>
+            </div>
           </div>
           <div class="metric-tile">
             <span class="metric-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24"><path d="M4 14h4l2-8 4 16 2-8h4"/></svg>
             </span>
-            <span>CPU</span>
-            <strong id="cpuUsage">0%</strong>
+            <div>
+              <span>CPU</span>
+              <strong id="cpuUsage">0%</strong>
+            </div>
           </div>
           <div class="metric-tile">
             <span class="metric-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24"><path d="M6 19V5h12v14zM9 9h6M9 13h6M9 17h6"/></svg>
             </span>
-            <span>RAM</span>
-            <strong id="ramUsage">0 GB</strong>
+            <div>
+              <span>RAM</span>
+              <strong id="ramUsage">0 GB</strong>
+            </div>
           </div>
           <div class="metric-tile">
             <span class="metric-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24"><path d="M12 7v5l3 2M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20"/></svg>
             </span>
-            <span>Uptime</span>
-            <strong id="uptime">0m</strong>
+            <div>
+              <span>Uptime</span>
+              <strong id="uptime">0m</strong>
+            </div>
           </div>
         </div>
 
@@ -125,17 +148,46 @@
             <span>Restart</span>
           </button>
         </div>
+        </div>
       </section>
 
-      <section class="panel console-panel">
+      <section id="tab-players" class="panel players-panel tab-content" hidden>
         <div class="section-head">
           <div>
-            <p class="eyebrow">Live console</p>
-            <h2>Console</h2>
+            <p class="eyebrow">Online players</p>
+            <h2>Players</h2>
+          </div>
+          <span id="playersState" class="state-label">0 online</span>
+        </div>
+        <div id="playerList" class="player-list"></div>
+
+        <div class="offline-player-manage">
+          <p class="eyebrow">Manage Offline Player</p>
+          <form id="offlinePlayerForm" class="command-row">
+            <input id="offlinePlayerInput" type="text" autocomplete="off" placeholder="Player name">
+            <button class="secondary-button" type="button" id="btnOfflinePardon">Unban</button>
+            <button class="secondary-button" type="button" id="btnOfflineDeop">De-OP</button>
+            <button class="danger-button" type="button" id="btnOfflineBan">Ban</button>
+          </form>
+        </div>
+      </section>
+
+      <section id="tab-console" class="panel console-panel tab-content" hidden>
+        <div class="section-head">
+          <div class="console-head-row">
+            <div>
+              <p class="eyebrow">Live console</p>
+              <h2>Console</h2>
+            </div>
+            <div class="console-filters">
+              <label class="filter-label"><input type="checkbox" id="filterInfo" checked> Info</label>
+              <label class="filter-label"><input type="checkbox" id="filterWarn" checked> Warn</label>
+              <label class="filter-label"><input type="checkbox" id="filterError" checked> Error</label>
+            </div>
           </div>
           <span id="consoleState" class="state-label">Idle</span>
         </div>
-        <pre id="consoleOutput" class="console-output"></pre>
+        <div id="consoleOutput" class="console-output"></div>
         <form id="commandForm" class="command-row">
           <input id="commandInput" type="text" autocomplete="off" placeholder="Type a console command">
           <button class="primary-button" type="submit">
@@ -147,18 +199,22 @@
         </form>
         <p id="commandDisabled" class="muted" hidden>Console commands are disabled in PocketMC Desktop.</p>
       </section>
-
-      <section class="panel players-panel">
-        <div class="section-head">
-          <div>
-            <p class="eyebrow">Online players</p>
-            <h2>Players</h2>
-          </div>
-          <span id="playersState" class="state-label">0 online</span>
-        </div>
-        <div id="playerList" class="player-list"></div>
-      </section>
     </section>
+
+    <!-- Reason Modal -->
+    <div id="reasonModal" class="modal-overlay" hidden>
+      <div class="modal-content">
+        <h3 id="reasonModalTitle">Reason Required</h3>
+        <p id="reasonModalMessage">Please provide a reason for this action.</p>
+        <form id="reasonModalForm" class="modal-form">
+          <input type="text" id="reasonModalInput" placeholder="Reason (optional)" autocomplete="off">
+          <div class="modal-actions">
+            <button type="button" id="reasonModalCancel" class="secondary-button">Cancel</button>
+            <button type="submit" id="reasonModalConfirm" class="danger-button">Confirm</button>
+          </div>
+        </form>
+      </div>
+    </div>
 
     <section id="emptyView" class="panel empty-panel" hidden>
       <div class="panel-icon" aria-hidden="true">

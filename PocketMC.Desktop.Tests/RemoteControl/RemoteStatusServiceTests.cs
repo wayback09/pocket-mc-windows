@@ -6,6 +6,7 @@ using PocketMC.Desktop.Features.Instances.Services;
 using PocketMC.Desktop.Features.RemoteControl.Models;
 using PocketMC.Desktop.Features.RemoteControl.Services;
 using PocketMC.Desktop.Features.Shell;
+using PocketMC.Desktop.Features.Players.Services;
 using PocketMC.Desktop.Models;
 
 namespace PocketMC.Desktop.Tests.RemoteControl;
@@ -28,7 +29,8 @@ public sealed class RemoteStatusServiceTests : IDisposable
 
         var lifecycle = new FakeLifecycleService();
         lifecycle.RunningInstances.Add(metadata.Id);
-        var service = CreateService(metadata, lifecycle, new FakeResourceMonitorService());
+        var state = new ApplicationState();
+        var service = CreateService(metadata, lifecycle, new FakeResourceMonitorService(), state);
 
         var instance = Assert.Single(service.GetInstances());
 
@@ -40,7 +42,7 @@ public sealed class RemoteStatusServiceTests : IDisposable
     }
 
     [Fact]
-    public void GetInstanceStatus_IncludesMetricsAndUptime()
+    public async Task GetInstanceStatus_IncludesMetricsAndUptime()
     {
         var metadata = new InstanceMetadata
         {
@@ -62,9 +64,10 @@ public sealed class RemoteStatusServiceTests : IDisposable
             PlayerCount = 2
         };
 
-        var service = CreateService(metadata, lifecycle, monitor);
+        var state = new ApplicationState();
+        var service = CreateService(metadata, lifecycle, monitor, state);
 
-        RemoteInstanceStatusDto status = service.GetInstanceStatus(metadata.Id)!;
+        RemoteInstanceStatusDto status = (await service.GetInstanceStatusAsync(metadata.Id))!;
 
         Assert.Equal(metadata.Id, status.InstanceId);
         Assert.True(status.IsRunning);
@@ -79,17 +82,20 @@ public sealed class RemoteStatusServiceTests : IDisposable
     private RemoteStatusService CreateService(
         InstanceMetadata metadata,
         FakeLifecycleService lifecycle,
-        FakeResourceMonitorService monitor)
+        FakeResourceMonitorService monitor,
+        ApplicationState state)
     {
         Directory.CreateDirectory(_tempDirectory);
-        var state = new ApplicationState();
         state.ApplySettings(new AppSettings { AppRootPath = _tempDirectory });
         var registry = new InstanceRegistry(new InstancePathService(state), NullLogger<InstanceRegistry>.Instance);
         string instancePath = Path.Combine(_tempDirectory, "servers", metadata.Name);
         Directory.CreateDirectory(instancePath);
         registry.Register(metadata, instancePath);
 
-        return new RemoteStatusService(registry, lifecycle, monitor);
+        var logger = new Microsoft.Extensions.Logging.Abstractions.NullLogger<ServerStateFileService>();
+        var serverStateFileService = new ServerStateFileService(registry, logger);
+
+        return new RemoteStatusService(registry, lifecycle, monitor, new LocalNetworkAddressService(), state, serverStateFileService);
     }
 
     public void Dispose()

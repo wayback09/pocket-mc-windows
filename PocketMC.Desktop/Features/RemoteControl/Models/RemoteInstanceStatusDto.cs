@@ -10,8 +10,9 @@ public sealed class RemoteInstanceStatusDto
     public int UptimeSeconds { get; set; }
     public int PlayerCount { get; set; }
     public int MaxPlayers { get; set; }
-    public IReadOnlyList<string> OnlinePlayers { get; set; } = Array.Empty<string>();
+    public IReadOnlyList<RemotePlayerDto> OnlinePlayers { get; set; } = Array.Empty<RemotePlayerDto>();
     public double CpuUsage { get; set; }
     public double RamUsageMb { get; set; }
     public int MaxRamMb { get; set; }
+    public IReadOnlyList<ServerIpDto> ServerIps { get; set; } = Array.Empty<ServerIpDto>();
 }

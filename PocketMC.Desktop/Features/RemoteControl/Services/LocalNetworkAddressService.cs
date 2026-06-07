@@ -22,6 +22,13 @@ public sealed class LocalNetworkAddressService
         GetLocalUrls(port).FirstOrDefault(url => !url.Contains("127.0.0.1", StringComparison.Ordinal))
         ?? $"http://127.0.0.1:{port}";
 
+    public IReadOnlyList<string> GetLocalIpAddresses()
+    {
+        var ips = GetLocalIPv4Addresses().Select(ip => ip.ToString()).ToList();
+        ips.Add("127.0.0.1");
+        return ips;
+    }
+
     private static IEnumerable<IPAddress> GetLocalIPv4Addresses()
     {
         foreach (NetworkInterface networkInterface in NetworkInterface.GetAllNetworkInterfaces())

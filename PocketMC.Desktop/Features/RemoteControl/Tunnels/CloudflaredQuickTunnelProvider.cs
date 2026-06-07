@@ -260,12 +260,6 @@ public sealed class CloudflaredQuickTunnelProvider : IRemoteTunnelProvider, IDis
 
     private async Task<string> ResolveExecutablePathAsync(CancellationToken cancellationToken)
     {
-        string? configuredPath = _applicationState.Settings.RemoteControl.CloudflaredPath;
-        if (!string.IsNullOrWhiteSpace(configuredPath))
-        {
-            return configuredPath.Trim();
-        }
-
         return await _installer.EnsureInstalledAsync(cancellationToken);
     }
 

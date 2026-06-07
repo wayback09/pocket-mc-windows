@@ -162,10 +162,10 @@ public sealed class RemoteDashboardHost
         app.MapGet("/api/instances", (HttpContext context) =>
             WithAuth(context, auth => Results.Ok(_statusService.GetInstances())));
 
-        app.MapGet("/api/instances/{instanceId:guid}/status", (HttpContext context, Guid instanceId) =>
-            WithAuth(context, auth =>
+        app.MapGet("/api/instances/{instanceId:guid}/status", async (HttpContext context, Guid instanceId) =>
+            await WithAuthAsync(context, async auth =>
             {
-                RemoteInstanceStatusDto? status = _statusService.GetInstanceStatus(instanceId);
+                RemoteInstanceStatusDto? status = await _statusService.GetInstanceStatusAsync(instanceId);
                 return status == null ? Results.NotFound() : Results.Ok(status);
             }));
 

@@ -1,5 +1,7 @@
 using System;
 using System.IO;
+using System.Linq;
+using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using System.Windows;
@@ -10,8 +12,6 @@ using System.Windows.Media;
 using PocketMC.Desktop.Models;
 using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Features.Instances;
-using PocketMC.Desktop.Features.Instances.Services;
-using PocketMC.Desktop.Features.Instances.Models;
 using PocketMC.Desktop.Features.Instances.Services;
 using PocketMC.Desktop.Features.Instances.Models;
 using PocketMC.Desktop.Features.Dashboard;
@@ -64,6 +64,7 @@ namespace PocketMC.Desktop.Features.Setup
         private bool _isForwardingMouseWheel;
         
         public CloudBackupSettingsViewModel CloudBackups { get; }
+        public ObservableCollection<RemoteDeviceSession> PairedDevices { get; } = new();
 
         public AppSettingsPage(
             ApplicationState applicationState, 
@@ -196,9 +197,14 @@ namespace PocketMC.Desktop.Features.Setup
             var remote = _applicationState.Settings.RemoteControl;
             ToggleRemoteControlEnabled.IsChecked = remote.Enabled;
             RemotePortInput.Text = remote.Port.ToString(System.Globalization.CultureInfo.InvariantCulture);
-            CloudflaredPathInput.Text = remote.CloudflaredPath ?? "";
             ToggleRemoteConsoleCommands.IsChecked = remote.AllowRemoteConsoleCommands;
             ToggleRemotePlayerActions.IsChecked = remote.AllowRemotePlayerActions;
+
+            PairedDevices.Clear();
+            foreach (var device in remote.PairedDevices.Where(d => !d.RevokedAtUtc.HasValue).OrderByDescending(d => d.CreatedAtUtc))
+            {
+                PairedDevices.Add(device);
+            }
 
             foreach (ComboBoxItem item in RemoteAccessModeCombo.Items)
             {
@@ -396,7 +402,29 @@ namespace PocketMC.Desktop.Features.Setup
 
             _remoteControlCoordinator.RevokeAllDevices();
             SetRemoteStatus("All remote devices were revoked.", isError: false);
+            InitializeRemoteControlUi();
             UpdateRemoteControlStatusUi();
+        }
+
+        private async void RevokeSpecificDevice_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is FrameworkElement element && element.DataContext is RemoteDeviceSession device)
+            {
+                DialogResult result = await _dialogService.ShowDialogAsync(
+                    "Revoke Device",
+                    $"Revoke access for {device.DisplayName}?",
+                    DialogType.Warning,
+                    showCancel: true,
+                    primaryButtonText: "Revoke");
+
+                if (result == DialogResult.Ok || result == DialogResult.Yes)
+                {
+                    _remoteControlCoordinator.RevokeDevice(device.Id);
+                    SetRemoteStatus($"Revoked {device.DisplayName}.", isError: false);
+                    InitializeRemoteControlUi();
+                    UpdateRemoteControlStatusUi();
+                }
+            }
         }
 
         private void SaveRemoteSettingsFromUi(bool showMessage)
@@ -409,9 +437,6 @@ namespace PocketMC.Desktop.Features.Setup
 
             settings.RemoteControl.Enabled = ToggleRemoteControlEnabled.IsChecked == true;
             settings.RemoteControl.Port = port;
-            settings.RemoteControl.CloudflaredPath = string.IsNullOrWhiteSpace(CloudflaredPathInput.Text)
-                ? null
-                : CloudflaredPathInput.Text.Trim();
             settings.RemoteControl.AllowRemoteConsoleCommands = ToggleRemoteConsoleCommands.IsChecked == true;
             settings.RemoteControl.AllowRemotePlayerActions = ToggleRemotePlayerActions.IsChecked == true;
 

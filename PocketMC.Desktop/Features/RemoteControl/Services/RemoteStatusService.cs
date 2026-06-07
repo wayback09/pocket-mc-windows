@@ -1,6 +1,7 @@
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Instances.Services;
 using PocketMC.Desktop.Features.RemoteControl.Models;
+using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Models;
 
 namespace PocketMC.Desktop.Features.RemoteControl.Services;
@@ -10,15 +11,24 @@ public sealed class RemoteStatusService
     private readonly InstanceRegistry _registry;
     private readonly IServerLifecycleService _lifecycleService;
     private readonly IResourceMonitorService _resourceMonitorService;
+    private readonly LocalNetworkAddressService _localNetworkAddressService;
+    private readonly ApplicationState _applicationState;
+    private readonly PocketMC.Desktop.Features.Players.Services.ServerStateFileService _serverStateFileService;
 
     public RemoteStatusService(
         InstanceRegistry registry,
         IServerLifecycleService lifecycleService,
-        IResourceMonitorService resourceMonitorService)
+        IResourceMonitorService resourceMonitorService,
+        LocalNetworkAddressService localNetworkAddressService,
+        ApplicationState applicationState,
+        PocketMC.Desktop.Features.Players.Services.ServerStateFileService serverStateFileService)
     {
         _registry = registry;
         _lifecycleService = lifecycleService;
         _resourceMonitorService = resourceMonitorService;
+        _localNetworkAddressService = localNetworkAddressService;
+        _applicationState = applicationState;
+        _serverStateFileService = serverStateFileService;
     }
 
     public IReadOnlyList<RemoteInstanceDto> GetInstances() =>
@@ -34,7 +44,7 @@ public sealed class RemoteStatusService
             })
             .ToList();
 
-    public RemoteInstanceStatusDto? GetInstanceStatus(Guid instanceId)
+    public async System.Threading.Tasks.Task<RemoteInstanceStatusDto?> GetInstanceStatusAsync(Guid instanceId)
     {
         InstanceMetadata? metadata = _registry.GetById(instanceId);
         if (metadata == null)
@@ -50,7 +60,48 @@ public sealed class RemoteStatusService
 
         _resourceMonitorService.Metrics.TryGetValue(instanceId, out InstanceMetrics? metrics);
         var process = _lifecycleService.GetProcess(instanceId);
-        IReadOnlyList<string> onlinePlayers = process?.OnlinePlayerNames ?? Array.Empty<string>();
+        IReadOnlyList<string> onlinePlayerNames = process?.OnlinePlayerNames ?? Array.Empty<string>();
+
+        var oppedPlayersList = await _serverStateFileService.GetOppedPlayersAsync(metadata);
+        var oppedPlayers = oppedPlayersList.ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        var onlinePlayers = onlinePlayerNames.Select(name => new RemotePlayerDto
+        {
+            Name = name,
+            IsOp = oppedPlayers.Contains(name)
+        }).ToList();
+
+        int serverPort = metadata.ServerPort ?? (metadata.HasGeyser && metadata.GeyserBedrockPort.HasValue ? metadata.GeyserBedrockPort.Value : 25565);
+        var serverIps = new List<ServerIpDto>();
+
+        string? tunnelIp = _applicationState.GetTunnelAddress(instanceId);
+        if (!string.IsNullOrWhiteSpace(tunnelIp))
+        {
+            serverIps.Add(new ServerIpDto { Label = PocketMC.Desktop.Helpers.CommandFormatter.IsBedrock(metadata.ServerType) ? "Primary (Playit)" : "Java (Playit)", Address = tunnelIp });
+        }
+
+        string? bedrockTunnelIp = _applicationState.GetBedrockTunnelAddress(instanceId);
+        if (!string.IsNullOrWhiteSpace(bedrockTunnelIp) && bedrockTunnelIp != tunnelIp)
+        {
+            serverIps.Add(new ServerIpDto { Label = "Bedrock (Playit)", Address = bedrockTunnelIp });
+        }
+
+        string? voiceChatTunnelIp = _applicationState.GetVoiceChatTunnelAddress(instanceId);
+        if (!string.IsNullOrWhiteSpace(voiceChatTunnelIp))
+        {
+            serverIps.Add(new ServerIpDto { Label = "Voice Chat", Address = voiceChatTunnelIp });
+        }
+
+        string? localIp = _localNetworkAddressService.GetLocalIpAddresses().FirstOrDefault();
+        if (!string.IsNullOrWhiteSpace(localIp))
+        {
+            serverIps.Add(new ServerIpDto { Label = PocketMC.Desktop.Helpers.CommandFormatter.IsBedrock(metadata.ServerType) ? "LAN" : "Java (LAN)", Address = $"{localIp}:{serverPort}" });
+
+            if (metadata.HasGeyser && metadata.GeyserBedrockPort.HasValue)
+            {
+                serverIps.Add(new ServerIpDto { Label = "Bedrock (LAN)", Address = $"{localIp}:{metadata.GeyserBedrockPort.Value}" });
+            }
+        }
 
         return new RemoteInstanceStatusDto
         {
@@ -65,7 +116,8 @@ public sealed class RemoteStatusService
             OnlinePlayers = onlinePlayers,
             CpuUsage = metrics?.CpuUsage ?? 0,
             RamUsageMb = metrics?.RamUsageMb ?? 0,
-            MaxRamMb = metadata.MaxRamMb
+            MaxRamMb = metadata.MaxRamMb,
+            ServerIps = serverIps
         };
     }
 

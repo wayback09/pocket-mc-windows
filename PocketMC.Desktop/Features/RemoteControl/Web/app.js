@@ -29,12 +29,31 @@ const els = {
   stopButton: document.querySelector("#stopButton"),
   restartButton: document.querySelector("#restartButton"),
   consoleState: document.querySelector("#consoleState"),
-  consoleOutput: document.querySelector("#consoleOutput"),
-  commandForm: document.querySelector("#commandForm"),
+  consoleOutput: document.getElementById("consoleOutput"),
+  filterInfo: document.getElementById("filterInfo"),
+  filterWarn: document.getElementById("filterWarn"),
+  filterError: document.getElementById("filterError"),
+  commandForm: document.getElementById("commandForm"),
   commandInput: document.querySelector("#commandInput"),
   commandDisabled: document.querySelector("#commandDisabled"),
   playersState: document.querySelector("#playersState"),
-  playerList: document.querySelector("#playerList")
+  playerList: document.querySelector("#playerList"),
+  
+  tabs: document.querySelectorAll(".tab-button"),
+  tabContents: document.querySelectorAll(".tab-content"),
+  serverIpsContainer: document.querySelector("#serverIpsContainer"),
+  serverIpsList: document.querySelector("#serverIpsList"),
+  
+  reasonModal: document.querySelector("#reasonModal"),
+  reasonModalTitle: document.querySelector("#reasonModalTitle"),
+  reasonModalForm: document.querySelector("#reasonModalForm"),
+  reasonModalInput: document.querySelector("#reasonModalInput"),
+  reasonModalCancel: document.querySelector("#reasonModalCancel"),
+  
+  offlinePlayerInput: document.querySelector("#offlinePlayerInput"),
+  btnOfflinePardon: document.querySelector("#btnOfflinePardon"),
+  btnOfflineDeop: document.querySelector("#btnOfflineDeop"),
+  btnOfflineBan: document.querySelector("#btnOfflineBan")
 };
 
 let deviceToken = localStorage.getItem(tokenKey);
@@ -254,6 +273,39 @@ function renderStatus(remoteStatus, instanceStatus) {
   els.commandForm.hidden = !canSendCommands;
   els.commandDisabled.hidden = remoteStatus.allowRemoteConsoleCommands || !instanceStatus.isRunning;
   renderPlayers(instanceStatus.onlinePlayers || [], remoteStatus.allowRemotePlayerActions);
+
+  if (instanceStatus.serverIps && instanceStatus.serverIps.length > 0) {
+    els.serverIpsContainer.hidden = false;
+    els.serverIpsList.innerHTML = "";
+    for (const ip of instanceStatus.serverIps) {
+      const badge = document.createElement("div");
+      badge.className = "ip-badge";
+      
+      const labelEl = document.createElement("span");
+      labelEl.className = "ip-label";
+      labelEl.textContent = ip.label;
+      
+      const addrEl = document.createElement("span");
+      addrEl.className = "ip-address";
+      addrEl.textContent = ip.address;
+      
+      const copyBtn = document.createElement("button");
+      copyBtn.className = "icon-button small";
+      copyBtn.type = "button";
+      copyBtn.title = "Copy to clipboard";
+      copyBtn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M15 2H9a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1z"/></svg>`;
+      copyBtn.addEventListener("click", () => {
+        navigator.clipboard.writeText(ip.address);
+        copyBtn.classList.add("success");
+        setTimeout(() => copyBtn.classList.remove("success"), 2000);
+      });
+      
+      badge.append(labelEl, addrEl, copyBtn);
+      els.serverIpsList.append(badge);
+    }
+  } else {
+    els.serverIpsContainer.hidden = true;
+  }
 }
 
 function setStatusPill(instanceStatus) {
@@ -272,7 +324,8 @@ async function ensureConsoleConnection(instanceStatus) {
     closeSocket();
     els.consoleState.textContent = "Offline";
     setStateClass(els.consoleState, "offline");
-    if (!els.consoleOutput.textContent) {
+    if (!els.consoleOutput.hasChildNodes() || els.consoleOutput.textContent === "Server is offline.") {
+      els.consoleOutput.innerHTML = "";
       els.consoleOutput.textContent = "Server is offline.";
     }
     return;
@@ -291,10 +344,16 @@ async function loadConsoleHistory() {
   if (!selectedInstanceId) return;
   try {
     const lines = await api(`/api/instances/${selectedInstanceId}/console/history`);
-    els.consoleOutput.textContent = lines.length > 0 ? lines.join("\n") : "Waiting for console output...";
+    els.consoleOutput.innerHTML = "";
+    if (lines.length > 0) {
+      lines.forEach(appendConsole);
+    } else {
+      els.consoleOutput.textContent = "Waiting for console output...";
+    }
     historyLoadedForInstance = selectedInstanceId;
     scrollConsole();
-  } catch {
+  } catch (err) {
+    els.consoleOutput.innerHTML = "";
     els.consoleOutput.textContent = "Console history is not available yet.";
   }
 }
@@ -348,10 +407,73 @@ function closeSocket() {
 }
 
 function appendConsole(line) {
-  const current = els.consoleOutput.textContent === "Waiting for console output..." ? "" : els.consoleOutput.textContent;
-  const next = current ? `${current}\n${line}` : line;
-  els.consoleOutput.textContent = next.split("\n").slice(-500).join("\n");
+  if (els.consoleOutput.textContent === "Waiting for console output..." ||
+      els.consoleOutput.textContent === "Server is offline." ||
+      els.consoleOutput.textContent === "Console history is not available yet.") {
+    els.consoleOutput.innerHTML = "";
+  }
+
+  const lineEl = document.createElement("div");
+  lineEl.className = "log-line";
+  
+  let level = "info";
+  if (line.includes("WARN")) level = "warn";
+  if (line.includes("ERROR") || line.includes("Exception") || line.includes("Failed")) level = "error";
+  lineEl.classList.add(`log-${level}`);
+  
+  let formatted = escapeHtml(line);
+  // Dim timestamp [XX:YY:ZZ]
+  formatted = formatted.replace(/^(\[[0-9:]+\])\s*/, '<span class="log-time">$1</span> ');
+  // Dim thread info [Server thread/INFO]
+  formatted = formatted.replace(/(\[.*?\/.*?\])\s*:\s*/, '<span class="log-thread">$1:</span> ');
+  // Handle Bedrock [INFO]
+  formatted = formatted.replace(/(\[INFO\]|\[WARN\]|\[ERROR\])\s*/, '<span class="log-level">$1</span> ');
+
+  lineEl.innerHTML = formatted;
+  els.consoleOutput.append(lineEl);
+
+  while (els.consoleOutput.childNodes.length > 500) {
+    els.consoleOutput.firstChild.remove();
+  }
+  
+  applyConsoleFiltersToLine(lineEl);
   scrollConsole();
+}
+
+function escapeHtml(unsafe) {
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function applyConsoleFilters() {
+  const showInfo = els.filterInfo.checked;
+  const showWarn = els.filterWarn.checked;
+  const showError = els.filterError.checked;
+  
+  for (const lineEl of els.consoleOutput.children) {
+    let show = true;
+    if (lineEl.classList.contains("log-info") && !showInfo) show = false;
+    if (lineEl.classList.contains("log-warn") && !showWarn) show = false;
+    if (lineEl.classList.contains("log-error") && !showError) show = false;
+    lineEl.style.display = show ? "block" : "none";
+  }
+  scrollConsole();
+}
+
+function applyConsoleFiltersToLine(lineEl) {
+  const showInfo = els.filterInfo.checked;
+  const showWarn = els.filterWarn.checked;
+  const showError = els.filterError.checked;
+
+  let show = true;
+  if (lineEl.classList.contains("log-info") && !showInfo) show = false;
+  if (lineEl.classList.contains("log-warn") && !showWarn) show = false;
+  if (lineEl.classList.contains("log-error") && !showError) show = false;
+  lineEl.style.display = show ? "block" : "none";
 }
 
 function scrollConsole() {
@@ -375,36 +497,119 @@ function renderPlayers(players, allowActions) {
     const row = document.createElement("div");
     row.className = "player-row";
 
+    const avatar = document.createElement("img");
+    avatar.className = "player-avatar";
+    avatar.src = `https://api.mineatar.io/face/${player.name}?scale=8`;
+    avatar.alt = `${player.name}'s avatar`;
+    avatar.loading = "lazy";
+    
+    const info = document.createElement("div");
+    info.className = "player-info";
+
     const name = document.createElement("span");
     name.className = "player-name";
-    name.textContent = player;
-    row.append(name);
-
-    for (const action of ["kick", "ban", "op"]) {
-      const button = document.createElement("button");
-      button.className = action === "ban" ? "danger-button" : "secondary-button";
-      button.type = "button";
-      button.textContent = action.toUpperCase();
-      button.disabled = !allowActions;
-      button.addEventListener("click", () => playerAction(player, action));
-      row.append(button);
+    name.textContent = player.name;
+    
+    if (player.isOp) {
+      const opBadge = document.createElement("span");
+      opBadge.className = "player-badge op";
+      opBadge.textContent = "OP";
+      info.append(name, opBadge);
+    } else {
+      info.append(name);
     }
+    
+    row.append(avatar, info);
+
+    const actions = document.createElement("div");
+    actions.className = "player-actions";
+
+    const kickBtn = document.createElement("button");
+    kickBtn.className = "secondary-button";
+    kickBtn.type = "button";
+    kickBtn.textContent = "KICK";
+    kickBtn.disabled = !allowActions;
+    kickBtn.addEventListener("click", () => playerAction(player.name, "kick"));
+    
+    const banBtn = document.createElement("button");
+    banBtn.className = "danger-button";
+    banBtn.type = "button";
+    banBtn.textContent = "BAN";
+    banBtn.disabled = !allowActions;
+    banBtn.addEventListener("click", () => playerAction(player.name, "ban"));
+    
+    const opAction = player.isOp ? "deop" : "op";
+    const opBtn = document.createElement("button");
+    opBtn.className = player.isOp ? "danger-button" : "primary-button";
+    opBtn.type = "button";
+    opBtn.textContent = opAction.toUpperCase();
+    opBtn.disabled = !allowActions;
+    opBtn.addEventListener("click", () => playerAction(player.name, opAction));
+    
+    actions.append(kickBtn, banBtn, opBtn);
+    row.append(actions);
 
     els.playerList.append(row);
   }
 }
 
+async function promptForReason(title) {
+  return new Promise((resolve) => {
+    els.reasonModalTitle.textContent = title;
+    els.reasonModalInput.value = "";
+    els.reasonModal.hidden = false;
+    els.reasonModalInput.focus();
+
+    const cleanup = () => {
+      els.reasonModal.hidden = true;
+      els.reasonModalForm.removeEventListener("submit", onSubmit);
+      els.reasonModalCancel.removeEventListener("click", onCancel);
+    };
+
+    const onSubmit = (e) => {
+      e.preventDefault();
+      cleanup();
+      resolve(els.reasonModalInput.value.trim() || undefined);
+    };
+
+    const onCancel = () => {
+      cleanup();
+      resolve(null);
+    };
+
+    els.reasonModalForm.addEventListener("submit", onSubmit);
+    els.reasonModalCancel.addEventListener("click", onCancel);
+  });
+}
+
 async function playerAction(player, action) {
+  let reason = undefined;
+  if (action === "kick" || action === "ban") {
+    reason = await promptForReason(`Reason for ${action}`);
+    if (reason === null) return;
+  }
+
   try {
+    const payload = reason ? { reason } : {};
     await api(`/api/instances/${selectedInstanceId}/players/${encodeURIComponent(player)}/${action}`, {
       method: "POST",
-      body: JSON.stringify({})
+      body: JSON.stringify(payload)
     });
     showNotice(`${action.toUpperCase()} sent for ${player}.`);
     await refreshEverything({ reconnectConsole: false });
   } catch (error) {
     showNotice(error.message, "error");
   }
+}
+
+async function offlinePlayerAction(action) {
+  const player = els.offlinePlayerInput.value.trim();
+  if (!player) {
+    showNotice("Enter a player name first.", "error");
+    return;
+  }
+  await playerAction(player, action);
+  els.offlinePlayerInput.value = "";
 }
 
 async function instanceCommand(command) {
@@ -485,5 +690,27 @@ els.commandForm.addEventListener("submit", async (event) => {
     showNotice(error.message, "error");
   }
 });
+
+els.tabs.forEach(tab => {
+  tab.addEventListener("click", () => {
+    els.tabs.forEach(t => t.classList.remove("active"));
+    els.tabContents.forEach(c => {
+      c.classList.remove("active");
+      c.hidden = true;
+    });
+    tab.classList.add("active");
+    const activeContent = document.querySelector(`#tab-${tab.dataset.tab}`);
+    activeContent.classList.add("active");
+    activeContent.hidden = false;
+  });
+});
+
+els.btnOfflinePardon.addEventListener("click", () => offlinePlayerAction("pardon"));
+els.btnOfflineDeop.addEventListener("click", () => offlinePlayerAction("deop"));
+els.btnOfflineBan.addEventListener("click", () => offlinePlayerAction("ban"));
+
+els.filterInfo.addEventListener("change", applyConsoleFilters);
+els.filterWarn.addEventListener("change", applyConsoleFilters);
+els.filterError.addEventListener("change", applyConsoleFilters);
 
 start();

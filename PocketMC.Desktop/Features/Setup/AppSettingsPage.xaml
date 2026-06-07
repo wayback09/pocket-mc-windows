@@ -205,7 +205,6 @@
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="180"/>
-                                <ColumnDefinition Width="220"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel Grid.Column="0" Margin="0,0,12,0">
@@ -214,15 +213,11 @@
                             </StackPanel>
                             <StackPanel Grid.Column="1" Margin="0,0,12,0">
                                 <TextBlock Text="Access Mode" FontSize="14" FontWeight="Medium"/>
-                                <ComboBox x:Name="RemoteAccessModeCombo" Margin="0,8,0,0" SelectionChanged="RemoteAccessModeCombo_SelectionChanged">
+                                <ComboBox x:Name="RemoteAccessModeCombo" Margin="0,8,0,0" SelectionChanged="RemoteAccessModeCombo_SelectionChanged" MaxWidth="300" HorizontalAlignment="Left">
                                     <ComboBoxItem Content="Local Wi-Fi" Tag="LanOnly"/>
                                     <ComboBoxItem Content="Cloudflare Quick Tunnel" Tag="CloudflaredQuickTunnel"/>
                                     <ComboBoxItem Content="PlayIt HTTPS Tunnel (Premium)" Tag="PlayitHttpTunnel"/>
                                 </ComboBox>
-                            </StackPanel>
-                            <StackPanel Grid.Column="2">
-                                <TextBlock Text="cloudflared path" FontSize="14" FontWeight="Medium"/>
-                                <ui:TextBox x:Name="CloudflaredPathInput" PlaceholderText="Optional custom cloudflared.exe path" Margin="0,8,0,0"/>
                             </StackPanel>
                         </Grid>
 
@@ -255,6 +250,27 @@
                                 <ui:Button x:Name="BtnRevokeRemoteDevices" Content="Revoke All Devices" Appearance="Danger" Click="RevokeRemoteDevices_Click"/>
                             </StackPanel>
                         </Grid>
+
+                        <Separator Margin="0,16" Opacity="0.15"/>
+                        
+                        <TextBlock Text="Paired Devices" FontSize="14" FontWeight="Medium"/>
+                        <ItemsControl ItemsSource="{Binding PairedDevices, RelativeSource={RelativeSource AncestorType=Page}}" Margin="0,8,0,0">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="0,4,0,4">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold"/>
+                                            <TextBlock Text="{Binding CreatedAtUtc, StringFormat=Paired on {0:g}}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                        </StackPanel>
+                                        <ui:Button Grid.Column="1" Content="Revoke" Appearance="Secondary" Click="RevokeSpecificDevice_Click" VerticalAlignment="Center"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
 
                         <Separator Margin="0,16" Opacity="0.15"/>
 
