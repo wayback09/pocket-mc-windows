@@ -11,14 +11,15 @@ public static class MainWindowCloseBehavior
     public static MainWindowCloseAction Decide(
         bool explicitExitRequested,
         bool hasRunningServers,
-        bool minimizeToTrayOnClose)
+        bool minimizeToTrayOnClose,
+        bool isRemoteControlRunning)
     {
         if (explicitExitRequested)
         {
             return MainWindowCloseAction.Exit;
         }
 
-        return hasRunningServers || minimizeToTrayOnClose
+        return hasRunningServers || minimizeToTrayOnClose || isRemoteControlRunning
             ? MainWindowCloseAction.HideToTray
             : MainWindowCloseAction.Exit;
     }

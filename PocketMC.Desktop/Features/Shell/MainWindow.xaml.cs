@@ -429,8 +429,12 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
             .GetRequiredService<ApplicationState>()
             .Settings
             .MinimizeToTrayOnClose;
+        bool isRemoteControlRunning = _serviceProvider
+            .GetRequiredService<ApplicationState>()
+            .Settings
+            .RemoteControl.Enabled;
 
-        if (MainWindowCloseBehavior.Decide(explicitExitRequested, hasRunningServers, minimizeToTrayOnClose)
+        if (MainWindowCloseBehavior.Decide(explicitExitRequested, hasRunningServers, minimizeToTrayOnClose, isRemoteControlRunning)
             == MainWindowCloseAction.HideToTray)
         {
             e.Cancel = true;

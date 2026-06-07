@@ -10,7 +10,8 @@ public sealed class MainWindowCloseBehaviorTests
         MainWindowCloseAction action = MainWindowCloseBehavior.Decide(
             explicitExitRequested: false,
             hasRunningServers: true,
-            minimizeToTrayOnClose: false);
+            minimizeToTrayOnClose: false,
+            isRemoteControlRunning: false);
 
         Assert.Equal(MainWindowCloseAction.HideToTray, action);
     }
@@ -21,7 +22,8 @@ public sealed class MainWindowCloseBehaviorTests
         MainWindowCloseAction action = MainWindowCloseBehavior.Decide(
             explicitExitRequested: false,
             hasRunningServers: false,
-            minimizeToTrayOnClose: true);
+            minimizeToTrayOnClose: true,
+            isRemoteControlRunning: false);
 
         Assert.Equal(MainWindowCloseAction.HideToTray, action);
     }
@@ -32,7 +34,8 @@ public sealed class MainWindowCloseBehaviorTests
         MainWindowCloseAction action = MainWindowCloseBehavior.Decide(
             explicitExitRequested: true,
             hasRunningServers: true,
-            minimizeToTrayOnClose: true);
+            minimizeToTrayOnClose: true,
+            isRemoteControlRunning: true);
 
         Assert.Equal(MainWindowCloseAction.Exit, action);
     }
@@ -43,8 +46,20 @@ public sealed class MainWindowCloseBehaviorTests
         MainWindowCloseAction action = MainWindowCloseBehavior.Decide(
             explicitExitRequested: false,
             hasRunningServers: false,
-            minimizeToTrayOnClose: false);
+            minimizeToTrayOnClose: false,
+            isRemoteControlRunning: false);
 
         Assert.Equal(MainWindowCloseAction.Exit, action);
+    }
+    [Fact]
+    public void Decide_HidesToTrayWhenRemoteControlIsRunning()
+    {
+        MainWindowCloseAction action = MainWindowCloseBehavior.Decide(
+            explicitExitRequested: false,
+            hasRunningServers: false,
+            minimizeToTrayOnClose: false,
+            isRemoteControlRunning: true);
+
+        Assert.Equal(MainWindowCloseAction.HideToTray, action);
     }
 }
