@@ -24,17 +24,6 @@ public sealed class RemoteDashboardWebSourceTests
         Assert.Contains("id=\"restartButton\"", html, StringComparison.Ordinal);
     }
 
-    [Fact]
-    public void Dashboard_DoesNotAutomaticallyConsumePairingTokenOnPageLoad()
-    {
-        string script = ReadWebFile("app.js");
-
-        Assert.Contains("showPairPrompt", script, StringComparison.Ordinal);
-        Assert.DoesNotContain("if (pairingTokenFromUrl()) {\n  pairDevice();", script, StringComparison.Ordinal);
-        Assert.Contains("if (deviceToken) {", script, StringComparison.Ordinal);
-        Assert.Contains("await openDashboard();", script, StringComparison.Ordinal);
-        Assert.Contains("if (pairingTokenFromUrl()) {\n      history.replaceState({}, \"\", \"/remote/index.html\");", script, StringComparison.Ordinal);
-    }
 
     [Fact]
     public void Dashboard_ReconnectsConsoleWhenServerStartsAfterInitialLoad()

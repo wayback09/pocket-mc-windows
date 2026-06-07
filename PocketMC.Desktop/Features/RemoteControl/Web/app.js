@@ -141,29 +141,36 @@ async function start() {
   clearInterval(statusTimer);
   closeSocket();
 
-  if (deviceToken) {
-    if (pairingTokenFromUrl()) {
-      history.replaceState({}, "", "/remote/index.html");
-    }
-    await openDashboard();
+  if (!deviceToken && pairingTokenFromUrl()) {
+    showPairPrompt();
     return;
   }
 
-  showPairPrompt();
+  if (pairingTokenFromUrl()) {
+    history.replaceState({}, "", "/remote/index.html");
+  }
+
+  await openDashboard();
 }
 
 function showPairPrompt() {
   closeSocket();
   clearInterval(statusTimer);
   const token = pairingTokenFromUrl();
-  els.connectionLabel.textContent = token ? "Ready to pair" : "Not paired";
-  els.pairTitle.textContent = token ? "Pair this browser" : "Pairing link needed";
+  els.connectionLabel.textContent = token ? "Pairing..." : "Not paired";
+  els.pairTitle.textContent = token ? "Pairing Browser" : "Pairing link needed";
   els.pairMessage.textContent = token
-    ? "Open this link before it expires. It can pair one browser only."
+    ? "Connecting to PocketMC Desktop..."
     : "Create a Pair Device link in PocketMC Desktop, then open it here.";
-  els.pairButton.disabled = !token;
-  els.copyPairLinkButton.disabled = !token;
+  
+  els.pairButton.style.display = token ? "none" : "";
+  els.copyPairLinkButton.style.display = token ? "none" : "";
+
   setVisible(els.pairView);
+
+  if (token) {
+      pairDevice();
+  }
 }
 
 async function pairDevice() {
@@ -197,6 +204,11 @@ async function pairDevice() {
     await openDashboard();
   } catch (error) {
     els.pairMessage.textContent = error.message;
+    els.pairTitle.textContent = "Pairing Failed";
+    els.connectionLabel.textContent = "Not paired";
+    
+    // Wipe token from URL so they don't get stuck in a reload loop
+    history.replaceState({}, "", "/remote/index.html");
   } finally {
     els.pairButton.disabled = false;
     els.pairButton.querySelector("span:last-child").textContent = "Pair Browser";

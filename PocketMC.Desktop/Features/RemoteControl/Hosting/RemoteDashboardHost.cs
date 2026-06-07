@@ -305,15 +305,18 @@ public sealed class RemoteDashboardHost
 
         app.Map("/ws/instances/{instanceId:guid}/console", async (HttpContext context, Guid instanceId) =>
         {
-            string? ticket = context.Request.Query["ticket"].FirstOrDefault();
-            if (!_authService.ValidateWebSocketTicket(ticket, instanceId, out string deviceId))
+            if (!IsLanRequest(context))
             {
-                await Results.Unauthorized().ExecuteAsync(context);
-                return;
+                string? ticket = context.Request.Query["ticket"].FirstOrDefault();
+                if (!_authService.ValidateWebSocketTicket(ticket, instanceId, out string deviceId))
+                {
+                    await Results.Unauthorized().ExecuteAsync(context);
+                    return;
+                }
             }
 
-            // Since we validated the ticket, we know the device is valid. We can inject it if needed,
-            // but the web socket handler just streams logs right now and doesn't take input directly.
+            // Since we validated the ticket or it's a LAN request, we know the device is valid.
+            // The web socket handler streams logs right now and doesn't take input directly.
             await _webSocketHandler.HandleAsync(context, instanceId);
         });
     }
@@ -332,6 +335,12 @@ public sealed class RemoteDashboardHost
 
     private IResult? TryAuthenticate(HttpContext context, bool allowQueryToken, out RemoteValidationResult validation)
     {
+        if (IsLanRequest(context))
+        {
+            validation = RemoteValidationResult.Successful("lan_bypass", "lan_device");
+            return null;
+        }
+
         validation = RemoteValidationResult.Failed(RemoteAuthFailure.InvalidDeviceToken);
         string clientKey = GetClientKey(context);
         if (_requestLimiter.IsBlocked("auth", clientKey, 20, AuthFailureWindow))
@@ -382,6 +391,46 @@ public sealed class RemoteDashboardHost
 
     private static string GetClientKey(HttpContext context) =>
         context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+
+    private static bool IsLanRequest(HttpContext context)
+    {
+        var ip = context.Connection.RemoteIpAddress;
+        if (ip == null) return false;
+
+        // If any proxy/forwarding headers are present, we treat it as an external request
+        // to prevent tunnel software from spoofing LAN connections.
+        if (context.Request.Headers.ContainsKey("X-Forwarded-For") ||
+            context.Request.Headers.ContainsKey("X-Forwarded-Host") ||
+            context.Request.Headers.ContainsKey("X-Real-IP") ||
+            context.Request.Headers.ContainsKey("Via"))
+        {
+            return false;
+        }
+
+        if (System.Net.IPAddress.IsLoopback(ip)) return true;
+
+        byte[] bytes = ip.GetAddressBytes();
+        if (ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+        {
+            // 10.0.0.0/8
+            if (bytes[0] == 10) return true;
+            // 172.16.0.0/12
+            if (bytes[0] == 172 && bytes[1] >= 16 && bytes[1] <= 31) return true;
+            // 192.168.0.0/16
+            if (bytes[0] == 192 && bytes[1] == 168) return true;
+            // 169.254.0.0/16 (Link local)
+            if (bytes[0] == 169 && bytes[1] == 254) return true;
+        }
+        else if (ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetworkV6)
+        {
+            // fc00::/7
+            if ((bytes[0] & 0xfe) == 0xfc) return true;
+            // fe80::/10
+            if (bytes[0] == 0xfe && (bytes[1] & 0xc0) == 0x80) return true;
+        }
+        
+        return false;
+    }
 
     private static bool UsesLoopbackOnlyForRemoteTunnel(RemoteAccessMode accessMode) =>
         accessMode is RemoteAccessMode.CloudflaredQuickTunnel or RemoteAccessMode.PlayitHttpsTunnel;

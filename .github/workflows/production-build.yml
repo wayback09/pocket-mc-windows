@@ -17,7 +17,7 @@ jobs:
       DOTNET_VERSION: "8.0.x"
       RUNTIME: win-x64
       APP_ID: PocketMC
-      VERSION: 1.8.0 # <-- single source of truth
+      VERSION: 1.8.0
 
     steps:
       - uses: actions/checkout@v4
@@ -26,112 +26,124 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
+      # ── FIX 1: Cache NuGet packages (biggest win, ~90s saved on warm cache) ──
+      - uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', '**/*.props') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      # ── FIX 2: Cache dotnet global tools so vpk isn't re-downloaded (~30s) ──
+      - uses: actions/cache@v4
+        id: tools-cache
+        with:
+          path: ~\.dotnet\tools
+          key: dotnet-tools-vpk-${{ runner.os }}-v1
+
       - name: Add .NET tools to PATH
         shell: pwsh
         run: echo "$env:USERPROFILE\.dotnet\tools" >> $env:GITHUB_PATH
 
       - name: Install Velopack
+        if: steps.tools-cache.outputs.cache-hit != 'true'
         run: dotnet tool install -g vpk
 
-      - name: Debug Build
-        run: dotnet build PocketMC.Desktop.sln -c Debug
+      # ── FIX 3: Single explicit restore; all subsequent steps use --no-restore ──
+      - name: Restore
+        run: dotnet restore PocketMC.Desktop.sln
 
-      - name: Release Build
-        run: dotnet build PocketMC.Desktop.sln -c Release
-
-      - name: Run Tests
-        run: dotnet test PocketMC.Desktop.sln --no-build
-
-      - name: Publish Multi-DLL
+      # ── FIX 4: Version check moved BEFORE any build work ──────────────────
+      - name: Get latest release version
+        id: latest
+        shell: pwsh
         run: |
-          dotnet publish PocketMC.Desktop/PocketMC.Desktop.csproj `
-            -c Release `
-            -r $env:RUNTIME `
-            --self-contained false `
-            -o publish
+          try {
+            $response = Invoke-RestMethod `
+              -Uri "https://api.github.com/repos/${{ github.repository }}/releases/latest" `
+              -Headers @{ Authorization = "Bearer ${{ secrets.GITHUB_TOKEN }}" }
+            $tag = $response.tag_name
+            if (-not $tag) { echo "version=none" >> $env:GITHUB_OUTPUT }
+            else { echo "version=$($tag -replace '^v','')" >> $env:GITHUB_OUTPUT }
+          } catch {
+            echo "version=none" >> $env:GITHUB_OUTPUT
+          }
 
-      - name: Publish Portable Release EXE (Test Release)
+      - name: Compare versions
+        id: compare
+        shell: pwsh
+        run: |
+          $current = "${{ env.VERSION }}"
+          $latest  = "${{ steps.latest.outputs.version }}"
+          Write-Host "Current: $current | Latest: $latest"
+          $skip = ($latest -ne "none") -and ($current -eq $latest)
+          echo "skip=$($skip.ToString().ToLower())" >> $env:GITHUB_OUTPUT
+
+      # ── Debug build only — tests need this, release publish does its own build ──
+      - name: Build (Debug)
+        run: dotnet build PocketMC.Desktop.sln -c Debug --no-restore
+
+      - name: Test
+        run: dotnet test PocketMC.Desktop.sln -c Debug --no-build --no-restore
+
+      # ── Portable publish: always runs (beta artifact), --no-restore ─────────
+      # ── FIX 5: Removed the redundant "dotnet build -c Release" step ────────
+      - name: Publish Portable
         run: |
           dotnet publish PocketMC.Desktop/PocketMC.Desktop.csproj `
             -c Release `
             -r $env:RUNTIME `
             --self-contained true `
+            --no-restore `
             -p:PublishSingleFile=true `
             -p:IncludeNativeLibrariesForSelfExtract=true `
             -p:DebugType=None `
             -p:DebugSymbols=false `
             -o "Test Release/Portable"
 
-      - name: Upload Test Release Portable Artifact
+      - name: Upload Beta Artifact
         id: upload-test-portable
         uses: actions/upload-artifact@v4
         with:
           name: PocketMC-Test-Portable-${{ github.run_number }}
           path: Test Release/Portable/
 
-      - name: Send Beta Build Discord Notification
+      - name: Discord Beta Notification
         shell: pwsh
         env:
           COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
         run: |
           $webhookUrl = "${{ secrets.DISCORD_BETA_WEBHOOK }}"
-          if (-not $webhookUrl) {
-            Write-Warning "DISCORD_BETA_WEBHOOK secret is not set. Skipping notification."
-            exit 0
-          }
-          
-          $runId = "${{ github.run_id }}"
-          $artifactId = "${{ steps.upload-test-portable.outputs.artifact-id }}"
-          $repo = "${{ github.repository }}"
-          $commit = "${{ github.sha }}".Substring(0, 7)
-          $branch = "${{ github.ref_name }}"
-          
-          # Clean up the commit message for the embed
-          $commitMessage = $env:COMMIT_MESSAGE
-          if ([string]::IsNullOrWhiteSpace($commitMessage)) {
-            $commitMessage = "No commit message provided."
-          } elseif ($commitMessage.Length -gt 1000) {
-            $commitMessage = $commitMessage.Substring(0, 1000) + "..."
-          }
-          
-          # The artifact link to download
-          $artifactUrl = "https://github.com/$repo/actions/runs/$runId/artifacts/$artifactId"
-          
-          $payload = @{
-            embeds = @(
-              @{
-                title = "🛠️ New Beta Portable Build Available!"
-                description = "A new test build has been uploaded for testing."
-                color = 16753920  # Orange
-                fields = @(
-                  @{
-                    name = "⬇️ Download Portable Artifact"
-                    value = "[Click here to download]($artifactUrl)"
-                    inline = $false
-                  },
-                  @{
-                    name = "📝 Run Details"
-                    value = "Branch: ``$branch`` | Commit: ``$commit`` `n[View Action Run](https://github.com/$repo/actions/runs/$runId)"
-                    inline = $false
-                  },
-                  @{
-                    name = "💬 Commit Message"
-                    value = ('```text' + "`n$commitMessage`n" + '```')
-                    inline = $false
-                  }
-                )
-                footer = @{
-                  text = "PocketMC CI/CD System"
-                }
-              }
-            )
-          }
-          
-          $json = $payload | ConvertTo-Json -Depth 5
-          Invoke-RestMethod -Uri $webhookUrl -Method Post -Body $json -ContentType "application/json"
+          if (-not $webhookUrl) { Write-Warning "DISCORD_BETA_WEBHOOK not set."; exit 0 }
 
-      # 🔽 KEEP THIS (for Velopack delta support, NOT version logic)
+          $runId      = "${{ github.run_id }}"
+          $artifactId = "${{ steps.upload-test-portable.outputs.artifact-id }}"
+          $repo       = "${{ github.repository }}"
+          $commit     = "${{ github.sha }}".Substring(0, 7)
+          $branch     = "${{ github.ref_name }}"
+
+          $commitMessage = $env:COMMIT_MESSAGE
+          if ([string]::IsNullOrWhiteSpace($commitMessage)) { $commitMessage = "No commit message." }
+          elseif ($commitMessage.Length -gt 1000) { $commitMessage = $commitMessage.Substring(0, 1000) + "..." }
+
+          $payload = @{
+            embeds = @(@{
+              title       = "🛠️ New Beta Portable Build Available!"
+              description = "A new test build has been uploaded."
+              color       = 16753920
+              fields      = @(
+                @{ name = "⬇️ Download"; value = "[Click to download](https://github.com/$repo/actions/runs/$runId/artifacts/$artifactId)"; inline = $false },
+                @{ name = "📝 Run"; value = "Branch: ``$branch`` | Commit: ``$commit`` `n[View Run](https://github.com/$repo/actions/runs/$runId)"; inline = $false },
+                @{ name = "💬 Commit"; value = ('```text' + "`n$commitMessage`n" + '```'); inline = $false }
+              )
+              footer      = @{ text = "PocketMC CI/CD" }
+            })
+          }
+          Invoke-RestMethod -Uri $webhookUrl -Method Post -Body ($payload | ConvertTo-Json -Depth 5) -ContentType "application/json"
+
+      # ── Everything below is gated on version change ────────────────────────
+      # ── FIX 6: Multi-DLL publish moved behind the gate (was always running) ─
       - name: Download previous release assets
+        if: steps.compare.outputs.skip == 'false'
         uses: robinraju/release-downloader@v1
         with:
           repository: PocketMC/pocket-mc-windows
@@ -140,57 +152,28 @@ jobs:
           out-file-path: Releases
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      # 🔍 Get latest GitHub release version (source of truth)
-      - name: Get latest release version
-        id: latest
-        shell: pwsh
+      - name: Publish Multi-DLL (Velopack input)
+        if: steps.compare.outputs.skip == 'false'
         run: |
-          try {
-            $response = Invoke-RestMethod -Uri "https://api.github.com/repos/${{ github.repository }}/releases/latest" `
-              -Headers @{ Authorization = "Bearer ${{ secrets.GITHUB_TOKEN }}" }
+          dotnet publish PocketMC.Desktop/PocketMC.Desktop.csproj `
+            -c Release `
+            -r $env:RUNTIME `
+            --self-contained false `
+            --no-restore `
+            -o publish
 
-            $tag = $response.tag_name
-
-            if (-not $tag) {
-              echo "version=none" >> $env:GITHUB_OUTPUT
-            } else {
-              $clean = $tag -replace '^v', ''
-              echo "version=$clean" >> $env:GITHUB_OUTPUT
-            }
-          } catch {
-            echo "version=none" >> $env:GITHUB_OUTPUT
-          }
-
-      # 🧠 Compare versions
-      - name: Compare versions
-        id: compare
-        shell: pwsh
-        run: |
-          $current = "${{ env.VERSION }}"
-          $latest  = "${{ steps.latest.outputs.version }}"
-
-          Write-Host "Current version: $current"
-          Write-Host "Latest release: $latest"
-
-          if ($latest -eq "none") {
-            echo "skip=false" >> $env:GITHUB_OUTPUT
-          }
-          elseif ($current -eq $latest) {
-            echo "skip=true" >> $env:GITHUB_OUTPUT
-          }
-          else {
-            echo "skip=false" >> $env:GITHUB_OUTPUT
-          }
-
-      # 🚀 Pack only if version changed
       - name: Pack with Velopack
         if: steps.compare.outputs.skip == 'false'
         run: >
-          vpk pack --packId ${{ env.APP_ID }} --packVersion ${{ env.VERSION }}
-          --packDir publish --mainExe PocketMC.Desktop.exe --framework net8.0,net8.0-aspnetcore
-          --runtime ${{ env.RUNTIME }} --outputDir Releases
+          vpk pack
+          --packId ${{ env.APP_ID }}
+          --packVersion ${{ env.VERSION }}
+          --packDir publish
+          --mainExe PocketMC.Desktop.exe
+          --framework net8.0,net8.0-aspnetcore
+          --runtime ${{ env.RUNTIME }}
+          --outputDir Releases
 
-      # 📦 Upload only if packaged
       - name: Upload Release Artifacts
         if: steps.compare.outputs.skip == 'false'
         uses: actions/upload-artifact@v4
@@ -198,53 +181,35 @@ jobs:
           name: PocketMC-Release-${{ env.VERSION }}
           path: Releases/
 
-          # ... existing steps up to Pack with Velopack ...
-
-      # Extract release notes from CHANGELOG.md for this version
-      - name: Extract release notes from CHANGELOG
+      - name: Extract release notes
         if: steps.compare.outputs.skip == 'false'
         id: notes
         shell: pwsh
         run: |
-          $version = "${{ env.VERSION }}"
-          $header = "## v$version"
-          
+          $version   = "${{ env.VERSION }}"
           $changelog = Get-Content -Path CHANGELOG.md -Raw
-          
-          # Extract everything from the matching header until the next ## or end
-          $pattern = '(?s)' + [regex]::Escape($header) + '.*?(?=^## |\Z)'
-          $match = [regex]::Match($changelog, $pattern, [System.Text.RegularExpressions.RegexOptions]::Multiline)
-          
-          if ($match.Success) {
-            $body = $match.Value.Trim()
-            # Strip the header line itself
-            $body = $body -replace '(?m)^## v.*?`r?`n', ''
-            
-            # Write multiline string to GITHUB_OUTPUT using EOF delimiter
-            $EOF = [guid]::NewGuid().ToString()
-            Add-Content -Path $env:GITHUB_OUTPUT -Value "body<<$EOF"
-            Add-Content -Path $env:GITHUB_OUTPUT -Value $body
-            Add-Content -Path $env:GITHUB_OUTPUT -Value $EOF
-            
-            Write-Host "Extracted notes for v$version"
+          $pattern   = '(?s)' + [regex]::Escape("## v$version") + '.*?(?=^## |\Z)'
+          $match     = [regex]::Match($changelog, $pattern, [System.Text.RegularExpressions.RegexOptions]::Multiline)
+
+          $body = if ($match.Success) {
+            ($match.Value.Trim() -replace '(?m)^## v.*?\r?\n', '')
           } else {
-            $EOF = [guid]::NewGuid().ToString()
-            Add-Content -Path $env:GITHUB_OUTPUT -Value "body<<$EOF"
-            Add-Content -Path $env:GITHUB_OUTPUT -Value "### Release v$version`n`nNo matching section found in CHANGELOG.md. Update it before bumping version."
-            Add-Content -Path $env:GITHUB_OUTPUT -Value $EOF
-            
-            Write-Warning "No changelog section for v$version"
+            "### Release v$version`n`nNo changelog section found. Update CHANGELOG.md before bumping version."
           }
 
-      # 🚀 Create GitHub Release and upload assets
+          $EOF = [guid]::NewGuid().ToString()
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "body<<$EOF"
+          Add-Content -Path $env:GITHUB_OUTPUT -Value $body
+          Add-Content -Path $env:GITHUB_OUTPUT -Value $EOF
+
       - name: Create GitHub Release
         if: steps.compare.outputs.skip == 'false'
         uses: softprops/action-gh-release@v2
         with:
-         tag_name: v${{ env.VERSION }}
-         name: PocketMC v${{ env.VERSION }}
-         body: ${{ steps.notes.outputs.body }}
-         files: |
+          tag_name: v${{ env.VERSION }}
+          name: PocketMC v${{ env.VERSION }}
+          body: ${{ steps.notes.outputs.body }}
+          files: |
             Releases/PocketMC-${{ env.VERSION }}-full.nupkg
             Releases/PocketMC-${{ env.VERSION }}-delta.nupkg
             Releases/PocketMC-win-Setup.exe
@@ -252,55 +217,31 @@ jobs:
             Releases/releases.win.json
             Releases/assets.win.json
             Releases/RELEASES
-         draft: false
-         prerelease: false
+          draft: false
+          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # 🚀 Post Release to Discord Webhook
-      - name: Send Discord Release Notification
+      - name: Discord Release Notification
         if: steps.compare.outputs.skip == 'false'
         shell: pwsh
         run: |
           $webhookUrl = "${{ secrets.DISCORD_RELEASE_WEBHOOK }}"
-          if (-not $webhookUrl) {
-            Write-Warning "DISCORD_RELEASE_WEBHOOK secret is not set. Skipping notification."
-            exit 0
-          }
-          
-          # Clean notes body for JSON compatibility (replace quotes, limits, etc.)
-          $body = @"
-          ${{ steps.notes.outputs.body }}
-          "@
-          if ($body.Length -gt 1000) {
-            $body = $body.Substring(0, 1000) + "..."
-          }
-          
-          $payload = @{
-            embeds = @(
-              @{
-                title = "🚀 New PocketMC Release: v${{ env.VERSION }}!"
-                description = "PocketMC version **${{ env.VERSION }}** has been successfully released and is now available for download!"
-                color = 3066993  # Green
-                fields = @(
-                  @{
-                    name = "📦 Release Notes"
-                    value = $body
-                    inline = $false
-                  },
-                  @{
-                    name = "⬇️ Downloads"
-                    value = "[GitHub Releases](https://github.com/PocketMC/pocket-mc-windows/releases/tag/v${{ env.VERSION }})"
-                    inline = $false
-                  }
-                )
-                footer = @{
-                  text = "PocketMC Build System"
-                }
-              }
-            )
-          }
-          
-          $json = $payload | ConvertTo-Json -Depth 5
-          Invoke-RestMethod -Uri $webhookUrl -Method Post -Body $json -ContentType "application/json"
+          if (-not $webhookUrl) { Write-Warning "DISCORD_RELEASE_WEBHOOK not set."; exit 0 }
 
+          $body = "${{ steps.notes.outputs.body }}"
+          if ($body.Length -gt 1000) { $body = $body.Substring(0, 1000) + "..." }
+
+          $payload = @{
+            embeds = @(@{
+              title       = "🚀 New PocketMC Release: v${{ env.VERSION }}!"
+              description = "Version **${{ env.VERSION }}** is now live!"
+              color       = 3066993
+              fields      = @(
+                @{ name = "📦 Release Notes"; value = $body; inline = $false },
+                @{ name = "⬇️ Downloads"; value = "[GitHub Releases](https://github.com/PocketMC/pocket-mc-windows/releases/tag/v${{ env.VERSION }})"; inline = $false }
+              )
+              footer      = @{ text = "PocketMC Build System" }
+            })
+          }
+          Invoke-RestMethod -Uri $webhookUrl -Method Post -Body ($payload | ConvertTo-Json -Depth 5) -ContentType "application/json"
