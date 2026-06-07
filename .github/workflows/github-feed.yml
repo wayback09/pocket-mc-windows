@@ -1,0 +1,77 @@
+name: GitHub Feed Notification
+
+on:
+  push:
+
+jobs:
+  notify:
+    runs-on: windows-latest
+    steps:
+      - name: Send Discord GitHub Feed Notification
+        shell: pwsh
+        env:
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+        run: |
+          $webhookUrl = "${{ secrets.DISCORD_GITHUB_FEED_WEBHOOK }}"
+          if (-not $webhookUrl) {
+            Write-Warning "DISCORD_GITHUB_FEED_WEBHOOK secret is not set. Skipping notification."
+            exit 0
+          }
+          
+          # Only proceed if there's a head commit
+          $commitHash = "${{ github.sha }}"
+          if (-not $commitHash) {
+            exit 0
+          }
+          
+          $repo = "${{ github.repository }}"
+          $branch = "${{ github.ref_name }}"
+          $actor = "${{ github.actor }}"
+          
+          $compareUrl = "${{ github.event.compare }}"
+          if (-not $compareUrl) { $compareUrl = "https://github.com/$repo/commits/$branch" }
+          
+          $commitUrl = "${{ github.event.head_commit.url }}"
+          if (-not $commitUrl) { $commitUrl = "https://github.com/$repo/commit/$commitHash" }
+          
+          $commitShort = $commitHash.Substring(0, 7)
+          
+          $commitMessage = $env:COMMIT_MESSAGE
+          if ([string]::IsNullOrWhiteSpace($commitMessage)) {
+            $commitMessage = "No commit message provided."
+          } elseif ($commitMessage.Length -gt 1000) {
+            $commitMessage = $commitMessage.Substring(0, 1000) + "..."
+          }
+          
+          $payload = @{
+            embeds = @(
+              @{
+                title = "[$repo:$branch] 1 New Commit"
+                url = $compareUrl
+                color = 7506394 # Discord Blurple / GitHub Blue
+                author = @{
+                  name = $actor
+                  url = "https://github.com/$actor"
+                  icon_url = "https://github.com/${actor}.png"
+                }
+                fields = @(
+                  @{
+                    name = "📌 Commit ``$commitShort``"
+                    value = "[View Commit Changes]($commitUrl)"
+                    inline = $false
+                  },
+                  @{
+                    name = "💬 Commit Message"
+                    value = ('```text' + "`n$commitMessage`n" + '```')
+                    inline = $false
+                  }
+                )
+                footer = @{
+                  text = "PocketMC GitHub Feed"
+                }
+              }
+            )
+          }
+          
+          $json = $payload | ConvertTo-Json -Depth 5
+          Invoke-RestMethod -Uri $webhookUrl -Method Post -Body $json -ContentType "application/json"
