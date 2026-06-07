@@ -9,6 +9,7 @@ public class RemoteDashboardHostTests
 {
     [Theory]
     [InlineData(RemoteAccessMode.CloudflaredQuickTunnel, true)]
+    [InlineData(RemoteAccessMode.PlayitHttpsTunnel, true)]
     [InlineData(RemoteAccessMode.LanOnly, false)]
     public void UsesLoopbackOnlyForRemoteTunnel_ReturnsCorrectly(RemoteAccessMode mode, bool expectedLoopback)
     {

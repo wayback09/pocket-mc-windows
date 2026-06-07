@@ -136,19 +136,12 @@ namespace PocketMC.Desktop.Features.Settings
                 settings.RemoteControl.Port = 25580;
             }
 
-            if (string.IsNullOrWhiteSpace(settings.RemoteControl.TunnelProviderId))
+            settings.RemoteControl.TunnelProviderId = settings.RemoteControl.AccessMode switch
             {
-                settings.RemoteControl.TunnelProviderId = "cloudflared-quick";
-            }
-            else if (settings.RemoteControl.AccessMode == (RemoteAccessMode)2 /* PlayitHttpTunnel */)
-            {
-                settings.RemoteControl.AccessMode = RemoteAccessMode.CloudflaredQuickTunnel;
-                settings.RemoteControl.TunnelProviderId = "cloudflared-quick";
-            }
-            else if (settings.RemoteControl.AccessMode == RemoteAccessMode.CloudflaredQuickTunnel)
-            {
-                settings.RemoteControl.TunnelProviderId = "cloudflared-quick";
-            }
+                RemoteAccessMode.CloudflaredQuickTunnel => "cloudflared-quick",
+                RemoteAccessMode.PlayitHttpsTunnel => "playit-https",
+                _ => "none"
+            };
 
             settings.PlayitConfigDirectory ??= Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),

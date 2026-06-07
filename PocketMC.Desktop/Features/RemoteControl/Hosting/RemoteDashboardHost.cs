@@ -375,7 +375,7 @@ public sealed class RemoteDashboardHost
         context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
 
     private static bool UsesLoopbackOnlyForRemoteTunnel(RemoteAccessMode accessMode) =>
-        accessMode is RemoteAccessMode.CloudflaredQuickTunnel;
+        accessMode is RemoteAccessMode.CloudflaredQuickTunnel or RemoteAccessMode.PlayitHttpsTunnel;
 
     private RemoteDashboardStatus BuildDashboardStatus()
     {

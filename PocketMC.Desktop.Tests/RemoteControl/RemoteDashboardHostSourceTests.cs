@@ -29,5 +29,6 @@ public sealed class RemoteDashboardHostSourceTests
 
         Assert.Contains("UsesLoopbackOnlyForRemoteTunnel(settings.AccessMode)", source, StringComparison.Ordinal);
         Assert.Contains("RemoteAccessMode.CloudflaredQuickTunnel", source, StringComparison.Ordinal);
+        Assert.Contains("RemoteAccessMode.PlayitHttpsTunnel", source, StringComparison.Ordinal);
     }
 }

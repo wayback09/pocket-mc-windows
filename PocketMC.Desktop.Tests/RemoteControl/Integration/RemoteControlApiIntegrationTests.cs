@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -30,7 +31,7 @@ public sealed class RemoteControlApiIntegrationTests : IAsyncLifetime
 
     public RemoteControlApiIntegrationTests()
     {
-        _port = 50000 + Random.Shared.Next(10000);
+        _port = GetAvailableTcpPort();
         _state = new ApplicationState();
         _state.Settings.RemoteControl.Enabled = true;
         _state.Settings.RemoteControl.Port = _port;
@@ -91,6 +92,13 @@ public sealed class RemoteControlApiIntegrationTests : IAsyncLifetime
     {
         _client.Dispose();
         await _host.StopAsync();
+    }
+
+    private static int GetAvailableTcpPort()
+    {
+        using var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        return ((IPEndPoint)listener.LocalEndpoint).Port;
     }
 
     [Fact]

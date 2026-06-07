@@ -8,11 +8,13 @@ public sealed class AppSettingsPageRemoteControlSourceTests
         string xaml = File.ReadAllText(TestSourceFileResolver.Resolve(
             "PocketMC.Desktop",
             "Features",
-            "Setup",
-            "AppSettingsPage.xaml"));
+            "RemoteControl",
+            "UI",
+            "RemoteControlPage.xaml"));
 
         Assert.Contains("Remote Control", xaml, StringComparison.Ordinal);
         Assert.Contains("Cloudflare Quick Tunnel creates a temporary public URL.", xaml, StringComparison.Ordinal);
+        Assert.Contains("PlayIt HTTPS tunnels require PlayIt Premium. Stop Remote Link disables the dedicated PocketMC Remote Control tunnel.", xaml, StringComparison.Ordinal);
         Assert.Contains("Remote console commands can fully control this Minecraft server.", xaml, StringComparison.Ordinal);
         Assert.Contains("ToggleRemoteControlEnabled", xaml, StringComparison.Ordinal);
         Assert.Contains("BtnPairRemoteDevice", xaml, StringComparison.Ordinal);
@@ -21,17 +23,18 @@ public sealed class AppSettingsPageRemoteControlSourceTests
     [Fact]
     public void AppSettingsPage_DelegatesRemoteControlActionsToCoordinator()
     {
-        string codeBehind = File.ReadAllText(TestSourceFileResolver.Resolve(
+        string viewModel = File.ReadAllText(TestSourceFileResolver.Resolve(
             "PocketMC.Desktop",
             "Features",
             "Setup",
-            "AppSettingsPage.xaml.cs"));
+            "ViewModels",
+            "RemoteControlSettingsViewModel.cs"));
 
-        Assert.Contains("RemoteControlCoordinator", codeBehind, StringComparison.Ordinal);
-        Assert.Contains("StartRemoteLink_Click", codeBehind, StringComparison.Ordinal);
-        Assert.Contains("StopRemoteLink_Click", codeBehind, StringComparison.Ordinal);
-        Assert.Contains("PairRemoteDevice_Click", codeBehind, StringComparison.Ordinal);
-        Assert.Contains("MapRemoteAccessModeToProviderId", codeBehind, StringComparison.Ordinal);
-        Assert.DoesNotContain("cloudflared tunnel --url", codeBehind, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("RemoteControlCoordinator", viewModel, StringComparison.Ordinal);
+        Assert.Contains("StartTunnelAsync", viewModel, StringComparison.Ordinal);
+        Assert.Contains("StopTunnelAsync", viewModel, StringComparison.Ordinal);
+        Assert.Contains("PairDevice", viewModel, StringComparison.Ordinal);
+        Assert.Contains("MapRemoteAccessModeToProviderId", viewModel, StringComparison.Ordinal);
+        Assert.DoesNotContain("cloudflared tunnel --url", viewModel, StringComparison.OrdinalIgnoreCase);
     }
 }

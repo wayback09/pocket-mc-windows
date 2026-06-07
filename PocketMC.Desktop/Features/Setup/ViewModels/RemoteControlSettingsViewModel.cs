@@ -13,6 +13,18 @@ namespace PocketMC.Desktop.Features.Setup.ViewModels;
 
 public sealed partial class RemoteControlSettingsViewModel : ObservableObject
 {
+    public sealed record RemoteAccessModeOption(RemoteAccessMode Mode, string Label);
+
+    public static IReadOnlyList<RemoteAccessModeOption> RemoteAccessModeOptions { get; } =
+    [
+        new(RemoteAccessMode.LanOnly, "LAN only"),
+        new(RemoteAccessMode.CloudflaredQuickTunnel, "Cloudflare Quick Tunnel"),
+        new(RemoteAccessMode.PlayitHttpsTunnel, "PlayIt Premium HTTPS")
+    ];
+
+    public const string PlayitHttpsWarningText =
+        "PlayIt HTTPS tunnels require PlayIt Premium. Stop Remote Link disables the dedicated PocketMC Remote Control tunnel.";
+
     private readonly ApplicationState _applicationState;
     private readonly SettingsManager _settingsManager;
     private readonly RemoteControlCoordinator _coordinator;
@@ -55,16 +67,18 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsCloudflaredMode))]
+    [NotifyPropertyChangedFor(nameof(IsPlayitHttpsMode))]
     private RemoteAccessMode _accessMode;
 
     public bool IsCloudflaredMode => AccessMode == RemoteAccessMode.CloudflaredQuickTunnel;
+    public bool IsPlayitHttpsMode => AccessMode == RemoteAccessMode.PlayitHttpsTunnel;
 
     [ObservableProperty]
     private string _cloudflaredPath;
 
     public ObservableCollection<RemoteDeviceSession> PairedDevices { get; } = new();
 
-    public Array AccessModes => Enum.GetValues(typeof(RemoteAccessMode));
+    public IReadOnlyList<RemoteAccessModeOption> AccessModes => RemoteAccessModeOptions;
 
     [ObservableProperty]
     private string _statusText = "";
@@ -280,11 +294,19 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
         settings.RemoteControl.AllowRemoteConsoleCommands = AllowRemoteConsoleCommands;
         settings.RemoteControl.AllowRemotePlayerActions = AllowRemotePlayerActions;
         settings.RemoteControl.AccessMode = AccessMode;
-        settings.RemoteControl.TunnelProviderId = AccessMode == RemoteAccessMode.CloudflaredQuickTunnel ? "cloudflared-quick" : "none";
+        settings.RemoteControl.TunnelProviderId = MapRemoteAccessModeToProviderId(AccessMode);
         settings.RemoteControl.CloudflaredPath = string.IsNullOrWhiteSpace(CloudflaredPath) ? null : CloudflaredPath.Trim();
 
         _settingsManager.Save(settings);
     }
+
+    public static string MapRemoteAccessModeToProviderId(RemoteAccessMode accessMode) =>
+        accessMode switch
+        {
+            RemoteAccessMode.CloudflaredQuickTunnel => "cloudflared-quick",
+            RemoteAccessMode.PlayitHttpsTunnel => "playit-https",
+            _ => "none"
+        };
 
     private async void SaveAndRestart()
     {
@@ -318,7 +340,12 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
         RemoteDashboardStatus status = _coordinator.GetStatus();
         LocalUrlText = $"Local URL: {status.LocalUrls.FirstOrDefault() ?? "not available"}";
         
-        string providerName = AccessMode == RemoteAccessMode.CloudflaredQuickTunnel ? "Cloudflare" : "Remote";
+        string providerName = AccessMode switch
+        {
+            RemoteAccessMode.CloudflaredQuickTunnel => "Cloudflare",
+            RemoteAccessMode.PlayitHttpsTunnel => "PlayIt",
+            _ => "Remote"
+        };
         PublicUrlText = $"{providerName} Public URL: {status.PublicUrl ?? "not started"}";
         
         CanStopTunnel = status.TunnelRunning;
