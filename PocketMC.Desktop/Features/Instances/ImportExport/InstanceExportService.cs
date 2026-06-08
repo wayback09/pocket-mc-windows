@@ -22,6 +22,7 @@ public sealed class InstanceExportService : IInstanceExportService
     private static readonly string[] JavaRootFiles =
     [
         "server.properties",
+        "eula.txt",
         "whitelist.json",
         "ops.json",
         "banned-players.json",
