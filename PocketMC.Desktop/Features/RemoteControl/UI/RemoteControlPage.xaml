@@ -51,7 +51,8 @@
                                              IsChecked="{Binding IsEnabled}"/>
                         </Grid>
 
-                        <Separator Margin="0,16" Opacity="0.15"/>
+                        <StackPanel Visibility="{Binding IsEnabled, Converter={StaticResource BoolToVis}}">
+                            <Separator Margin="0,16" Opacity="0.15"/>
 
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -213,6 +214,7 @@
                                              VerticalAlignment="Center"
                                              IsChecked="{Binding AllowRemotePlayerActions}"/>
                         </Grid>
+                        </StackPanel>
                     </StackPanel>
                 </ui:Card>
             </StackPanel>
