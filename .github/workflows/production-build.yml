@@ -228,11 +228,13 @@ jobs:
       - name: Discord Release Notification
         if: steps.compare.outputs.skip == 'false'
         shell: pwsh
+        env:
+          BODY: ${{ steps.notes.outputs.body }}
         run: |
           $webhookUrl = "${{ secrets.DISCORD_RELEASE_WEBHOOK }}"
           if (-not $webhookUrl) { Write-Warning "DISCORD_RELEASE_WEBHOOK not set."; exit 0 }
 
-          $body = "${{ steps.notes.outputs.body }}"
+          $body = $env:BODY
           if ($body.Length -gt 1000) { $body = $body.Substring(0, 1000) + "..." }
 
           $payload = @{
