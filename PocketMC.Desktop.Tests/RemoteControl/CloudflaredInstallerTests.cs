@@ -38,13 +38,4 @@ public sealed class CloudflaredInstallerTests
         }
     }
 
-    [Fact]
-    public async Task EnsureInstalledAsync_InvalidUserConfiguredPath_ThrowsFileNotFoundException()
-    {
-        var appState = new PocketMC.Desktop.Features.Shell.ApplicationState();
-        var downloader = new DownloaderService(null!, NullLogger<DownloaderService>.Instance);
-        var installer = new PocketMC.Desktop.Features.RemoteControl.Tunnels.CloudflaredInstaller(appState, downloader);
-
-        await Assert.ThrowsAsync<FileNotFoundException>(() => installer.EnsureInstalledAsync("invalid/path/that/does/not/exist.exe", CancellationToken.None));
-    }
 }

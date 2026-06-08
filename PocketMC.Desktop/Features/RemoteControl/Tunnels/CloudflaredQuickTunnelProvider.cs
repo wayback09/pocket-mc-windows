@@ -137,7 +137,7 @@ public sealed class CloudflaredQuickTunnelProvider : IRemoteTunnelProvider, IDis
         catch (Win32Exception ex)
         {
             _logger.LogWarning(ex, "cloudflared executable could not be started.");
-            return SetError("cloudflared could not be started. PocketMC can download it automatically, or you can set a custom path in Remote Control settings.");
+            return SetError("cloudflared could not be started. Check if PocketMC has permission to run executables.");
         }
         catch (Exception ex)
         {
@@ -270,7 +270,7 @@ public sealed class CloudflaredQuickTunnelProvider : IRemoteTunnelProvider, IDis
 
     private async Task<string> ResolveExecutablePathAsync(CancellationToken cancellationToken)
     {
-        return await _installer.EnsureInstalledAsync(_applicationState.Settings.RemoteControl.CloudflaredPath, cancellationToken);
+        return await _installer.EnsureInstalledAsync(cancellationToken);
     }
 
     private bool IsProcessRunning() => _process != null && !_process.HasExited;

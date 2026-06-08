@@ -16,16 +16,8 @@ public sealed class CloudflaredInstaller : ICloudflaredInstaller
         _downloaderService = downloaderService;
     }
 
-    public async Task<string> EnsureInstalledAsync(string? userConfiguredPath, CancellationToken cancellationToken)
+    public async Task<string> EnsureInstalledAsync(CancellationToken cancellationToken)
     {
-        if (!string.IsNullOrWhiteSpace(userConfiguredPath))
-        {
-            if (File.Exists(userConfiguredPath))
-            {
-                return userConfiguredPath;
-            }
-            throw new FileNotFoundException("The user-configured Cloudflared path does not exist.");
-        }
 
         if (!_applicationState.IsConfigured)
         {

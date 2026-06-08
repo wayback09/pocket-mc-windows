@@ -87,29 +87,7 @@
                                    FontSize="12"
                                    Margin="0,8,0,0"/>
 
-                        <!-- Using a simple implicit converter for bool to visibility if we have one, but we can just use WPF-UI built in converter or use a style trigger -->
-                        <StackPanel Margin="0,16,0,0" x:Name="CloudflaredPathPanel">
-                            <StackPanel.Style>
-                                <Style TargetType="StackPanel">
-                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding IsCloudflaredMode}" Value="True">
-                                            <Setter Property="Visibility" Value="Visible"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </StackPanel.Style>
-                            <TextBlock Text="Custom Cloudflared Executable (Optional)" FontSize="14" FontWeight="Medium"/>
-                            <TextBlock Text="Leave blank to let PocketMC manage it automatically. Useful if you want to use a specific version." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
-                            <Grid Margin="0,8,0,0">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-                                <ui:TextBox x:Name="CloudflaredPathInput" Text="{Binding CloudflaredPath, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="C:\path\to\cloudflared.exe"/>
-                                <ui:Button Grid.Column="1" Content="Browse..." Margin="8,0,0,0" Command="{Binding BrowseCloudflaredPathCommand}"/>
-                            </Grid>
-                        </StackPanel>
+
 
                         <Grid Margin="0,16,0,0">
                             <Grid.RowDefinitions>

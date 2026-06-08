@@ -48,7 +48,6 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
         _accessMode = remote.AccessMode == RemoteAccessMode.LanOnly 
             ? RemoteAccessMode.CloudflaredQuickTunnel 
             : remote.AccessMode;
-        _cloudflaredPath = remote.CloudflaredPath ?? "";
 
         UpdateStatus();
     }
@@ -74,9 +73,6 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
 
     public bool IsCloudflaredMode => AccessMode == RemoteAccessMode.CloudflaredQuickTunnel;
     public bool IsPlayitHttpsMode => AccessMode == RemoteAccessMode.PlayitHttpsTunnel;
-
-    [ObservableProperty]
-    private string _cloudflaredPath;
 
     public IReadOnlyList<RemoteAccessModeOption> AccessModes => RemoteAccessModeOptions;
 
@@ -127,27 +123,6 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
         SaveAndRestart();
     }
 
-    partial void OnCloudflaredPathChanged(string value)
-    {
-        SaveAndRestart();
-    }
-
-    [RelayCommand]
-    private void BrowseCloudflaredPath()
-    {
-        var dialog = new Microsoft.Win32.OpenFileDialog
-        {
-            Title = "Select cloudflared.exe",
-            Filter = "Executable Files|*.exe|All Files|*.*",
-            Multiselect = false
-        };
-
-        if (dialog.ShowDialog() == true)
-        {
-            CloudflaredPath = dialog.FileName;
-        }
-    }
-
 
 
 
@@ -167,7 +142,6 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
         settings.RemoteControl.AllowRemotePlayerActions = AllowRemotePlayerActions;
         settings.RemoteControl.AccessMode = AccessMode;
         settings.RemoteControl.TunnelProviderId = MapRemoteAccessModeToProviderId(AccessMode);
-        settings.RemoteControl.CloudflaredPath = string.IsNullOrWhiteSpace(CloudflaredPath) ? null : CloudflaredPath.Trim();
 
         _settingsManager.Save(settings);
         return true;
