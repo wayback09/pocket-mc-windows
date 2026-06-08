@@ -355,7 +355,7 @@ For substantial changes touching process lifecycle, runtime provisioning, tunnel
 <a href="https://www.buymeacoffee.com/sahaj33" target="_blank">
   <img src="https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png" alt="Buy Me A Coffee" height="38" />
 </a>
-&nbsp;&nbsp;
+<br>
 <a href="https://deepwiki.com/PocketMC/pocket-mc-windows">
   <img src="https://deepwiki.com/badge.svg" alt="DeepWiki" />
 </a>
