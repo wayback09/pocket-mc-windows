@@ -6,6 +6,7 @@ public sealed class RemoteInstanceStatusDto
     public string Name { get; set; } = string.Empty;
     public string ServerType { get; set; } = string.Empty;
     public string State { get; set; } = "Offline";
+    public string MinecraftVersion { get; set; } = string.Empty;
     public bool IsRunning { get; set; }
     public int UptimeSeconds { get; set; }
     public int PlayerCount { get; set; }

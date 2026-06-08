@@ -79,6 +79,32 @@ public sealed class RemoteStatusServiceTests : IDisposable
         Assert.Equal(4096, status.MaxRamMb);
     }
 
+    [Fact]
+    public async Task GetInstanceStatus_IncludesBedrockNumericTunnelIpForCrossplay()
+    {
+        var metadata = new InstanceMetadata
+        {
+            Id = Guid.NewGuid(),
+            Name = "CrossplayServer",
+            ServerType = "Paper",
+            HasGeyser = true,
+            GeyserBedrockPort = 19132
+        };
+
+        var lifecycle = new FakeLifecycleService();
+        var monitor = new FakeResourceMonitorService();
+        var state = new ApplicationState();
+        state.SetBedrockTunnelAddress(metadata.Id, "bedrock-tunnel.playit.gg:19132");
+        state.SetBedrockNumericTunnelAddress(metadata.Id, "147.185.221.95:19132");
+
+        var service = CreateService(metadata, lifecycle, monitor, state);
+        var status = (await service.GetInstanceStatusAsync(metadata.Id))!;
+
+        var bedrockNumericIp = status.ServerIps.FirstOrDefault(ip => ip.Label == "Bedrock Numeric (Playit)");
+        Assert.NotNull(bedrockNumericIp);
+        Assert.Equal("147.185.221.95:19132", bedrockNumericIp.Address);
+    }
+
     private RemoteStatusService CreateService(
         InstanceMetadata metadata,
         FakeLifecycleService lifecycle,

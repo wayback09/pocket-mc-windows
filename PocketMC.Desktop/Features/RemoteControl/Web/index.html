@@ -57,101 +57,174 @@
       <div id="notice" class="notice" hidden aria-live="polite"></div>
 
 
+      <!-- Instance Selection Dashboard -->
+      <section id="instanceSelectionView" class="panel instance-selection-panel" hidden>
+        <div class="selection-container">
+          <header class="selection-header">
+            <h1>Select Instance</h1>
+          </header>
+
+          <div class="search-container">
+            <span class="search-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            </span>
+            <input type="text" id="instanceSearchInput" placeholder="Search instances..." autocomplete="off" />
+          </div>
+
+          <div id="instancesGrid" class="instances-grid">
+            <!-- Dynamically populated by JS -->
+          </div>
+        </div>
+      </section>
+
       <section id="appView" hidden>
         <div class="server-heading">
-          <div class="server-title">
-            <span class="server-icon" aria-hidden="true">
-              <img src="/remote/icon.png" alt="" class="server-icon-img" id="serverIconImage" />
-            </span>
-            <div>
-              <p class="eyebrow">Instance</p>
-              <h2 id="serverName">Select a server</h2>
-              <p id="serverType">PocketMC instance</p>
+          <div class="server-title-row">
+            <button id="backToSelectorButton" class="icon-button back-btn" title="Back to Select Instance">
+              <svg viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+            </button>
+            <h1>Server Dashboard</h1>
+          </div>
+        </div>
+
+        <div class="server-info-card">
+          <div class="server-title-row-detail">
+            <h2 id="serverName">Select a server</h2>
+            <div class="server-badges-row">
+              <span id="statusPill" class="status-pill offline">Offline</span>
+              <span id="serverVersionBadge" class="meta-badge">v1.20.1</span>
+              <span id="serverType" class="meta-badge">Paper</span>
             </div>
           </div>
-          <span id="statusPill" class="status-pill offline">Offline</span>
+          <p id="serverIpAddress" class="server-ip-label">IP: N/A</p>
         </div>
 
         <nav class="tabs-nav">
-          <button class="tab-button active" data-tab="overview" type="button">Overview</button>
-          <button class="tab-button" data-tab="console" type="button">Console</button>
-          <button class="tab-button" data-tab="players" type="button">Players</button>
+          <button class="tab-button active" data-tab="overview" type="button">
+            <svg viewBox="0 0 24 24" class="tab-icon"><rect x="3" y="3" width="7" height="9" rx="1"></rect><rect x="14" y="3" width="7" height="5" rx="1"></rect><rect x="14" y="12" width="7" height="9" rx="1"></rect><rect x="3" y="16" width="7" height="5" rx="1"></rect></svg>
+            <span class="tab-text">Overview</span>
+          </button>
+          <button class="tab-button" data-tab="console" type="button">
+            <svg viewBox="0 0 24 24" class="tab-icon"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
+            <span class="tab-text">Console</span>
+          </button>
+          <button class="tab-button" data-tab="players" type="button">
+            <svg viewBox="0 0 24 24" class="tab-icon"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <span class="tab-text">Players</span>
+          </button>
         </nav>
 
-        <div id="tab-overview" class="tab-content active panel">
+        <div id="tab-overview" class="tab-content active panel overview-panel">
           <div class="server-ips" id="serverIpsContainer" hidden>
             <p class="eyebrow">Connect</p>
             <div id="serverIpsList" class="ips-list"></div>
           </div>
 
-          <div class="metrics-grid">
-            <div class="metric-tile">
-              <span class="metric-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-8 0v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M20 21v-2a3 3 0 0 0-2-2.8M18 4.4a4 4 0 0 1 0 7.2"/></svg>
+          <div class="button-row">
+            <button id="startButton" class="primary-button action-btn start-btn" type="button">
+              <span class="button-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M5 3l14 9-14 9V3z"/></svg>
               </span>
-              <div>
-                <span>Players</span>
-                <strong id="playerCount">0 / 0</strong>
-              </div>
-            </div>
-            <div class="metric-tile">
-              <span class="metric-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24"><path d="M4 14h4l2-8 4 16 2-8h4"/></svg>
+              <span class="btn-spinner" hidden></span>
+              <span class="btn-text">Start</span>
+            </button>
+            <button id="stopButton" class="danger-button action-btn stop-btn" type="button">
+              <span class="button-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
               </span>
-              <div>
-                <span>CPU</span>
-                <strong id="cpuUsage">0%</strong>
-              </div>
-            </div>
-            <div class="metric-tile">
-              <span class="metric-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24"><path d="M6 19V5h12v14zM9 9h6M9 13h6M9 17h6"/></svg>
+              <span class="btn-spinner" hidden></span>
+              <span class="btn-text">Stop</span>
+            </button>
+            <button id="restartButton" class="secondary-button action-btn restart-btn" type="button">
+              <span class="button-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
               </span>
-              <div>
-                <span>RAM</span>
-                <strong id="ramUsage">0 GB</strong>
-              </div>
-            </div>
-            <div class="metric-tile">
-              <span class="metric-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24"><path d="M12 7v5l3 2M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20"/></svg>
-              </span>
-              <div>
-                <span>Uptime</span>
-                <strong id="uptime">0m</strong>
-              </div>
-            </div>
+              <span class="btn-spinner" hidden></span>
+              <span class="btn-text">Restart</span>
+            </button>
           </div>
 
-          <div class="button-row">
-            <button id="startButton" class="primary-button" type="button">
-              <span class="button-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24"><path d="m8 5 11 7-11 7z"/></svg>
-              </span>
-              <span>Start</span>
-            </button>
-            <button id="stopButton" class="danger-button" type="button">
-              <span class="button-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24"><path d="M7 7h10v10H7z"/></svg>
-              </span>
-              <span>Stop</span>
-            </button>
-            <button id="restartButton" class="secondary-button" type="button">
-              <span class="button-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 0 1-13.7 5.6M4 12A8 8 0 0 1 17.7 6.4M17 3v4h4M7 21v-4H3"/></svg>
-              </span>
-              <span>Restart</span>
-            </button>
+          <!-- Single Consolidated Resources Card -->
+          <div class="metric-summary-card">
+            <div class="summary-grid">
+              
+              <!-- CPU Quadrant -->
+              <div class="summary-item cpu-summary">
+                <div class="summary-item-header">
+                  <span class="summary-item-label">CPU USAGE</span>
+                  <span class="summary-item-icon">
+                    <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"></rect><rect x="9" y="9" width="6" height="6"></rect><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 15h3M1 9h3M1 15h3"/></svg>
+                  </span>
+                </div>
+                <div class="summary-item-value">
+                  <span id="cpuUsage">0</span><span class="metric-tile-unit">%</span>
+                </div>
+                <div class="metric-progress-container">
+                  <div id="cpuProgressBar" class="metric-progress-bar cpu-bar" style="width: 0%"></div>
+                </div>
+              </div>
+
+              <!-- RAM Quadrant -->
+              <div class="summary-item ram-summary">
+                <div class="summary-item-header">
+                  <span class="summary-item-label">RAM ALLOCATION</span>
+                  <span class="summary-item-icon">
+                    <svg viewBox="0 0 24 24"><path d="M6 19V5h12v14zM9 9h6M9 13h6M9 17h6"/></svg>
+                  </span>
+                </div>
+                <div class="summary-item-value">
+                  <span id="ramUsage">0 GB</span>
+                </div>
+                <div class="metric-progress-container">
+                  <div id="ramProgressBar" class="metric-progress-bar ram-bar" style="width: 0%"></div>
+                </div>
+              </div>
+
+              <!-- Players Quadrant -->
+              <div class="summary-item players-summary">
+                <div class="summary-item-header">
+                  <span class="summary-item-label">PLAYERS ONLINE</span>
+                  <span class="summary-item-icon">
+                    <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8"/></svg>
+                  </span>
+                </div>
+                <div class="summary-item-value">
+                  <span id="playerCount">0 / 0</span>
+                </div>
+                <div id="playersAvatarList" class="players-avatar-list">
+                  <!-- Dynamically filled with player initial circles -->
+                </div>
+              </div>
+
+              <!-- Uptime Quadrant -->
+              <div class="summary-item uptime-summary">
+                <div class="summary-item-header">
+                  <span class="summary-item-label">UPTIME</span>
+                  <span class="summary-item-icon">
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                  </span>
+                </div>
+                <div class="summary-item-value">
+                  <span id="uptime">0m</span>
+                </div>
+                <div class="metric-tile-footer-text">
+                  Since last restart
+                </div>
+              </div>
+
+            </div>
           </div>
         </div>
 
         <div id="tab-players" class="tab-content panel players-panel" hidden>
           <div class="section-head">
-            <div>
+            <div class="title-area">
               <p class="eyebrow">Online players</p>
-              <h2>Players</h2>
+              <div class="title-row">
+                <h2>Players</h2>
+                <span id="playersState" class="state-label">0 online</span>
+              </div>
             </div>
-            <span id="playersState" class="state-label">0 online</span>
           </div>
           <div id="playerList" class="player-list"></div>
 
@@ -159,26 +232,26 @@
             <p class="eyebrow">Manage Offline Player</p>
             <form id="offlinePlayerForm" class="command-row">
               <input id="offlinePlayerInput" type="text" autocomplete="off" placeholder="Player name">
-              <button class="secondary-button" type="submit" id="btnOfflineManage">Manage Player</button>
+              <button class="secondary-button icon-btn" type="submit" id="btnOfflineManage"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 10 4 15 9 20"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/></svg></button>
             </form>
           </div>
           <p id="playersDisabled" class="muted" hidden>Remote player actions are disabled in PocketMC Desktop.</p>
         </div>
 
         <div id="tab-console" class="tab-content panel console-panel" hidden>
-          <div class="section-head">
-            <div class="console-head-row">
-              <div>
-                <p class="eyebrow">Live console</p>
+          <div class="section-head console-section-head">
+            <div class="title-area">
+              <p class="eyebrow">Live console</p>
+              <div class="title-row">
                 <h2>Console</h2>
-              </div>
-              <div class="console-filters">
-                <label class="filter-label"><input type="checkbox" id="filterInfo" checked> Info</label>
-                <label class="filter-label"><input type="checkbox" id="filterWarn" checked> Warn</label>
-                <label class="filter-label"><input type="checkbox" id="filterError" checked> Error</label>
+                <span id="consoleState" class="state-label">Idle</span>
               </div>
             </div>
-            <span id="consoleState" class="state-label">Idle</span>
+            <div class="console-filters">
+              <label class="filter-label"><input type="checkbox" id="filterInfo" checked> Info</label>
+              <label class="filter-label"><input type="checkbox" id="filterWarn" checked> Warn</label>
+              <label class="filter-label"><input type="checkbox" id="filterError" checked> Error</label>
+            </div>
           </div>
           <div id="consoleOutput" class="console-output"></div>
           <form id="commandForm" class="command-row">
@@ -261,6 +334,45 @@
     </div>
   </div>
 
+  <!-- Welcome Screen Overlay -->
+  <div id="welcomeScreen" class="welcome-overlay" hidden>
+    <div class="welcome-content">
+      <div class="welcome-logo-box">
+        <img src="/remote/icon.png" alt="PocketMC Logo" class="welcome-logo-img" />
+      </div>
+      
+      <h1 class="welcome-title">Welcome to<br><span class="brand-name">PocketMC Remote</span></h1>
+      <p class="welcome-subtitle">Your Minecraft server, anywhere. Monitor performance, manage players, and run commands from the palm of your hand.</p>
+      
+      <div class="welcome-features">
+        <div class="welcome-feature-item">
+          <div class="welcome-feature-icon-wrapper perf-theme">
+            <svg viewBox="0 0 24 24" class="welcome-feature-svg"><path d="M3 3v18h18M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/></svg>
+          </div>
+          <span class="welcome-feature-text">Live Performance Tracking</span>
+        </div>
+        <div class="welcome-feature-item">
+          <div class="welcome-feature-icon-wrapper console-theme">
+            <svg viewBox="0 0 24 24" class="welcome-feature-svg"><path d="M4 17V7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zM8 9l3 3-3 3M13 15h3"/></svg>
+          </div>
+          <span class="welcome-feature-text">Mobile Console Access</span>
+        </div>
+        <div class="welcome-feature-item">
+          <div class="welcome-feature-icon-wrapper players-theme">
+            <svg viewBox="0 0 24 24" class="welcome-feature-svg"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <span class="welcome-feature-text">Player Management Tools</span>
+        </div>
+      </div>
+      
+      <button id="getStartedButton" class="welcome-btn" type="button">
+        <span>Get Started</span>
+        <svg viewBox="0 0 24 24" class="welcome-btn-arrow"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>
+    </div>
+  </div>
+
   <script src="/remote/app.js"></script>
 </body>
 </html>
+

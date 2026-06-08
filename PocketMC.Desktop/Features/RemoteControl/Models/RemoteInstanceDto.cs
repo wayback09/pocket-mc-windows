@@ -7,4 +7,7 @@ public sealed class RemoteInstanceDto
     public string ServerType { get; set; } = string.Empty;
     public bool IsRunning { get; set; }
     public string State { get; set; } = "Offline";
+    public string MinecraftVersion { get; set; } = string.Empty;
+    public int PlayerCount { get; set; }
+    public int MaxPlayers { get; set; }
 }

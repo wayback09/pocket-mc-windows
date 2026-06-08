@@ -55,6 +55,7 @@ const els = {
   reasonModalInput: document.querySelector("#reasonModalInput"),
   reasonModalCancel: document.querySelector("#reasonModalCancel"),
   playerActionModalClose: document.querySelector("#playerActionModalClose"),
+  playerActionCloseRow: document.querySelector("#playerActionCloseRow"),
 
   btnMakeOp: document.querySelector("#btnMakeOp"),
   btnDeop: document.querySelector("#btnDeop"),
@@ -64,11 +65,24 @@ const els = {
   
   offlinePlayerInput: document.querySelector("#offlinePlayerInput"),
   btnOfflineManage: document.querySelector("#btnOfflineManage"),
-  offlinePlayerForm: document.querySelector("#offlinePlayerForm")
+  offlinePlayerForm: document.querySelector("#offlinePlayerForm"),
+  welcomeScreen: document.querySelector("#welcomeScreen"),
+  getStartedButton: document.querySelector("#getStartedButton"),
+  instanceSelectionView: document.querySelector("#instanceSelectionView"),
+  instancesGrid: document.querySelector("#instancesGrid"),
+  instanceSearchInput: document.querySelector("#instanceSearchInput"),
+  backToSelectorButton: document.querySelector("#backToSelectorButton"),
+  serverVersionBadge: document.querySelector("#serverVersionBadge"),
+  serverIpAddress: document.querySelector("#serverIpAddress"),
+  cpuProgressBar: document.querySelector("#cpuProgressBar"),
+  ramProgressBar: document.querySelector("#ramProgressBar"),
+  playersAvatarList: document.querySelector("#playersAvatarList")
 };
 
 let selectedInstanceId = localStorage.getItem(instanceKey);
-let currentAppView = "instances";
+let currentView = selectedInstanceId ? "details" : "selection";
+let searchQuery = "";
+let cachedInstances = [];
 let socket = null;
 let statusTimer = null;
 let historyLoadedForInstance = null;
@@ -79,7 +93,7 @@ let remoteStatusGlobal = null;
 let modalActionTarget = null; // { name: string, action: string, requireReason: bool }
 
 function setVisible(view) {
-  for (const item of [els.appView, els.emptyView, els.errorView]) {
+  for (const item of [els.appView, els.emptyView, els.errorView, els.instanceSelectionView]) {
     if (item) item.hidden = item !== view;
   }
 }
@@ -115,11 +129,29 @@ async function api(path, options = {}) {
   return contentType.includes("application/json") ? response.json() : response.text();
 }
 
+
+if (els.getStartedButton && els.welcomeScreen) {
+  els.getStartedButton.addEventListener("click", () => {
+    localStorage.setItem("pocketmc.remote.welcomeSeen", "true");
+    els.welcomeScreen.classList.add("welcome-fade-out");
+    setTimeout(() => {
+      els.welcomeScreen.hidden = true;
+    }, 300);
+  });
+}
+
+// Init
 async function start() {
+  const welcomeSeen = localStorage.getItem("pocketmc.remote.welcomeSeen");
+  if (welcomeSeen !== "true" && els.welcomeScreen) {
+    els.welcomeScreen.hidden = false;
+  }
+  
   clearInterval(statusTimer);
   closeSocket();
   await openDashboard();
 }
+
 
 
 
@@ -140,13 +172,21 @@ async function openDashboard() {
 }
 
 async function refreshEverything({ reconnectConsole = false } = {}) {
-  const instances = await api("/api/instances");
-  remoteStatusGlobal = await api("/api/status");
+  let instances = [];
+  try {
+    instances = await api("/api/instances");
+    remoteStatusGlobal = await api("/api/status");
+  } catch (error) {
+    showError(error.message);
+    return;
+  }
   
-  els.connectionLabel.textContent = remoteStatusGlobal.publicUrl || remoteStatusGlobal.localUrls?.[0] || "Connected";
-  els.connectionLabel.className = "connection-pill online";
+  cachedInstances = instances;
 
-  renderSidebar(instances);
+  if (els.connectionLabel) {
+    els.connectionLabel.textContent = remoteStatusGlobal.publicUrl || remoteStatusGlobal.localUrls?.[0] || "Connected";
+    els.connectionLabel.className = "connection-pill online";
+  }
 
   if (instances.length === 0) {
     historyLoadedForInstance = null;
@@ -156,24 +196,89 @@ async function refreshEverything({ reconnectConsole = false } = {}) {
     return;
   }
 
-  if (!selectedInstanceId || !instances.some((i) => i.id === selectedInstanceId)) {
-    selectedInstanceId = instances[0].id;
-    localStorage.setItem(instanceKey, selectedInstanceId);
-    renderSidebar(instances); // re-render to update active
+  if (currentView === "details" && (!selectedInstanceId || !instances.some((i) => i.id === selectedInstanceId))) {
+    currentView = "selection";
   }
 
-  setVisible(els.appView);
-
-  const instanceStatus = await api(`/api/instances/${selectedInstanceId}/status`);
-  lastInstanceStatus = instanceStatus;
-  
-  renderStatus(remoteStatusGlobal, instanceStatus);
-
-  if (reconnectConsole) {
-    historyLoadedForInstance = null;
+  if (currentView === "selection") {
     closeSocket();
+    renderSelectionView(instances);
+    setVisible(els.instanceSelectionView);
+  } else {
+    setVisible(els.appView);
+
+    const instanceStatus = await api(`/api/instances/${selectedInstanceId}/status`);
+    lastInstanceStatus = instanceStatus;
+    
+    renderStatus(remoteStatusGlobal, instanceStatus);
+
+    if (reconnectConsole) {
+      historyLoadedForInstance = null;
+      closeSocket();
+    }
+    await ensureConsoleConnection(instanceStatus);
   }
-  await ensureConsoleConnection(instanceStatus);
+}
+
+function renderSelectionView(instances) {
+  if (!els.instancesGrid) return;
+  els.instancesGrid.innerHTML = "";
+
+  const query = (searchQuery || "").toLowerCase().trim();
+  const filtered = instances.filter(inst => {
+    return inst.name.toLowerCase().includes(query) || 
+           inst.serverType.toLowerCase().includes(query);
+  });
+
+  if (filtered.length === 0) {
+    els.instancesGrid.innerHTML = `<p class="muted" style="text-align: center; margin: 32px 0;">No matching servers found.</p>`;
+    return;
+  }
+
+  for (const inst of filtered) {
+    const card = document.createElement("div");
+    card.className = "instance-card";
+    card.dataset.id = inst.id;
+
+    const state = (inst.state || "").toLowerCase();
+    const isOnline = inst.isRunning;
+    const isBusy = ["starting", "stopping", "restarting", "settingup", "installing"].includes(state);
+    const statusClass = isOnline ? "online" : (isBusy ? "busy" : "offline");
+    const statusText = isBusy ? (inst.state || "").toUpperCase() : (isOnline ? "ONLINE" : "OFFLINE");
+
+    const playerCount = inst.playerCount !== undefined ? inst.playerCount : 0;
+    const maxPlayers = inst.maxPlayers !== undefined ? inst.maxPlayers : 20;
+
+    card.innerHTML = `
+      <div class="instance-card-header">
+        <img src="${getServerIcon(inst.serverType)}" alt="" class="instance-card-icon" />
+        <div class="instance-card-info">
+          <h3>${escapeHtml(inst.name)}</h3>
+          <p>${escapeHtml(inst.serverType)} ${escapeHtml(inst.minecraftVersion || "")}</p>
+        </div>
+      </div>
+      <hr class="instance-card-divider" />
+      <div class="instance-card-footer">
+        <span class="instance-status-pill ${statusClass}">
+          <span class="status-dot"></span>
+          ${escapeHtml(statusText)}
+        </span>
+        <span class="instance-player-count">
+          <svg viewBox="0 0 24 24" class="player-icon-svg"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8"/></svg>
+          <span>${playerCount} / ${maxPlayers}</span>
+        </span>
+      </div>
+    `;
+
+    card.addEventListener("click", () => {
+      selectedInstanceId = inst.id;
+      localStorage.setItem(instanceKey, selectedInstanceId);
+      currentView = "details";
+      refreshEverything({ reconnectConsole: true });
+    });
+
+    els.instancesGrid.appendChild(card);
+  }
 }
 
 function getStatusColor(status) {
@@ -195,49 +300,101 @@ function getServerIcon(serverType) {
   return "/remote/icons/vanilla.png";
 }
 
-function renderSidebar(instances) {
-  els.instanceListSidebar.innerHTML = "";
-  for (const instance of instances) {
-    const li = document.createElement("li");
-    const btn = document.createElement("button");
-    btn.className = "sidebar-item";
-    if (instance.id === selectedInstanceId) {
-        btn.classList.add("active");
-    }
-    
-    const iconPath = getServerIcon(instance.serverType);
-    const icon = `<img src="${iconPath}" alt="" class="sidebar-item-icon" />`;
-    btn.innerHTML = `${icon}<span>${escapeHtml(instance.name)}</span>`;
-    
-    btn.addEventListener("click", () => {
-        selectedInstanceId = instance.id;
-        localStorage.setItem(instanceKey, selectedInstanceId);
-        openDashboard();
-    });
-    li.appendChild(btn);
-    els.instanceListSidebar.appendChild(li);
-  }
-}
-
-
-
 function renderStatus(remoteStatus, instanceStatus) {
   els.serverName.textContent = instanceStatus.name;
   els.serverType.textContent = instanceStatus.serverType;
   
+  if (els.serverVersionBadge) {
+    els.serverVersionBadge.textContent = instanceStatus.minecraftVersion ? `v${instanceStatus.minecraftVersion}` : "v1.20.1";
+  }
+
+  if (els.serverIpAddress) {
+    let primaryIp = "N/A";
+    if (instanceStatus.serverIps && instanceStatus.serverIps.length > 0) {
+      const tunnel = instanceStatus.serverIps.find(ip => {
+        const label = (ip.label || "").toLowerCase();
+        return label.includes("playit") && !label.includes("voice");
+      });
+      primaryIp = tunnel ? tunnel.address : "N/A";
+    }
+    els.serverIpAddress.textContent = `IP: ${primaryIp}`;
+  }
+
   if (els.serverIconImage) {
       els.serverIconImage.src = getServerIcon(instanceStatus.serverType);
   }
 
   setStatusPill(instanceStatus);
   els.playerCount.textContent = `${instanceStatus.playerCount} / ${instanceStatus.maxPlayers}`;
-  els.ramUsage.textContent = `${(instanceStatus.ramUsageMb / 1024).toFixed(1)} GB`;
-  els.cpuUsage.textContent = `${instanceStatus.cpuUsage.toFixed(0)}%`;
-  els.uptime.textContent = formatUptime(instanceStatus.uptimeSeconds);
   
-  els.startButton.disabled = instanceStatus.isRunning;
-  els.stopButton.disabled = !instanceStatus.isRunning;
-  els.restartButton.disabled = !instanceStatus.isRunning;
+  const ramUsageGb = (instanceStatus.ramUsageMb / 1024).toFixed(1);
+  const maxRamGb = instanceStatus.maxRamMb ? (instanceStatus.maxRamMb / 1024).toFixed(0) : "4";
+  els.ramUsage.innerHTML = `${ramUsageGb} <span class="metric-tile-unit">/ ${maxRamGb} GB</span>`;
+  
+  els.cpuUsage.textContent = `${instanceStatus.cpuUsage.toFixed(0)}`;
+  els.uptime.textContent = formatUptime(instanceStatus.uptimeSeconds);
+
+  // Update progress bars
+  if (els.cpuProgressBar) {
+    els.cpuProgressBar.style.width = `${instanceStatus.cpuUsage.toFixed(0)}%`;
+  }
+  if (els.ramProgressBar) {
+    const ramPct = instanceStatus.maxRamMb > 0 ? (instanceStatus.ramUsageMb / instanceStatus.maxRamMb) * 100 : 0;
+    els.ramProgressBar.style.width = `${ramPct.toFixed(0)}%`;
+  }
+
+  // Update players avatar list
+  if (els.playersAvatarList) {
+    els.playersAvatarList.innerHTML = "";
+    const onlinePlayers = instanceStatus.onlinePlayers || [];
+    if (onlinePlayers.length > 0) {
+      onlinePlayers.slice(0, 5).forEach(player => {
+        const circle = document.createElement("span");
+        circle.className = "player-initial-circle";
+        circle.textContent = player.name ? player.name.charAt(0).toUpperCase() : "?";
+        circle.title = player.name;
+        els.playersAvatarList.appendChild(circle);
+      });
+    } else {
+      els.playersAvatarList.innerHTML = `<span class="muted" style="font-size: 12px; font-weight: normal;">No players online</span>`;
+    }
+  }
+  
+  const state = (instanceStatus.state || "").toLowerCase();
+  const isBusy = ["starting", "stopping", "restarting", "settingup", "installing"].includes(state);
+
+  // Transition state details
+  const isStarting = state === "starting";
+  const isStopping = state === "stopping";
+  const isRestarting = state === "restarting";
+
+  // Helpers to update button content
+  const updateButtonState = (btn, isTransitioning, transitionText, defaultText) => {
+    if (!btn) return;
+    const icon = btn.querySelector(".button-icon");
+    const spinner = btn.querySelector(".btn-spinner");
+    const textEl = btn.querySelector(".btn-text");
+    
+    if (isTransitioning) {
+      if (icon) icon.hidden = true;
+      if (spinner) spinner.hidden = false;
+      if (textEl) textEl.textContent = transitionText;
+    } else {
+      if (icon) icon.hidden = false;
+      if (spinner) spinner.hidden = true;
+      if (textEl) textEl.textContent = defaultText;
+    }
+  };
+
+  updateButtonState(els.startButton, isStarting, "Starting...", "Start");
+  updateButtonState(els.stopButton, isStopping, "Stopping...", "Stop");
+  updateButtonState(els.restartButton, isRestarting, "Restarting...", "Restart");
+
+  els.startButton.disabled = instanceStatus.isRunning || isBusy;
+  els.stopButton.disabled = !instanceStatus.isRunning || isBusy;
+  els.restartButton.disabled = !instanceStatus.isRunning || isBusy;
+
+
   
   const canSendCommands = remoteStatus.allowRemoteConsoleCommands && instanceStatus.isRunning;
   els.commandForm.hidden = !canSendCommands;
@@ -252,28 +409,24 @@ function renderStatus(remoteStatus, instanceStatus) {
   
   renderPlayers(instanceStatus.onlinePlayers || [], remoteStatus.allowRemotePlayerActions);
 
-  if (instanceStatus.serverIps && instanceStatus.serverIps.length > 0) {
+  let filteredIps = [];
+  if (state === "online") {
+    filteredIps = (instanceStatus.serverIps || []).filter(ip => {
+      const label = (ip.label || "").toLowerCase();
+      
+      // Keep Playit public IPs (excluding Voice)
+      if (label.includes("playit") && !label.includes("voice")) {
+        return true;
+      }
+      
+      return false;
+    });
+  }
+
+  if (filteredIps.length > 0) {
     els.serverIpsContainer.hidden = false;
     els.serverIpsList.innerHTML = "";
     
-    // Filter redundant LAN IPs: Prefer IPV4 over IPV6, keep only 1 for each port type if possible
-    let filteredIps = instanceStatus.serverIps.filter(ip => ip.label.toLowerCase().includes("tunnel"));
-    let lanIps = instanceStatus.serverIps.filter(ip => !ip.label.toLowerCase().includes("tunnel"));
-    
-    // Naive filter for LAN: group by port
-    let lanGroups = {};
-    for (const lip of lanIps) {
-        const parts = lip.address.split(":");
-        const port = parts[parts.length-1];
-        if (!lanGroups[port]) lanGroups[port] = [];
-        lanGroups[port].push(lip);
-    }
-    for (const port in lanGroups) {
-        // Pick IPv4 first
-        let best = lanGroups[port].find(x => x.address.includes(".")) || lanGroups[port][0];
-        filteredIps.push(best);
-    }
-
     for (const ip of filteredIps) {
       const badge = document.createElement("div");
       badge.className = "ip-item";
@@ -303,16 +456,27 @@ function renderStatus(remoteStatus, instanceStatus) {
 
 function setStatusPill(instanceStatus) {
   const state = (instanceStatus.state || "").toLowerCase();
-  const isBusy = state.includes("start") || state.includes("stop") || state.includes("restart");
-  els.statusPill.textContent = instanceStatus.state || (instanceStatus.isRunning ? "Online" : "Offline");
+  const isBusy = ["starting", "stopping", "restarting", "settingup", "installing"].includes(state);
+  
+  let statusText = "Offline";
+  if (isBusy) {
+    statusText = instanceStatus.state;
+  } else if (instanceStatus.isRunning) {
+    statusText = "Online";
+  }
+  
+  els.statusPill.textContent = statusText;
   els.statusPill.className = "status-pill";
-  els.statusPill.classList.add(instanceStatus.isRunning ? "online" : (isBusy ? "busy" : "offline"));
+  els.statusPill.classList.add(isBusy ? "busy" : (instanceStatus.isRunning ? "online" : "offline"));
 }
 
 function formatUptime(seconds) {
   if (seconds < 0) return "0m";
-  const h = Math.floor(seconds / 3600);
+  const d = Math.floor(seconds / 86400);
+  const h = Math.floor((seconds % 86400) / 3600);
   const m = Math.floor((seconds % 3600) / 60);
+  
+  if (d > 0) return `${d}d ${h}h`;
   if (h > 0) return `${h}h ${m}m`;
   return `${m}m`;
 }
@@ -325,8 +489,13 @@ async function ensureConsoleConnection(instanceStatus) {
     closeSocket();
     els.consoleState.textContent = "Offline";
     els.consoleState.className = "state-label offline";
-    if (!els.consoleOutput.hasChildNodes() || els.consoleOutput.textContent === "Server is offline.") {
-      els.consoleOutput.innerHTML = "Server is offline.";
+    // Always clear — prevents stale logs from another instance leaking through
+    if (historyLoadedForInstance !== selectedInstanceId) {
+      els.consoleOutput.innerHTML = "";
+      els.consoleOutput.textContent = "Server is offline.";
+      historyLoadedForInstance = selectedInstanceId;
+    } else if (!els.consoleOutput.hasChildNodes()) {
+      els.consoleOutput.textContent = "Server is offline.";
     }
     return;
   }
@@ -351,7 +520,7 @@ async function loadConsoleHistory() {
       els.consoleOutput.textContent = "Waiting for console output...";
     }
     historyLoadedForInstance = selectedInstanceId;
-    scrollConsole();
+    scrollConsole({ force: true });
   } catch (err) {
     els.consoleOutput.innerHTML = "Console history is not available yet.";
   }
@@ -452,8 +621,18 @@ function applyConsoleFiltersToLine(lineEl) {
   lineEl.style.display = show ? "block" : "none";
 }
 
-function scrollConsole() {
-  els.consoleOutput.scrollTop = els.consoleOutput.scrollHeight;
+function scrollConsole({ force = false } = {}) {
+  const container = els.consoleOutput;
+  if (!container) return;
+  
+  const isNearBottom = container.scrollHeight - container.clientHeight - container.scrollTop < 120;
+  
+  if (force || isNearBottom) {
+    container.scrollTop = container.scrollHeight;
+    requestAnimationFrame(() => {
+      container.scrollTop = container.scrollHeight;
+    });
+  }
 }
 
 // ---------------------------------------------------------
@@ -472,9 +651,10 @@ function renderPlayers(players, allowActions) {
   for (const player of players) {
     const item = document.createElement("div");
     item.className = "player-item";
-    
+    const firstChar = player.name ? player.name.charAt(0).toUpperCase() : "?";
     item.innerHTML = `
       <div class="player-name">
+        <span class="player-avatar-circle">${escapeHtml(firstChar)}</span>
         <span>${escapeHtml(player.name)}</span>
       </div>
     `;
@@ -549,13 +729,32 @@ els.tabs.forEach(tab => {
     const content = document.getElementById(`tab-${tab.dataset.tab}`);
     content.classList.add("active");
     content.hidden = false;
-    if (tab.dataset.tab === "console") scrollConsole();
+    if (tab.dataset.tab === "console") scrollConsole({ force: true });
   });
 });
 
 els.refreshButton.addEventListener("click", () => refreshEverything());
 els.emptyRefreshButton.addEventListener("click", () => refreshEverything());
 els.retryButton.addEventListener("click", () => refreshEverything());
+
+
+
+if (els.backToSelectorButton) {
+  els.backToSelectorButton.addEventListener("click", () => {
+    localStorage.removeItem(instanceKey);
+    selectedInstanceId = null;
+    currentView = "selection";
+    refreshEverything();
+  });
+}
+
+if (els.instanceSearchInput) {
+  els.instanceSearchInput.addEventListener("input", (e) => {
+    searchQuery = e.target.value;
+    renderSelectionView(cachedInstances);
+  });
+}
+
 
 
 
@@ -611,6 +810,7 @@ els.playerActionButtons.addEventListener("click", (e) => {
         
         if (action === "kick" || action === "ban") {
             els.playerActionButtons.hidden = true;
+            els.playerActionCloseRow.hidden = true;
             els.reasonModalForm.hidden = false;
             els.reasonModalInput.value = "";
             els.reasonModalInput.focus();
@@ -625,6 +825,7 @@ els.playerActionModalClose.addEventListener("click", () => {
 els.reasonModalCancel.addEventListener("click", () => {
     els.reasonModalForm.hidden = true;
     els.playerActionButtons.hidden = false;
+    els.playerActionCloseRow.hidden = false;
 });
 els.reasonModalForm.addEventListener("submit", (e) => {
     e.preventDefault();

@@ -34,13 +34,22 @@ public sealed class RemoteStatusService
     public IReadOnlyList<RemoteInstanceDto> GetInstances() =>
         _registry.GetAll()
             .OrderBy(instance => instance.Name, StringComparer.OrdinalIgnoreCase)
-            .Select(instance => new RemoteInstanceDto
+            .Select(instance =>
             {
-                Id = instance.Id,
-                Name = instance.Name,
-                ServerType = instance.ServerType,
-                IsRunning = _lifecycleService.IsRunning(instance.Id),
-                State = GetState(instance.Id)
+                bool isRunning = _lifecycleService.IsRunning(instance.Id);
+                var process = _lifecycleService.GetProcess(instance.Id);
+                _resourceMonitorService.Metrics.TryGetValue(instance.Id, out InstanceMetrics? metrics);
+                return new RemoteInstanceDto
+                {
+                    Id = instance.Id,
+                    Name = instance.Name,
+                    ServerType = instance.ServerType,
+                    IsRunning = isRunning,
+                    State = GetState(instance.Id),
+                    MinecraftVersion = instance.MinecraftVersion,
+                    PlayerCount = process?.PlayerCount ?? metrics?.PlayerCount ?? 0,
+                    MaxPlayers = instance.MaxPlayers
+                };
             })
             .ToList();
 
@@ -89,6 +98,12 @@ public sealed class RemoteStatusService
             serverIps.Add(new ServerIpDto { Label = "Bedrock (Playit)", Address = bedrockTunnelIp });
         }
 
+        string? bedrockNumericTunnelIp = _applicationState.GetBedrockNumericTunnelAddress(instanceId);
+        if (!string.IsNullOrWhiteSpace(bedrockNumericTunnelIp) && bedrockNumericTunnelIp != bedrockTunnelIp)
+        {
+            serverIps.Add(new ServerIpDto { Label = "Bedrock Numeric (Playit)", Address = bedrockNumericTunnelIp });
+        }
+
         string? voiceChatTunnelIp = _applicationState.GetVoiceChatTunnelAddress(instanceId);
         if (!string.IsNullOrWhiteSpace(voiceChatTunnelIp))
         {
@@ -112,6 +127,7 @@ public sealed class RemoteStatusService
             Name = metadata.Name,
             ServerType = metadata.ServerType,
             State = GetState(instanceId),
+            MinecraftVersion = metadata.MinecraftVersion,
             IsRunning = isRunning,
             UptimeSeconds = uptimeSeconds,
             PlayerCount = process?.PlayerCount ?? metrics?.PlayerCount ?? 0,
