@@ -66,6 +66,8 @@ public partial class App : Application
         AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
         TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
 
+        SingleInstanceService.ShowApplicationRequested += OnShowApplicationRequested;
+
         await _host.StartAsync();
         Services.GetRequiredService<ServerSleepPreventionCoordinator>().Refresh();
 
@@ -91,6 +93,7 @@ public partial class App : Application
         DispatcherUnhandledException -= OnDispatcherUnhandledException;
         AppDomain.CurrentDomain.UnhandledException -= OnUnhandledException;
         TaskScheduler.UnobservedTaskException -= OnUnobservedTaskException;
+        SingleInstanceService.ShowApplicationRequested -= OnShowApplicationRequested;
 
         if (_host is not null)
         {
@@ -99,6 +102,25 @@ public partial class App : Application
         }
 
         base.OnExit(e);
+    }
+
+    private void OnShowApplicationRequested()
+    {
+        Dispatcher.Invoke(() =>
+        {
+            if (MainWindow != null)
+            {
+                if (MainWindow.WindowState == WindowState.Minimized)
+                {
+                    MainWindow.WindowState = WindowState.Normal;
+                }
+                MainWindow.Show();
+                MainWindow.Activate();
+                MainWindow.Topmost = true;
+                MainWindow.Topmost = false;
+                MainWindow.Focus();
+            }
+        });
     }
 
     private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)

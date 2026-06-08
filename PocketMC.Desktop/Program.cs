@@ -14,9 +14,24 @@ public static class Program
         // delta-patch application on startup.
         VelopackApp.Build().Run();
 
-        // Normal WPF startup
-        var app = new App();
-        app.InitializeComponent();
-        app.Run();
+        // Enforce single instance rule before starting WPF
+        if (!Infrastructure.SingleInstanceService.InitializeAsFirstInstance())
+        {
+            // Another instance is running, and we just sent it a message to show itself.
+            // Exit immediately.
+            return;
+        }
+
+        try
+        {
+            // Normal WPF startup
+            var app = new App();
+            app.InitializeComponent();
+            app.Run();
+        }
+        finally
+        {
+            Infrastructure.SingleInstanceService.Cleanup();
+        }
     }
 }
