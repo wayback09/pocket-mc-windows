@@ -11,20 +11,26 @@ namespace PocketMC.Desktop.Infrastructure.Process;
 public class RconClient : IDisposable
 {
     private const int MaxPacketLengthBytes = 1024 * 1024;
-    private static readonly TimeSpan OperationTimeout = TimeSpan.FromSeconds(5);
 
     private readonly string _host;
     private readonly int _port;
     private readonly string _password;
+    private readonly TimeSpan _timeout;
     private TcpClient? _client;
     private NetworkStream? _stream;
     private bool _authenticated;
 
     public RconClient(string host, int port, string password)
+        : this(host, port, password, TimeSpan.FromSeconds(5))
+    {
+    }
+
+    internal RconClient(string host, int port, string password, TimeSpan timeout)
     {
         _host = host;
         _port = port;
         _password = password;
+        _timeout = timeout;
     }
 
     public async Task ConnectAsync(CancellationToken ct = default)
@@ -107,10 +113,10 @@ public class RconClient : IDisposable
         }
     }
 
-    private static CancellationTokenSource CreateTimeoutTokenSource(CancellationToken ct)
+    private CancellationTokenSource CreateTimeoutTokenSource(CancellationToken ct)
     {
         var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        cts.CancelAfter(OperationTimeout);
+        cts.CancelAfter(_timeout);
         return cts;
     }
 

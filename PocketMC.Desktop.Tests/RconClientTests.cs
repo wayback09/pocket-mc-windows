@@ -28,7 +28,7 @@ public sealed class RconClientTests
             await stream.WriteAsync(maliciousLength);
         });
 
-        using var client = new RconClient("127.0.0.1", port, "password");
+        using var client = new RconClient("127.0.0.1", port, "password", TimeSpan.FromSeconds(30));
 
         await Assert.ThrowsAsync<InvalidDataException>(() => client.ConnectAsync());
         await serverTask;
