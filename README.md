@@ -20,307 +20,267 @@
   </tr>
 </table>
 
-<img src="docs/assets/screenshot-dashboard.png" alt="PocketMC Dashboard" width="860" style="border-radius: 10px; margin-top: 16px;" />
+
+<br>
+
+<img src="docs/assets/screenshot-dashboard.png" alt="PocketMC Dashboard" width="880" style="border-radius:12px" />
+
+<br>
+<br>
 
 </div>
 
 ---
 
-## What PocketMC is
+PocketMC is a **native WPF/.NET 8 desktop app** that handles everything local Minecraft server hosting throws at you — software downloads, isolated instances, app-managed Java/PHP runtimes, startup/shutdown, live metrics, logs, players, backups, cloud replication, add-ons, and Playit.gg tunnels — from one polished Windows UI.
 
-PocketMC is a **native Windows WPF/.NET 8 desktop app** for people who want to host Minecraft servers locally without becoming a part-time terminal priest.
+Your servers live on your machine, in the app root you choose. PocketMC is not a cloud host, not a Minecraft client launcher, and not a Linux web panel pretending to wear a Windows costume.
 
-It manages server software downloads, isolated instance folders, app-local Java/PHP runtimes, startup/shutdown, live metrics, logs, players, backups, cloud replication, add-ons, updates, diagnostics, and Playit.gg tunnels from one desktop UI.
+<br>
 
-Your servers stay under the app root folder you choose. PocketMC is not a cloud host, not a Minecraft client launcher, and not a Linux/Docker web panel wearing a fake mustache.
+## What changed without PocketMC vs. with it
 
----
+| Before | After |
+|--------|-------|
+| Hunt the right JAR. Guess the Java version. Edit configs by hand. | Server software and runtimes managed entirely by the app. |
+| Scattered terminal scripts and folders across the disk. | Isolated instances under one root — clean, auditable, portable. |
+| Manual Playit tunnel setup on every machine. | Built-in agent provisioning, tunnel creation, and live status. |
+| Backups when someone remembers to run a script. | Manual, scheduled, external-folder, and cloud backup flows. |
+| Replacing server files and hoping the update holds. | Staged updates with planning, snapshots, journals, and rollback. |
+| Staring at raw logs until something makes sense. | Persistent history, diagnostics, and optional AI session summaries. |
 
-## Why PocketMC exists
-
-Running a local Minecraft server usually turns into this ritual:
-
-1. Find the right server JAR.
-2. Guess the right Java version.
-3. Accept the EULA.
-4. Edit config files by hand.
-5. Open ports or set up tunneling.
-6. Install plugins/mods.
-7. Pray the console error is not a 200-line stack trace.
-8. Back up the world after something already broke.
-
-PocketMC turns that mess into a desktop workflow built for Windows users.
-
-| Without PocketMC | With PocketMC |
-|---|---|
-| Manual JAR/PHP/Java setup | App-managed server downloads and runtimes |
-| Terminal scripts and scattered folders | Isolated instances under one app root |
-| Manual Playit tunnel setup | Built-in Playit agent and tunnel orchestration |
-| Backups when someone remembers | Manual, scheduled, external, and cloud backup flows |
-| Updating servers by replacing files and hoping | Planned instance updates with staging, snapshots, warnings, and rollback support |
-| Guessing what broke from raw logs | Persistent console history, diagnostics, and optional AI summaries |
-
----
-
-## Latest codebase highlights
-
-Current `master` includes the v1.8.0 operations work plus newer unreleased reliability changes:
-
-- **Instance version updates** with planning, staging, add-on migration, snapshots, journals, locks, and rollback support.
-- **Persistent console history** for current sessions, last sessions, archived logs, and stopped/crashed instances.
-- **Discord Rich Presence** using PocketMC's official Discord application ID, with server type, version, player count, uptime, and download button.
-- **Interactive Ports Map** for local ports, Playit tunnels, role metadata, copy actions, and tunnel status.
-- **Cloud backups** for Google Drive, Dropbox, and OneDrive, alongside local and external-folder backups.
-- **Add-on inventory and toggles** for mods, plugins, packs, metadata, icons, side-support labels, warnings, disabled state, and update checks.
-- **Whitelist/player management** across Java, Bedrock Dedicated Server, and PocketMine-style formats.
-- **Safer restore and marketplace paths** with checksum checks, staged extraction, path traversal protection, dependency failure handling, and stricter archive validation.
-- **Simple Voice Chat tunnel support** using Playit tunnel type `mc-simple-voice-chat` when the server needs it.
-- **Remote Control Web Dashboard** for managing instances, viewing live consoles, and moderating players remotely via a browser, with built-in Cloudflare and Playit HTTPS tunnels.
-- **Windows startup/tray behavior** including start with Windows, start minimized to tray, minimize-to-tray-on-close, and safer auto-start handling.
-
----
+<br>
 
 ## Supported server software
 
-PocketMC resolves versions through upstream APIs/manifests where possible. Exact availability depends on the upstream project, because apparently even computers need supply chains now.
+| Family | Coverage |
+|--------|----------|
+| **Vanilla Java** | Official Mojang JARs — Minecraft 1.8.8 and up |
+| **Paper** | PaperMC builds via the modern Paper API |
+| **Fabric** | Server JARs from 1.14+, with loader version selection |
+| **Forge** | Installer-based setup *(beta)* |
+| **NeoForge** | Maven-resolved installer flow *(beta)* |
+| **Bedrock Dedicated Server** | Windows BDS ZIP extraction including preview builds |
+| **PocketMine-MP** | `.phar` releases with managed PHP 8.2 runtime |
+| **Cross-play** | Geyser + Floodgate provisioning for supported Java types |
+| **Simple Voice Chat** | Detection and dedicated `mc-simple-voice-chat` Playit tunnel |
 
-| Server family | Support in PocketMC |
-|---|---|
-| Vanilla Java | Official Mojang server JARs, Minecraft 1.8.8+ |
-| Paper | PaperMC builds through the modern Paper API |
-| Fabric | Fabric server JARs, Minecraft 1.14+ with loader selection |
-| Forge | Installer-based Forge server setup, marked beta in the creation flow |
-| NeoForge | Installer-based NeoForge server setup from Maven metadata, marked beta in the creation flow |
-| Bedrock Dedicated Server | Windows BDS ZIP extraction from Bedrock server metadata, including previews when available |
-| PocketMine-MP | PocketMine-MP `.phar` releases with managed PHP runtime support |
-| Java ↔ Bedrock cross-play | Geyser/Floodgate provisioning for supported Java server types |
-| Simple Voice Chat | Detection and Playit `mc-simple-voice-chat` tunnel orchestration |
+<br>
 
----
-
-## Feature map
+## Features
 
 <details open>
-<summary><b>Instance creation and lifecycle</b></summary>
+<summary><b>🖥️ &nbsp;Instance lifecycle</b></summary>
+<br>
 
-- Create isolated server instances from the desktop UI.
-- Choose server type, version, loader version, seed, world type, gamemode, difficulty, and player limit.
-- Import custom world archives during instance creation.
-- Accept the Minecraft EULA during setup.
-- Start, stop, restart, and kill servers from the dashboard or tray flow.
-- Graceful shutdown uses RCON when available, then falls back to console input.
-- Crash detection captures sanitized output and can trigger automatic restart with backoff.
-- Per-instance port checks catch local conflicts before launch.
-- Geyser-enabled instances patch Bedrock listener ports before launch.
+- Create isolated instances from the UI: server type, version, loader, seed, world type, gamemode, difficulty, player limit, EULA, custom world import.
+- Start, stop, restart, and hard-kill servers from the dashboard or tray.
+- Graceful shutdown via RCON with a console-input fallback.
+- Crash detection with sanitized output capture and optional auto-restart with backoff.
+- Per-instance port conflict checks before launch.
+- Geyser-enabled instances patch Bedrock listener ports before starting.
 
 </details>
 
 <details>
-<summary><b>Managed runtimes: zero Java headaches</b></summary>
+<summary><b>☕ &nbsp;Managed runtimes — zero Java headaches</b></summary>
+<br>
 
-- App-local Java provisioning through Adoptium.
-- Runtime targets: **Java 8, 11, 17, 21, and 25**.
-- Background setup downloads Java 25 by default.
-- Older Java versions are downloaded only when a selected Minecraft version needs them.
-- Custom Java path support is available for advanced users.
-- PocketMine-MP uses an app-managed PHP 8.2 PM5 runtime.
-- Downloads use retries, partial-file cleanup, safe promotion, and hash verification where upstream hashes are available.
-
-</details>
-
-<details>
-<summary><b>Dashboard, metrics, console, and logs</b></summary>
-
-- Dashboard cards show instance state, server type, version, player count, and live context.
-- Live CPU/RAM/player metrics for running instances.
-- Dynamic badges for Geyser/Floodgate cross-play and Simple Voice Chat detection.
-- Console output is buffered, sanitized, classified, and stored.
-- Persistent log history supports current, previous, archived, and legacy session logs.
-- Stopped or crashed servers can still open read-only last-session console history.
-- Large logs are tailed instead of loading the entire file into the UI.
-- Console tools include filtering, search-oriented handling, command input, and session history.
+- App-local Java provisioning through Adoptium: **Java 8, 11, 17, 21, and 25**.
+- Java 25 downloaded by default in the background. Older versions pulled only when a selected Minecraft version requires them.
+- Custom Java path override for advanced users.
+- PocketMine-MP uses an app-managed PHP 8.2 PM5 runtime — nothing to install globally.
+- All downloads use retries, partial-file cleanup, safe promotion, and hash verification where upstream hashes exist.
 
 </details>
 
 <details>
-<summary><b>Public access with Playit.gg</b></summary>
+<summary><b>📊 &nbsp;Dashboard, metrics, and console</b></summary>
+<br>
 
-- Built-in Playit.gg agent provisioning and setup flow.
-- Existing tunnel discovery for matching instance ports.
-- Automatic tunnel creation for Java, Bedrock, Geyser, PocketMine, and Simple Voice Chat ports when possible.
-- Public and numeric tunnel addresses shown in the app.
-- Interactive Ports Map for local ports, public tunnel addresses, roles, and status.
-- Clear handling for offline agents, invalid tokens, unclaimed agents, pending allocations, and account tunnel limits.
+- Live CPU / RAM / player metrics for running instances.
+- Dynamic Geyser/Floodgate and Simple Voice Chat badges.
+- Console output is buffered, sanitized, classified, and persisted across sessions.
+- Stopped or crashed servers can still open a read-only last-session log view.
+- Large logs are tailed — no loading a 500 MB log file into the UI.
+- Console tools: filter, search, command input, session history.
 
 </details>
 
 <details>
-<summary><b>Mods, plugins, packs, and add-ons</b></summary>
+<summary><b>🌐 &nbsp;Public access via Playit.gg</b></summary>
+<br>
+
+- Built-in Playit agent provisioning and setup flow.
+- Automatic tunnel discovery for matching instance ports.
+- Auto-creates tunnels for Java, Bedrock, Geyser, PocketMine, and Simple Voice Chat when possible.
+- Interactive Ports Map with local ports, public addresses, roles, and live tunnel status.
+- Clear states for offline agents, invalid tokens, unclaimed agents, pending allocations, and account limits.
+
+</details>
+
+<details>
+<summary><b>🧩 &nbsp;Mods, plugins, packs, and add-ons</b></summary>
+<br>
 
 - Modrinth browser for server-side mods, plugins, and modpacks.
-- CurseForge browser support through the user's own CurseForge API key.
+- CurseForge browser via your own API key.
 - Poggit integration for PocketMine plugins.
-- Marketplace installs can resolve dependencies where provider metadata supports it.
-- Java metadata scanning for Fabric, Quilt, Forge, NeoForge, legacy Forge, Bukkit/Paper plugin metadata, and icons.
-- Add-on inventory shows display names, versions, filenames, loader types, side-support labels, warnings, and update status.
-- Add-ons can be enabled or disabled without manual file renaming.
-- Bedrock `.mcpack`, `.mcaddon`, and `.zip` ingestion with manifest parsing.
-- Bedrock behavior/resource packs are copied into BDS folders and registered in the active world's JSON pack lists.
-- Safer marketplace installs validate staged files, expected extensions, filenames, hashes, dependency failures, and unsafe modpack overrides.
+- Dependency resolution where provider metadata supports it.
+- Java metadata scanning: Fabric, Quilt, Forge, NeoForge, Bukkit/Paper plugin metadata, icons.
+- Add-on inventory: display names, versions, loader types, side-support labels, warnings, update status.
+- Enable/disable add-ons without manually renaming files.
+- Bedrock `.mcpack`, `.mcaddon`, `.zip` ingestion with manifest parsing and automatic pack registration.
+- Marketplace installs validate staged files, extensions, filenames, hashes, dependency failures, and unsafe modpack overrides.
 
 </details>
 
 <details>
-<summary><b>Backups, cloud replication, and restore safety</b></summary>
+<summary><b>💾 &nbsp;Backups, cloud replication, and safe restore</b></summary>
+<br>
 
-- Manual and scheduled world backups.
-- Live-server backup flow tries RCON save synchronization first, then console save commands.
-- Locked files and unsafe files such as `session.lock` are skipped safely.
-- Backup manifest entries include metadata, size deltas, checksums, and failure state.
-- Backup retention pruning keeps old archives under control.
-- Restore verifies ZIP readability and stored checksums when available.
-- Restore extracts to a staging folder, validates world structure, backs up the current world, and rolls back if applying the restore fails.
-- Per-instance custom local backup directory support.
-- External backup replication to a selected folder.
-- Cloud upload support for **Google Drive**, **Dropbox**, and **OneDrive**, with upload history and retention handling.
+- Manual and scheduled backups with retention pruning.
+- Live-server backup: RCON save sync first, console save-command fallback.
+- Locked and unsafe files (e.g. `session.lock`) skipped gracefully.
+- Manifest entries include metadata, size deltas, checksums, and failure state.
+- Cloud upload to **Google Drive**, **Dropbox**, and **OneDrive** with upload history and retention handling.
+- Per-instance custom local and external-folder backup directories.
+- Restore: checks ZIP integrity, validates checksums, extracts to staging, verifies world structure, backs up the current world, rolls back if apply fails.
 
 </details>
 
 <details>
-<summary><b>Player and server controls</b></summary>
+<summary><b>👥 &nbsp;Player and server controls</b></summary>
+<br>
 
-- Online player parsing for Java, Bedrock, and PocketMine-style output.
-- Player management page for server actions.
-- Ban/operator sidecar management.
-- Whitelist support for Java `whitelist.json`, Bedrock `allowlist.json`, and PocketMine `white-list.txt`.
-- Runtime setting application path for safer configuration changes while servers are running.
+- Online player parsing for Java, Bedrock, and PocketMine log formats.
+- Ban, op, whitelist, and runtime command actions from the player management page.
+- Whitelist support for `whitelist.json` (Java), `allowlist.json` (BDS), and `white-list.txt` (PocketMine).
+- Runtime setting application path for safer config changes while a server is running.
 
 </details>
 
 <details>
-<summary><b>Instance version updates</b></summary>
+<summary><b>🔄 &nbsp;Instance version updates</b></summary>
+<br>
 
-- Update workflow for stopped server instances.
-- Target version selection and Java runtime requirement checks.
+- Offline update workflow with target version selection and Java runtime requirement checks.
 - Compatibility warnings for tracked marketplace add-ons.
-- Staged update application for server artifacts and supported add-on migrations.
-- Backup-aware planning with snapshots before risky changes.
-- Journals and locks for safer update application.
-- Rollback support when an update fails.
+- Staged artifact replacement with supported add-on migration.
+- Pre-update snapshots, journals, and locks for safe application.
+- Rollback when an update fails mid-apply.
 
 </details>
 
 <details>
-<summary><b>Remote Control Dashboard</b></summary>
+<summary><b>🖱️ &nbsp;Remote Control Dashboard</b></summary>
+<br>
 
-- Built-in web dashboard for managing your servers remotely from any browser.
-- Start, stop, and restart server instances from any device.
-- View the live server console and send console commands (if enabled).
-- View online players and perform administrative actions like kick, ban, pardon, op, and de-op (if enabled).
-- Expose the dashboard securely to the internet using built-in Cloudflare Quick Tunnels or Playit.gg HTTPS tunnels, or keep it strictly on your local network (LAN).
-- Configurable host port and strict access controls for command/player actions to prevent unauthorized execution.
+- Browser-based dashboard for managing servers from any device.
+- Start, stop, restart, view the live console, send commands, and manage players remotely.
+- Secure internet exposure via built-in **Cloudflare Quick Tunnels** or **Playit.gg HTTPS tunnels**, or restrict to LAN only.
+- Configurable host port and per-feature access controls to prevent unauthorized actions.
 
 </details>
 
 <details>
-<summary><b>Diagnostics, Windows integration, and app polish</b></summary>
+<summary><b>🤖 &nbsp;AI session summaries</b></summary>
+<br>
 
-- Dependency health checks for Playit.gg, Adoptium, Modrinth, and related providers.
-- Diagnostic reporting and support-bundle style data collection.
-- Windows toast notifications.
-- Tray integration and safer close/startup behavior.
-- Start with Windows, start minimized to tray, and minimize-to-tray-on-close settings.
-- Velopack startup/update integration.
-- Windows UWP loopback helper for Minecraft Bedrock local loopback access through `CheckNetIsolation.exe`.
+Generates structured session summaries from server logs using your own API key or a local endpoint.
+
+Supported providers: **Google Gemini**, **OpenAI**, **Anthropic Claude**, **Mistral AI**, **Groq**, **Ollama / compatible local endpoint**
+
+Logs are preprocessed and sanitized (IPs, emails) before being sent. You own the API key and the provider choice.
+
+</details>
+
+<details>
+<summary><b>🪟 &nbsp;Windows integration and app polish</b></summary>
+<br>
+
+- Toast notifications, tray integration, minimize-to-tray, and start-with-Windows.
+- Start minimized to tray on launch option.
+- Velopack update integration.
+- Windows UWP loopback helper for Minecraft Bedrock local access via `CheckNetIsolation.exe`.
 - Mica, Acrylic, Wallpaper Blur, custom background image, and theme settings.
+- Discord Rich Presence: server type, version, player count, uptime, download button.
 
 </details>
 
-<details>
-<summary><b>AI session summaries</b></summary>
-
-PocketMC can generate structured summaries from server session logs using a user-supplied API key or local endpoint.
-
-Supported providers:
-
-- Google Gemini
-- OpenAI
-- Anthropic Claude
-- Mistral AI
-- Groq
-- Ollama / compatible local endpoint
-
-Logs are preprocessed before summarization. PocketMC sanitizes obvious personal data such as IP addresses and emails before storing/exporting console output, but AI summaries still send processed log content to the provider you select.
-
-</details>
-
----
-
-## Installation
-
-Download `Setup.exe` from the [latest release](https://github.com/PocketMC/pocket-mc-windows/releases/latest) and run it.
-
-- Installs per-user; admin rights are not required for normal installation.
-- .NET 8 Desktop Runtime is required and should be prompted if missing.
-- Java does not need to be installed globally. PocketMC manages its own Java runtimes.
-- PHP does not need to be installed globally for PocketMine-MP. PocketMC provisions the required runtime.
-- Updates are handled through Velopack.
-
----
-
-## Quick start
-
-1. **Choose an app root folder.** This stores instances, runtimes, backups, logs, settings, and tunnel files.
-2. **Create an instance.** Pick a server family, Minecraft version, loader version if needed, world settings, player limit, and EULA state.
-3. **Start the server.** Use the dashboard start button. Connect locally with `localhost` or from LAN using your PC's local IP.
-4. **Optional: add public access.** Link Playit.gg and let PocketMC resolve or create matching tunnels.
-5. **Optional: install content.** Use Modrinth, CurseForge, Poggit, or Bedrock add-on import flows.
-6. **Optional: protect the world.** Configure manual/scheduled backups, external replication, cloud backups, and update snapshots.
-7. **Optional: diagnose and summarize.** Use diagnostics, persistent logs, and AI summaries when the console starts screaming in fluent Java.
-
----
+<br>
 
 ## Screenshots
 
-| Dashboard | Server Console |
-|-----------|---------------|
-| ![Dashboard](docs/assets/screenshot-dashboard.png) | ![Console](docs/assets/screenshot-console.png) |
+<table>
+  <tr>
+    <td align="center"><b>Dashboard</b></td>
+    <td align="center"><b>Console</b></td>
+  </tr>
+  <tr>
+    <td><img src="docs/assets/screenshot-dashboard.png" width="420" /></td>
+    <td><img src="docs/assets/screenshot-console.png" width="420" /></td>
+  </tr>
+  <tr>
+    <td align="center"><b>Server Settings</b></td>
+    <td align="center"><b>Backups</b></td>
+  </tr>
+  <tr>
+    <td><img src="docs/assets/server-settings.png" width="420" /></td>
+    <td><img src="docs/assets/screenshot-backups.png" width="420" /></td>
+  </tr>
+  <tr>
+    <td align="center"><b>Mod Marketplace</b></td>
+    <td align="center"><b>Public Tunnels</b></td>
+  </tr>
+  <tr>
+    <td><img src="docs/assets/mod-marketplace.png" width="420" /></td>
+    <td><img src="docs/assets/tunnels.png" width="420" /></td>
+  </tr>
+</table>
 
-| Server Settings | App Settings | Backups |
-|-----------------|--------------|---------|
-| ![Server Settings](docs/assets/server-settings.png) | ![Settings](docs/assets/screenshot-settings.png) | ![Backups](docs/assets/screenshot-backups.png) |
+<br>
 
-| Plugin Browser | Mod Marketplace |
-|----------------|-----------------|
-| ![Plugins](docs/assets/screenshot-plugins.png) | ![Marketplace](docs/assets/mod-marketplace.png) |
+## Installation
 
-| Public Tunnels | Managed Runtimes | About |
-|----------------|------------------|-------|
-| ![Tunnels](docs/assets/tunnels.png) | ![Runtimes](docs/assets/runtimes.png) | ![About](docs/assets/about.png) |
+Download [`Setup.exe`](https://github.com/PocketMC/pocket-mc-windows/releases/latest) from the latest release and run it.
 
----
+- Installs per-user — no admin rights required.
+- .NET 8 Desktop Runtime is required and prompted automatically if missing.
+- Java and PHP do not need to be globally installed. PocketMC provisions its own runtimes.
+- Updates are handled automatically through Velopack.
+
+<br>
+
+## Quick start
+
+```
+1.  Pick an app root folder      →  Stores instances, runtimes, backups, logs, and settings.
+2.  Create an instance           →  Family, version, world settings, player limit, EULA.
+3.  Start the server             →  Connect via localhost or LAN IP.
+4.  (Optional) Add public access →  Link Playit.gg — PocketMC resolves or creates tunnels.
+5.  (Optional) Install content   →  Modrinth, CurseForge, Poggit, or Bedrock add-on import.
+6.  (Optional) Protect the world →  Manual / scheduled / external / cloud backups.
+7.  (Optional) Diagnose          →  Diagnostics, persistent logs, AI summaries.
+```
+
+<br>
 
 ## System requirements
 
-| Requirement | Minimum |
+| | |
 |---|---|
-| OS | Windows 10 1809, build 17763, or Windows 11 |
-| Architecture | x64 |
-| RAM | 4 GB minimum, 8 GB+ recommended |
-| Runtime | .NET 8 Desktop Runtime |
-| Internet | Required for first-run server/runtime downloads, provider metadata, marketplace browsing, updates, cloud backup auth/uploads, and Playit.gg |
+| **OS** | Windows 10 build 17763 (1809) or Windows 11 |
+| **Architecture** | x64 |
+| **RAM** | 4 GB minimum — 8 GB+ recommended |
+| **Runtime** | .NET 8 Desktop Runtime |
+| **Internet** | Required for first-run downloads, marketplace, cloud backups, updates, Playit.gg |
 
----
+<br>
 
 ## Build from source
 
-### Prerequisites
-
-- Windows 10 1809+ or Windows 11
-- .NET 8 SDK
-- Visual Studio 2022 with **Desktop development with .NET**, or JetBrains Rider
-
-### Commands
+**Prerequisites:** Windows 10 1809+ or Windows 11 · .NET 8 SDK · Visual Studio 2022 with *Desktop development with .NET*, or JetBrains Rider
 
 ```bash
 git clone https://github.com/PocketMC/pocket-mc-windows.git
@@ -334,51 +294,43 @@ dotnet run --project PocketMC.Desktop/PocketMC.Desktop.csproj
 
 For packaging, PocketMC uses Velopack. See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the release packaging flow.
 
----
+<br>
 
 ## Project structure
 
+<details>
+<summary>Expand</summary>
+<br>
+
 | Path | Purpose |
-|---|---|
+|------|---------|
 | `PocketMC.Desktop/Composition` | Dependency injection and service registration |
 | `PocketMC.Desktop/Core` | Shared interfaces, MVVM utilities, and presentation primitives |
 | `PocketMC.Desktop/Infrastructure` | WPF/Windows integrations, dialogs, dispatcher, notifications, updates, loopback helper, filesystem/process helpers, and security utilities |
-| `PocketMC.Desktop/Features/Dashboard` | Dashboard cards, metrics, actions, instance state, and quick server controls |
+| `PocketMC.Desktop/Features/Dashboard` | Dashboard cards, metrics, actions, instance state, and quick controls |
 | `PocketMC.Desktop/Features/InstanceCreation` | New instance wizard, version loading, EULA flow, world import, Geyser setup, and server downloads |
-| `PocketMC.Desktop/Features/Instances` | Instance metadata, registry, lifecycle, launch configuration, providers, backups, updates, worlds, runtime configuration, and server process management |
-| `PocketMC.Desktop/Features/Java` | Java version resolution, Adoptium runtime provisioning, runtime validation, and custom Java paths |
-| `PocketMC.Desktop/Features/CloudBackups` | Google Drive, Dropbox, and OneDrive backup provider integrations, OAuth helpers, upload history, retention, and cloud path safety |
-| `PocketMC.Desktop/Features/Tunnel` | Playit.gg agent lifecycle, API client, partner/agent provisioning, tunnel setup, discovery, auto-creation, and ports map UI |
-| `PocketMC.Desktop/Features/Networking` | Port checks, port roles, Simple Voice Chat config parsing, tunnel-aware preflight, and diagnostics snapshots |
-| `PocketMC.Desktop/Features/Marketplace` | Modrinth, CurseForge, Poggit, modpack parsing, dependency resolution, marketplace models, and install hardening |
-| `PocketMC.Desktop/Features/Mods` | Java add-on inventory, toggles, update checks, Bedrock add-on install/uninstall, and pack registration |
-| `PocketMC.Desktop/Features/Console` | Console filtering, sanitization, classification, persistent history, and display behavior |
-| `PocketMC.Desktop/Features/Players` | Player parsing, bans, operators, allowlist/whitelist handling, and player UI |
-| `PocketMC.Desktop/Features/Diagnostics` | Dependency health, port diagnostics, and diagnostic reporting |
-| `PocketMC.Desktop/Features/Settings` | App/server settings pages, settings view models, runtime setting application, add-ons, cloud backups, appearance, and AI config |
-| `PocketMC.Desktop/Features/Shell` | Main shell, navigation, tray UI, startup options, visual state, and startup coordination |
-| `PocketMC.Desktop/Features/Intelligence` | AI API client, session summarization, log preprocessing, markdown rendering, and summary storage |
-| `PocketMC.Desktop.Tests` | xUnit/Moq tests for lifecycle, process, settings, marketplace, tunnel, console, backups, cloud, add-ons, players, startup, and view-model logic |
+| `PocketMC.Desktop/Features/Instances` | Metadata, registry, lifecycle, launch config, providers, backups, updates, worlds, runtime config, and process management |
+| `PocketMC.Desktop/Features/Java` | Java resolution, Adoptium provisioning, runtime validation, and custom path support |
+| `PocketMC.Desktop/Features/CloudBackups` | Google Drive, Dropbox, OneDrive integrations, OAuth, upload history, retention, and path safety |
+| `PocketMC.Desktop/Features/Tunnel` | Playit agent lifecycle, API client, provisioning, discovery, auto-creation, and ports map UI |
+| `PocketMC.Desktop/Features/Networking` | Port checks, roles, Simple Voice Chat parsing, tunnel-aware preflight, and diagnostic snapshots |
+| `PocketMC.Desktop/Features/Marketplace` | Modrinth, CurseForge, Poggit, modpack parsing, dependency resolution, and install hardening |
+| `PocketMC.Desktop/Features/Mods` | Java add-on inventory, toggles, update checks, Bedrock add-on install/uninstall, pack registration |
+| `PocketMC.Desktop/Features/Console` | Filtering, sanitization, classification, persistent history, and display behavior |
+| `PocketMC.Desktop/Features/Players` | Parsing, bans, operators, whitelist/allowlist, and player UI |
+| `PocketMC.Desktop/Features/Diagnostics` | Dependency health, port diagnostics, and reporting |
+| `PocketMC.Desktop/Features/Settings` | App/server settings, runtime application, cloud config, appearance, and AI config |
+| `PocketMC.Desktop/Features/Shell` | Main shell, navigation, tray, startup options, visual state, and coordination |
+| `PocketMC.Desktop/Features/Intelligence` | AI API client, session summarization, log preprocessing, markdown rendering, summary storage |
+| `PocketMC.Desktop.Tests` | xUnit/Moq tests for lifecycle, process, settings, marketplace, tunnel, console, backups, cloud, add-ons, players, startup, and VM logic |
 
----
+</details>
 
-## Important notes
-
-- PocketMC runs servers on your Windows PC. It does not provide cloud hosting.
-- Playit.gg public access requires a working Playit account/agent link. Playit tunnel limits still apply.
-- CurseForge browsing requires your own CurseForge API key.
-- Cloud backup providers require their own account/auth setup and are subject to provider quota/API behavior.
-- AI summaries require your own provider API key or local endpoint and send processed logs to the provider you select.
-- Forge and NeoForge use installer-based flows, so setup is more complex than a single vanilla JAR download.
-- Provider availability depends on upstream services such as Mojang, PaperMC, Fabric, Forge, NeoForge, GitHub, Modrinth, CurseForge, Poggit, Adoptium, PocketMine, Playit.gg, Google Drive, Dropbox, and OneDrive.
-- Missing JRE runtimes are prompted for download when starting a server that requires them.
-- Backups reduce risk, but they are not magic. Test restores before treating any backup system like a force field.
-
----
+<br>
 
 ## Contributing
 
-Fork the repo, branch off `master`, and open a pull request with a clear explanation of what changed and why.
+Fork the repo, branch off `master`, open a pull request with a clear explanation of what changed and why.
 
 Before opening a PR:
 
@@ -387,27 +339,29 @@ dotnet build
 dotnet test
 ```
 
-For larger changes, especially around process lifecycle, runtime provisioning, tunnel orchestration, update/rollback flows, backup safety, cloud uploads, marketplace installs, or filesystem security, open an issue first.
+For substantial changes touching process lifecycle, runtime provisioning, tunnel orchestration, update/rollback flows, backup safety, cloud uploads, marketplace installs, or filesystem security — open an issue first.
 
----
+<br>
 
-## Community
+## Community & License
 
-**Discord:** [discord.gg/h27uNCaxPH](https://discord.gg/h27uNCaxPH)
+**Discord** — [discord.gg/h27uNCaxPH](https://discord.gg/h27uNCaxPH)  
+**MIT** © 2026 PocketMC Contributors — see [LICENSE](LICENSE)
 
----
-
-## License
-
-MIT © 2024 PocketMC Contributors — see [LICENSE](LICENSE).
-
----
+<br>
 
 <div align="center">
 
 <a href="https://www.buymeacoffee.com/sahaj33" target="_blank">
-  <img src="https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png" alt="Buy Me A Coffee" height="41" />
+  <img src="https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png" alt="Buy Me A Coffee" height="38" />
 </a>
-<br>
-<a href="https://deepwiki.com/PocketMC/pocket-mc-windows"><img src="https://deepwiki.com/badge.svg" alt="DeepWiki" /></a>
+&nbsp;&nbsp;
+<a href="https://deepwiki.com/PocketMC/pocket-mc-windows">
+  <img src="https://deepwiki.com/badge.svg" alt="DeepWiki" />
+</a>
+
+<br><br>
+
+<sub>PocketMC runs servers on your Windows PC. It does not provide cloud hosting.<br>Playit.gg, CurseForge, cloud providers, and AI summaries require their own accounts/keys.</sub>
+
 </div>
