@@ -96,29 +96,29 @@
                                 <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
                             
-                            <!-- Local Network (LAN) IP Card -->
-                            <Border Grid.Row="0" Visibility="{Binding HasLocalUrl, Converter={StaticResource BoolToVis}}"
+                            <!-- Loading Skeleton Public Tunnel Card -->
+                            <Border Grid.Row="0" Visibility="{Binding IsLoadingPublicUrl, Converter={StaticResource BoolToVis}}"
                                     Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="6" Padding="12,10" Margin="0,0,0,8"
-                                    MaxWidth="600" HorizontalAlignment="Left">
+                                    HorizontalAlignment="Stretch">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
-                                    <ui:SymbolIcon Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" Symbol="Home24" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                    <ui:SymbolIcon Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" Symbol="Desktop24" Foreground="{DynamicResource TextFillColorDisabledBrush}"/>
                                     <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0">
-                                        <TextBlock Text="Local Network (LAN)" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontWeight="SemiBold"/>
-                                        <TextBlock Text="{Binding LocalUrl}" FontSize="14" Foreground="{DynamicResource TextFillColorPrimaryBrush}" TextTrimming="CharacterEllipsis" Margin="0,2,0,0"/>
+                                        <TextBlock Text="{Binding PublicUrlProviderName, StringFormat='{}{0} Public URL'}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontWeight="SemiBold"/>
+                                        <TextBlock Text="Starting tunnel..." FontSize="14" Foreground="{DynamicResource TextFillColorDisabledBrush}" Margin="0,2,0,0"/>
                                     </StackPanel>
-                                    <ui:Button Grid.Column="2" Appearance="Secondary" Content="Copy URL" Icon="{ui:SymbolIcon Copy16}" Command="{Binding CopyLocalUrlCommand}" VerticalAlignment="Center"/>
+                                    <ui:ProgressRing Grid.Column="2" IsIndeterminate="True" Width="16" Height="16" VerticalAlignment="Center" Margin="12,0,12,0"/>
                                 </Grid>
                             </Border>
 
                             <!-- Public Tunnel IP Card -->
-                            <Border Grid.Row="1" Visibility="{Binding HasPublicUrl, Converter={StaticResource BoolToVis}}"
+                            <Border Grid.Row="0" Visibility="{Binding HasPublicUrl, Converter={StaticResource BoolToVis}}"
                                     Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="6" Padding="12,10" Margin="0,0,0,8"
-                                    MaxWidth="600" HorizontalAlignment="Left">
+                                    HorizontalAlignment="Stretch">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto"/>
@@ -131,6 +131,25 @@
                                         <TextBlock Text="{Binding PublicUrl}" FontSize="14" Foreground="{DynamicResource TextFillColorPrimaryBrush}" TextTrimming="CharacterEllipsis" Margin="0,2,0,0"/>
                                     </StackPanel>
                                     <ui:Button Grid.Column="2" Appearance="Secondary" Content="Copy URL" Icon="{ui:SymbolIcon Copy16}" Command="{Binding CopyPublicUrlCommand}" VerticalAlignment="Center"/>
+                                </Grid>
+                            </Border>
+                            
+                            <!-- Local Network (LAN) IP Card -->
+                            <Border Grid.Row="1" Visibility="{Binding HasLocalUrl, Converter={StaticResource BoolToVis}}"
+                                    Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="6" Padding="12,10" Margin="0,0,0,8"
+                                    HorizontalAlignment="Stretch">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <ui:SymbolIcon Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" Symbol="Home24" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0">
+                                        <TextBlock Text="Local Network (LAN)" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontWeight="SemiBold"/>
+                                        <TextBlock Text="{Binding LocalUrl}" FontSize="14" Foreground="{DynamicResource TextFillColorPrimaryBrush}" TextTrimming="CharacterEllipsis" Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                    <ui:Button Grid.Column="2" Appearance="Secondary" Content="Copy URL" Icon="{ui:SymbolIcon Copy16}" Command="{Binding CopyLocalUrlCommand}" VerticalAlignment="Center"/>
                                 </Grid>
                             </Border>
 

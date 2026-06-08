@@ -94,6 +94,9 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
     public bool HasPublicUrl => !string.IsNullOrEmpty(PublicUrl);
 
     [ObservableProperty]
+    private bool _isLoadingPublicUrl;
+
+    [ObservableProperty]
     private bool _isStatusError;
 
     partial void OnIsEnabledChanged(bool value)
@@ -167,6 +170,7 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
         {
             if (IsEnabled)
             {
+                if (IsCloudflaredMode) IsLoadingPublicUrl = true;
                 await _coordinator.RestartAllAsync();
                 SetStatus("Settings applied.", false);
             }
@@ -204,6 +208,8 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
         {
             SetStatus(status.TunnelError, true);
         }
+
+        IsLoadingPublicUrl = false;
     }
 
     private void SetStatus(string message, bool isError)
