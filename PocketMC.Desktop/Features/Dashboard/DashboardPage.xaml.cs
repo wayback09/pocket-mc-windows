@@ -113,26 +113,9 @@ namespace PocketMC.Desktop.Features.Dashboard
         }
 
 
-        private async Task TrySetClipboardText(string text)
+        private Task TrySetClipboardText(string text)
         {
-            for (int i = 0; i < 5; i++)
-            {
-                try
-                {
-                    System.Windows.Clipboard.SetText(text);
-                    return;
-                }
-                catch (System.Runtime.InteropServices.COMException ex) when ((uint)ex.ErrorCode == 0x800401D0)
-                {
-                    // Clipboard is locked by another process, wait and retry
-                    await Task.Delay(100);
-                }
-                catch (Exception)
-                {
-                    // Other clipboard failures are ignored to prevent crashes
-                    return;
-                }
-            }
+            return Infrastructure.ClipboardHelper.TrySetTextAsync(text);
         }
 
         private async Task ShowCopiedFeedback(FrameworkElement element)

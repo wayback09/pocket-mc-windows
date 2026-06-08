@@ -626,27 +626,22 @@ namespace PocketMC.Desktop.Features.Console
 
 
 
-        private void BtnCopyLogs_Click(object sender, RoutedEventArgs e)
+        private async void BtnCopyLogs_Click(object sender, RoutedEventArgs e)
         {
-            try
+            var allText = string.Join(Environment.NewLine, Logs.Select(l => l.Text));
+            if (!string.IsNullOrEmpty(allText))
             {
-                var allText = string.Join(Environment.NewLine, Logs.Select(l => l.Text));
-                if (!string.IsNullOrEmpty(allText))
-                {
-                    System.Windows.Clipboard.SetText(allText);
-                }
-            }
-            catch (Exception ex)
-            {
-                PocketMC.Desktop.Infrastructure.AppDialog.ShowWarning("Clipboard Error", $"Failed to copy logs: {ex.Message}");
+                bool ok = await PocketMC.Desktop.Infrastructure.ClipboardHelper.TrySetTextAsync(allText);
+                if (!ok)
+                    PocketMC.Desktop.Infrastructure.AppDialog.ShowWarning("Clipboard Error", "Failed to copy logs. The clipboard may be locked by another application.");
             }
         }
 
-        private void BtnCopyCrash_Click(object sender, RoutedEventArgs e)
+        private async void BtnCopyCrash_Click(object sender, RoutedEventArgs e)
         {
             if (!string.IsNullOrEmpty(TxtCrashLog.Text))
             {
-                System.Windows.Clipboard.SetText(TxtCrashLog.Text);
+                await PocketMC.Desktop.Infrastructure.ClipboardHelper.TrySetTextAsync(TxtCrashLog.Text);
             }
         }
 

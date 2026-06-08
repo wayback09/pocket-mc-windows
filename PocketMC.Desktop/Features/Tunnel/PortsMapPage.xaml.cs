@@ -104,19 +104,15 @@ namespace PocketMC.Desktop.Features.Tunnel
             await RefreshMapAsync();
         }
 
-        private void ExecuteCopyAddress(object? parameter)
+        private async void ExecuteCopyAddress(object? parameter)
         {
             if (parameter is string address && !string.IsNullOrEmpty(address))
             {
-                try
-                {
-                    Clipboard.SetText(address);
+                bool ok = await Infrastructure.ClipboardHelper.TrySetTextAsync(address);
+                if (ok)
                     _logger.LogInformation("Copied public tunnel address to clipboard: {Address}", address);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Failed to copy tunnel address to clipboard.");
-                }
+                else
+                    _logger.LogWarning("Failed to copy tunnel address to clipboard (clipboard locked).");
             }
         }
 

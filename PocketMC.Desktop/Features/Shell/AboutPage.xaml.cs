@@ -35,17 +35,13 @@ namespace PocketMC.Desktop.Features.Shell
             }
         }
 
-        private void CopyDiscordInvite_Click(object sender, RoutedEventArgs e)
+        private async void CopyDiscordInvite_Click(object sender, RoutedEventArgs e)
         {
-            try
-            {
-                Clipboard.SetText("https://discord.gg/h27uNCaxPH");
+            bool ok = await Infrastructure.ClipboardHelper.TrySetTextAsync("https://discord.gg/h27uNCaxPH");
+            if (ok)
                 _dialogService.ShowMessage("Copied", "Discord invite copied to clipboard.");
-            }
-            catch (Exception ex)
-            {
-                _dialogService.ShowMessage("Unable to copy invite", ex.Message);
-            }
+            else
+                _dialogService.ShowMessage("Clipboard Error", "Failed to copy. The clipboard may be locked by another application.");
         }
 
         private void OpenFeedbackForm_Click(object sender, RoutedEventArgs e)

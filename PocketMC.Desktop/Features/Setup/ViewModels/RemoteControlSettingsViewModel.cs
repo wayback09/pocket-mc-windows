@@ -234,16 +234,14 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void CopyLocalUrl()
+    private async Task CopyLocalUrl()
     {
-        if (!string.IsNullOrEmpty(LocalUrl))
-            System.Windows.Clipboard.SetText(LocalUrl);
+        await Infrastructure.ClipboardHelper.TrySetTextAsync(LocalUrl!);
     }
 
     [RelayCommand]
-    private void CopyPublicUrl()
+    private async Task CopyPublicUrl()
     {
-        if (!string.IsNullOrEmpty(PublicUrl))
-            System.Windows.Clipboard.SetText(PublicUrl);
+        await Infrastructure.ClipboardHelper.TrySetTextAsync(PublicUrl!);
     }
 }

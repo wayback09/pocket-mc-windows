@@ -294,7 +294,7 @@ namespace PocketMC.Desktop.Features.Dashboard
             }
         }
 
-        public void CopyCrashReport(InstanceCardViewModel vm)
+        public async void CopyCrashReport(InstanceCardViewModel vm)
         {
             string? path = _registry.GetPath(vm.Id);
             if (path == null) return;
@@ -304,8 +304,11 @@ namespace PocketMC.Desktop.Features.Dashboard
                 var latest = new DirectoryInfo(crashReportsDir).GetFiles("*.txt").OrderByDescending(f => f.LastWriteTime).FirstOrDefault();
                 if (latest != null)
                 {
-                    System.Windows.Clipboard.SetText(File.ReadAllText(latest.FullName));
-                    _dialogService.ShowMessage("Copied", "Crash report copied to clipboard.", DialogType.Information);
+                    bool ok = await Infrastructure.ClipboardHelper.TrySetTextAsync(File.ReadAllText(latest.FullName));
+                    if (ok)
+                        _dialogService.ShowMessage("Copied", "Crash report copied to clipboard.", DialogType.Information);
+                    else
+                        _dialogService.ShowMessage("Clipboard Error", "Failed to copy crash report. The clipboard may be locked by another application.", DialogType.Warning);
                     return;
                 }
             }

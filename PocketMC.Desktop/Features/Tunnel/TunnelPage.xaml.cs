@@ -408,13 +408,13 @@ namespace PocketMC.Desktop.Features.Tunnel
 
         // ─── Clipboard ───────────────────────────────────────────────────
 
-        private void BtnCopyAddress_Click(object sender, RoutedEventArgs e)
+        private async void BtnCopyAddress_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Wpf.Ui.Controls.Button btn && btn.Tag is string address && !string.IsNullOrEmpty(address))
             {
-                try
+                bool ok = await Infrastructure.ClipboardHelper.TrySetTextAsync(address);
+                if (ok)
                 {
-                    System.Windows.Clipboard.SetText(address);
                     btn.Icon = new Wpf.Ui.Controls.SymbolIcon { Symbol = Wpf.Ui.Controls.SymbolRegular.Checkmark24 };
                     var timer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
                     timer.Tick += (s, args) =>
@@ -424,9 +424,9 @@ namespace PocketMC.Desktop.Features.Tunnel
                     };
                     timer.Start();
                 }
-                catch (Exception ex)
+                else
                 {
-                    _logger.LogWarning(ex, "Failed to copy tunnel address to clipboard.");
+                    _logger.LogWarning("Failed to copy tunnel address to clipboard (clipboard locked).");
                 }
             }
         }
