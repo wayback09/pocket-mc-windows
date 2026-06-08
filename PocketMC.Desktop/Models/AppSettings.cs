@@ -60,5 +60,10 @@ namespace PocketMC.Desktop.Models
 
         // Remote Control
         public RemoteControlSettings RemoteControl { get; set; } = new();
+
+        // Discord Bot Integration
+        public string? DiscordUserId { get; set; }
+        public string? DiscordApiUrl { get; set; }
+        public string? DiscordApiKey { get; set; }
     }
 }

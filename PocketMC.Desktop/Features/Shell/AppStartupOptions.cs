@@ -5,7 +5,7 @@ using PocketMC.Desktop.Infrastructure;
 
 namespace PocketMC.Desktop.Features.Shell;
 
-public sealed record AppStartupOptions(bool IsWindowsStartup, bool IsMinimized)
+public sealed record AppStartupOptions(bool IsWindowsStartup, bool IsMinimized, string? ActivatedUri = null)
 {
     public static AppStartupOptions NormalLaunch { get; } = new(false, false);
 
@@ -20,6 +20,8 @@ public sealed record AppStartupOptions(bool IsWindowsStartup, bool IsMinimized)
         bool isMinimized = normalizedArgs.Any(arg =>
             string.Equals(arg, WindowsStartupService.MinimizedArgument, StringComparison.OrdinalIgnoreCase));
 
-        return new AppStartupOptions(isWindowsStartup, isMinimized);
+        string? activatedUri = normalizedArgs.FirstOrDefault(arg => arg.StartsWith("pocketmc://", StringComparison.OrdinalIgnoreCase));
+
+        return new AppStartupOptions(isWindowsStartup, isMinimized, activatedUri);
     }
 }

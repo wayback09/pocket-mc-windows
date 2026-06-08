@@ -93,9 +93,55 @@ public sealed class RemoteControlCoordinator
             return RemoteTunnelStartResult.Failed("Remote Control is disabled.");
         }
 
-
         await _dashboardHost.StartAsync(cancellationToken);
-        return await _tunnelManager.StartAsync(cancellationToken);
+        var result = await _tunnelManager.StartAsync(cancellationToken);
+        
+        if (result.Success && !string.IsNullOrEmpty(result.PublicUrl))
+        {
+            _ = NotifyDiscordOfRemoteControlUrlAsync(result.PublicUrl);
+        }
+        
+        return result;
+    }
+
+    private string? _lastNotifiedUrl;
+    
+    private async Task NotifyDiscordOfRemoteControlUrlAsync(string publicUrl)
+    {
+        var settings = _applicationState.Settings;
+        if (string.IsNullOrEmpty(settings.DiscordUserId) || string.IsNullOrEmpty(settings.DiscordApiUrl) || string.IsNullOrEmpty(settings.DiscordApiKey))
+        {
+            return;
+        }
+
+        if (_lastNotifiedUrl == publicUrl)
+        {
+            return; // Avoid duplicate DMs
+        }
+
+        try
+        {
+            using var client = new System.Net.Http.HttpClient();
+            client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", settings.DiscordApiKey);
+            
+            var payload = new
+            {
+                user_id = settings.DiscordUserId,
+                message = $"Hey! Your PocketMC Remote Control Dashboard is now online at: {publicUrl}"
+            };
+
+            var content = new System.Net.Http.StringContent(System.Text.Json.JsonSerializer.Serialize(payload), System.Text.Encoding.UTF8, "application/json");
+            
+            var response = await client.PostAsync($"{settings.DiscordApiUrl.TrimEnd('/')}/send-dm", content);
+            if (response.IsSuccessStatusCode)
+            {
+                _lastNotifiedUrl = publicUrl;
+            }
+        }
+        catch (Exception)
+        {
+            // Ignore failure
+        }
     }
 
     public Task StopTunnelAsync(CancellationToken cancellationToken = default) =>

@@ -23,13 +23,13 @@ public static class SingleInstanceService
     /// <summary>
     /// Triggered in the primary instance when a secondary instance requests the app to show itself.
     /// </summary>
-    public static event Action? ShowApplicationRequested;
+    public static event Action<string?>? ShowApplicationRequested;
 
     /// <summary>
     /// Initializes the single instance check.
     /// </summary>
     /// <returns>True if this is the first instance (startup should continue). False if another instance is already running (this instance should exit).</returns>
-    public static bool InitializeAsFirstInstance()
+    public static bool InitializeAsFirstInstance(string[] args)
     {
         bool isFirstInstance;
         _mutex = new Mutex(true, MutexName, out isFirstInstance);
@@ -44,7 +44,7 @@ public static class SingleInstanceService
         else
         {
             // Not the first instance. Send a message to the first instance to show itself.
-            SendShowRequestToPrimaryInstance();
+            SendShowRequestToPrimaryInstance(args);
             _mutex.Dispose();
             _mutex = null;
             return false;
@@ -89,9 +89,16 @@ public static class SingleInstanceService
                 using var reader = new StreamReader(pipeServer);
                 var message = await reader.ReadLineAsync();
 
-                if (message == "SHOW")
+                if (message != null)
                 {
-                    ShowApplicationRequested?.Invoke();
+                    if (message == "SHOW")
+                    {
+                        ShowApplicationRequested?.Invoke(null);
+                    }
+                    else if (message.StartsWith("URL:"))
+                    {
+                        ShowApplicationRequested?.Invoke(message.Substring(4));
+                    }
                 }
             }
             catch (OperationCanceledException)
@@ -113,7 +120,7 @@ public static class SingleInstanceService
         }
     }
 
-    private static void SendShowRequestToPrimaryInstance()
+    private static void SendShowRequestToPrimaryInstance(string[] args)
     {
         try
         {
@@ -127,7 +134,16 @@ public static class SingleInstanceService
             pipeClient.Connect(1000);
 
             using var writer = new StreamWriter(pipeClient) { AutoFlush = true };
-            writer.WriteLine("SHOW");
+            
+            var uriArg = System.Linq.Enumerable.FirstOrDefault(args, a => a.StartsWith("pocketmc://", StringComparison.OrdinalIgnoreCase));
+            if (uriArg != null)
+            {
+                writer.WriteLine($"URL:{uriArg}");
+            }
+            else
+            {
+                writer.WriteLine("SHOW");
+            }
         }
         catch (Exception)
         {

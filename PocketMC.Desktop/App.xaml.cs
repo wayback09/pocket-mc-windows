@@ -43,6 +43,7 @@ public partial class App : Application
         base.OnStartup(e);
         AppStartupOptions startupOptions = AppStartupOptions.Parse(e.Args);
         WindowsToastNotificationService.RegisterApplication();
+        ProtocolRegistrationService.Register();
 
         _host = Host.CreateDefaultBuilder()
             .ConfigureLogging(logging =>
@@ -86,6 +87,11 @@ public partial class App : Application
         {
             mainWindow.Show();
         }
+
+        if (!string.IsNullOrEmpty(startupOptions.ActivatedUri))
+        {
+            HandleUriActivation(startupOptions.ActivatedUri);
+        }
     }
 
     protected override async void OnExit(ExitEventArgs e)
@@ -104,7 +110,7 @@ public partial class App : Application
         base.OnExit(e);
     }
 
-    private void OnShowApplicationRequested()
+    private void OnShowApplicationRequested(string? uri)
     {
         Dispatcher.Invoke(() =>
         {
@@ -120,7 +126,46 @@ public partial class App : Application
                 MainWindow.Topmost = false;
                 MainWindow.Focus();
             }
+
+            if (!string.IsNullOrEmpty(uri))
+            {
+                HandleUriActivation(uri);
+            }
         });
+    }
+
+    private void HandleUriActivation(string uri)
+    {
+        try
+        {
+            if (Uri.TryCreate(uri, UriKind.Absolute, out var parsedUri) && parsedUri.Scheme == "pocketmc")
+            {
+                if (parsedUri.Host == "associate-discord")
+                {
+                    var query = System.Web.HttpUtility.ParseQueryString(parsedUri.Query);
+                    var userId = query["userId"];
+                    var apiUrl = query["apiUrl"];
+                    var apiKey = query["apiKey"];
+
+                    if (!string.IsNullOrEmpty(userId) && !string.IsNullOrEmpty(apiUrl))
+                    {
+                        var applicationState = Services.GetRequiredService<PocketMC.Desktop.Features.Shell.ApplicationState>();
+                        var settingsManager = Services.GetRequiredService<PocketMC.Desktop.Features.Settings.SettingsManager>();
+                        
+                        applicationState.Settings.DiscordUserId = userId;
+                        applicationState.Settings.DiscordApiUrl = apiUrl;
+                        applicationState.Settings.DiscordApiKey = apiKey;
+                        settingsManager.Save(applicationState.Settings);
+
+                        Infrastructure.AppDialog.ShowInfo("Discord Linked", "PocketMC has been successfully linked to your Discord account!");
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Services.GetRequiredService<ILogger<App>>().LogError(ex, "Failed to handle URI activation.");
+        }
     }
 
     private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)

@@ -15,7 +15,7 @@ public static class Program
         VelopackApp.Build().Run();
 
         // Enforce single instance rule before starting WPF
-        if (!Infrastructure.SingleInstanceService.InitializeAsFirstInstance())
+        if (!Infrastructure.SingleInstanceService.InitializeAsFirstInstance(args))
         {
             // Another instance is running, and we just sent it a message to show itself.
             // Exit immediately.

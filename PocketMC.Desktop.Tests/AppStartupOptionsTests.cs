@@ -32,4 +32,12 @@ public sealed class AppStartupOptionsTests
         Assert.True(options.IsMinimized);
         Assert.False(options.ShouldStartMinimizedToTray);
     }
+
+    [Fact]
+    public void Parse_DetectsCustomUriScheme()
+    {
+        AppStartupOptions options = AppStartupOptions.Parse(new[] { "pocketmc://associate-discord?userId=123" });
+
+        Assert.Equal("pocketmc://associate-discord?userId=123", options.ActivatedUri);
+    }
 }
