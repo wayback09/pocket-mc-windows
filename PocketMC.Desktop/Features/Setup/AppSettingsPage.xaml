@@ -32,28 +32,6 @@
                       HorizontalScrollBarVisibility="Disabled"
                       Padding="24,0,24,24">
             <StackPanel>
-                <!-- UPDATES -->
-                <ui:CardExpander IsExpanded="False" Icon="{ui:SymbolIcon ArrowDownload24}" Margin="0,0,0,12">
-                    <ui:CardExpander.Header>
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel>
-                                <TextBlock Text="Software Updates" FontSize="16" FontWeight="SemiBold"/>
-                                <TextBlock Text="Manage and check for application updates." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
-                            </StackPanel>
-                        </Grid>
-                    </ui:CardExpander.Header>
-
-                    <StackPanel Margin="16,8,16,16">
-                        <TextBlock Text="Check for Updates" FontSize="14" FontWeight="Medium"/>
-                        <TextBlock Text="Looking for a newer version of PocketMC Desktop? Click below to check manually." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,12" TextWrapping="Wrap"/>
-                        <ui:Button x:Name="BtnCheckUpdates" Content="Check for Updates" Icon="{ui:SymbolIcon ArrowSync24}" Appearance="Secondary" Click="CheckUpdates_Click"/>
-                        <TextBlock x:Name="UpdateStatusText" FontSize="12" Margin="0,8,0,0" Visibility="Collapsed"/>
-                    </StackPanel>
-                </ui:CardExpander>
-
                 <ui:CardExpander IsExpanded="False" Icon="{ui:SymbolIcon Settings24}" Margin="0,0,0,12">
                     <ui:CardExpander.Header>
                         <Grid>
@@ -166,6 +144,28 @@
                     </StackPanel>
                 </ui:CardExpander>
 
+                <!-- UPDATES -->
+                <ui:CardExpander IsExpanded="False" Icon="{ui:SymbolIcon ArrowDownload24}" Margin="0,0,0,12">
+                    <ui:CardExpander.Header>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="Software Updates" FontSize="16" FontWeight="SemiBold"/>
+                                <TextBlock Text="Manage and check for application updates." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
+                            </StackPanel>
+                        </Grid>
+                    </ui:CardExpander.Header>
+
+                    <StackPanel Margin="16,8,16,16">
+                        <TextBlock Text="Check for Updates" FontSize="14" FontWeight="Medium"/>
+                        <TextBlock Text="Looking for a newer version of PocketMC Desktop? Click below to check manually." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,12" TextWrapping="Wrap"/>
+                        <ui:Button x:Name="BtnCheckUpdates" Content="Check for Updates" Icon="{ui:SymbolIcon ArrowSync24}" Appearance="Secondary" Click="CheckUpdates_Click"/>
+                        <TextBlock x:Name="UpdateStatusText" FontSize="12" Margin="0,8,0,0" Visibility="Collapsed"/>
+                    </StackPanel>
+                </ui:CardExpander>
+
                 <ui:CardExpander IsExpanded="False" Icon="{ui:SymbolIcon Color24}" Margin="0,0,0,12">
                     <ui:CardExpander.Header>
                         <Grid>
@@ -248,6 +248,188 @@
                                 </StackPanel>
                             </Grid>
                         </StackPanel>
+                    </StackPanel>
+                </ui:CardExpander>
+
+                <ui:CardExpander IsExpanded="False" Icon="{ui:SymbolIcon Alert24}" Margin="0,0,0,12">
+                    <ui:CardExpander.Header>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="Notifications" FontSize="16" FontWeight="SemiBold"/>
+                                <TextBlock Text="Manage desktop notifications." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
+                            </StackPanel>
+                        </Grid>
+                    </ui:CardExpander.Header>
+
+                    <StackPanel Margin="16,8,16,16">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Server Online Notification" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock Text="Show a notification when a server finishes starting up and becomes online."
+                                           TextWrapping="Wrap"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                           FontSize="12"
+                                           Margin="0,4,24,0"/>
+                            </StackPanel>
+                            <ui:ToggleSwitch x:Name="ToggleServerOnlineNotifications"
+                                             Grid.Column="1"
+                                             VerticalAlignment="Center"
+                                             Checked="ToggleServerOnlineNotifications_Changed"
+                                             Unchecked="ToggleServerOnlineNotifications_Changed"/>
+                        </Grid>
+                        <Grid Margin="0,12,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Agent Connect Notification" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock Text="Show a notification when the Playit agent successfully connects."
+                                           TextWrapping="Wrap"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                           FontSize="12"
+                                           Margin="0,4,24,0"/>
+                            </StackPanel>
+                            <ui:ToggleSwitch x:Name="ToggleAgentConnectNotifications"
+                                             Grid.Column="1"
+                                             VerticalAlignment="Center"
+                                             Checked="ToggleAgentConnectNotifications_Changed"
+                                             Unchecked="ToggleAgentConnectNotifications_Changed"/>
+                        </Grid>
+                        <Grid Margin="0,12,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Remote Control Online Notification" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock Text="Show a notification when the remote control service is online and a tunnel is found."
+                                           TextWrapping="Wrap"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                           FontSize="12"
+                                           Margin="0,4,24,0"/>
+                            </StackPanel>
+                            <ui:ToggleSwitch x:Name="ToggleRemoteControlNotifications"
+                                             Grid.Column="1"
+                                             VerticalAlignment="Center"
+                                             Checked="ToggleRemoteControlNotifications_Changed"
+                                             Unchecked="ToggleRemoteControlNotifications_Changed"/>
+                        </Grid>
+                        <Grid Margin="0,12,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="AI Summary Notification" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock Text="Show a notification when AI session summarization starts and completes."
+                                           TextWrapping="Wrap"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                           FontSize="12"
+                                           Margin="0,4,24,0"/>
+                            </StackPanel>
+                            <ui:ToggleSwitch x:Name="ToggleAiSummaryNotifications"
+                                             Grid.Column="1"
+                                             VerticalAlignment="Center"
+                                             Checked="ToggleAiSummaryNotifications_Changed"
+                                             Unchecked="ToggleAiSummaryNotifications_Changed"/>
+                        </Grid>
+                    </StackPanel>
+                </ui:CardExpander>
+
+                <ui:CardExpander IsExpanded="False" Icon="{ui:SymbolIcon People24}" Margin="0,0,0,12">
+                    <ui:CardExpander.Header>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="Discord Integration" FontSize="16" FontWeight="SemiBold"/>
+                                <TextBlock Text="Show your active server status on your Discord profile." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
+                            </StackPanel>
+                        </Grid>
+                    </ui:CardExpander.Header>
+
+                    <StackPanel Margin="16,8,16,16">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Discord Rich Presence" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock Text="Display your server type, player count, uptime, and a Join button directly on your Discord profile while a server is running." 
+                                           TextWrapping="Wrap" 
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
+                                           FontSize="12" 
+                                           Margin="0,4,24,0"/>
+                            </StackPanel>
+                            <ui:ToggleSwitch x:Name="ToggleDiscordRpc" Grid.Column="1" VerticalAlignment="Center" 
+                                             Checked="ToggleDiscordRpc_Changed" 
+                                             Unchecked="ToggleDiscordRpc_Changed"/>
+                        </Grid>
+                    </StackPanel>
+                </ui:CardExpander>
+
+                <ui:CardExpander IsExpanded="False" Icon="{ui:SymbolIcon Cloud24}" Margin="0,0,0,12">
+                    <ui:CardExpander.Header>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="Cloud Backups" FontSize="16" FontWeight="SemiBold"/>
+                                <TextBlock Text="Native cloud backup integration for disaster recovery." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
+                            </StackPanel>
+                        </Grid>
+                    </ui:CardExpander.Header>
+
+                    <StackPanel Margin="16,8,16,16" DataContext="{Binding CloudBackups, RelativeSource={RelativeSource AncestorType=Page}}">
+                        <!-- Toggles -->
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Enable Cloud Backups" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock Text="Master toggle to allow instances to upload backups to configured providers." TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,24,0"/>
+                            </StackPanel>
+                            <ui:ToggleSwitch Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding EnableCloudBackups, Mode=TwoWay}"/>
+                        </Grid>
+
+                        <Separator Margin="0,16" Opacity="0.15"/>
+
+                        <ItemsControl ItemsSource="{Binding ProviderViewModels}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="0,0,0,16">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <ui:SymbolIcon Symbol="Cloud24" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="24"/>
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding ProviderType}" FontSize="14" FontWeight="Medium"/>
+                                            <TextBlock Text="{Binding AccountInfo}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,4,0,0"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                            <ui:ProgressRing IsIndeterminate="True" Width="16" Height="16" Margin="0,0,12,0" Visibility="{Binding IsBusy, Converter={StaticResource VisibleIfTrue}}"/>
+                                            <ui:Button Content="Connect" Command="{Binding ConnectCommand}" Appearance="Primary" Margin="0,0,8,0" Visibility="{Binding IsConnected, Converter={StaticResource InvertedVisibilityConverter}}" />
+                                            <ui:Button Content="Disconnect" Command="{Binding DisconnectCommand}" Appearance="Danger" Visibility="{Binding IsConnected, Converter={StaticResource VisibleIfTrue}}" />
+                                        </StackPanel>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
                     </StackPanel>
                 </ui:CardExpander>
 
@@ -380,188 +562,6 @@
                             <ui:ToggleSwitch x:Name="ToggleAutoSummarize" Grid.Column="1" VerticalAlignment="Center" 
                                              Checked="ToggleAutoSummarize_Changed" 
                                              Unchecked="ToggleAutoSummarize_Changed"/>
-                        </Grid>
-                    </StackPanel>
-                </ui:CardExpander>
-
-                <ui:CardExpander IsExpanded="False" Icon="{ui:SymbolIcon Cloud24}" Margin="0,0,0,12">
-                    <ui:CardExpander.Header>
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel>
-                                <TextBlock Text="Cloud Backups" FontSize="16" FontWeight="SemiBold"/>
-                                <TextBlock Text="Native cloud backup integration for disaster recovery." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
-                            </StackPanel>
-                        </Grid>
-                    </ui:CardExpander.Header>
-
-                    <StackPanel Margin="16,8,16,16" DataContext="{Binding CloudBackups, RelativeSource={RelativeSource AncestorType=Page}}">
-                        <!-- Toggles -->
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="Enable Cloud Backups" FontSize="14" FontWeight="Medium"/>
-                                <TextBlock Text="Master toggle to allow instances to upload backups to configured providers." TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,24,0"/>
-                            </StackPanel>
-                            <ui:ToggleSwitch Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding EnableCloudBackups, Mode=TwoWay}"/>
-                        </Grid>
-
-                        <Separator Margin="0,16" Opacity="0.15"/>
-
-                        <ItemsControl ItemsSource="{Binding ProviderViewModels}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Grid Margin="0,0,0,16">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
-                                        <ui:SymbolIcon Symbol="Cloud24" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="24"/>
-                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                            <TextBlock Text="{Binding ProviderType}" FontSize="14" FontWeight="Medium"/>
-                                            <TextBlock Text="{Binding AccountInfo}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,4,0,0"/>
-                                        </StackPanel>
-                                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                            <ui:ProgressRing IsIndeterminate="True" Width="16" Height="16" Margin="0,0,12,0" Visibility="{Binding IsBusy, Converter={StaticResource VisibleIfTrue}}"/>
-                                            <ui:Button Content="Connect" Command="{Binding ConnectCommand}" Appearance="Primary" Margin="0,0,8,0" Visibility="{Binding IsConnected, Converter={StaticResource InvertedVisibilityConverter}}" />
-                                            <ui:Button Content="Disconnect" Command="{Binding DisconnectCommand}" Appearance="Danger" Visibility="{Binding IsConnected, Converter={StaticResource VisibleIfTrue}}" />
-                                        </StackPanel>
-                                    </Grid>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </StackPanel>
-                </ui:CardExpander>
-
-                <ui:CardExpander IsExpanded="False" Icon="{ui:SymbolIcon People24}" Margin="0,0,0,12">
-                    <ui:CardExpander.Header>
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel>
-                                <TextBlock Text="Discord Integration" FontSize="16" FontWeight="SemiBold"/>
-                                <TextBlock Text="Show your active server status on your Discord profile." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
-                            </StackPanel>
-                        </Grid>
-                    </ui:CardExpander.Header>
-
-                    <StackPanel Margin="16,8,16,16">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="Discord Rich Presence" FontSize="14" FontWeight="Medium"/>
-                                <TextBlock Text="Display your server type, player count, uptime, and a Join button directly on your Discord profile while a server is running." 
-                                           TextWrapping="Wrap" 
-                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
-                                           FontSize="12" 
-                                           Margin="0,4,24,0"/>
-                            </StackPanel>
-                            <ui:ToggleSwitch x:Name="ToggleDiscordRpc" Grid.Column="1" VerticalAlignment="Center" 
-                                             Checked="ToggleDiscordRpc_Changed" 
-                                             Unchecked="ToggleDiscordRpc_Changed"/>
-                        </Grid>
-                    </StackPanel>
-                </ui:CardExpander>
-
-                <ui:CardExpander IsExpanded="False" Icon="{ui:SymbolIcon Alert24}" Margin="0,0,0,12">
-                    <ui:CardExpander.Header>
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel>
-                                <TextBlock Text="Notifications" FontSize="16" FontWeight="SemiBold"/>
-                                <TextBlock Text="Manage desktop notifications." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
-                            </StackPanel>
-                        </Grid>
-                    </ui:CardExpander.Header>
-
-                    <StackPanel Margin="16,8,16,16">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="Server Online Notification" FontSize="14" FontWeight="Medium"/>
-                                <TextBlock Text="Show a notification when a server finishes starting up and becomes online."
-                                           TextWrapping="Wrap"
-                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                           FontSize="12"
-                                           Margin="0,4,24,0"/>
-                            </StackPanel>
-                            <ui:ToggleSwitch x:Name="ToggleServerOnlineNotifications"
-                                             Grid.Column="1"
-                                             VerticalAlignment="Center"
-                                             Checked="ToggleServerOnlineNotifications_Changed"
-                                             Unchecked="ToggleServerOnlineNotifications_Changed"/>
-                        </Grid>
-                        <Grid Margin="0,12,0,0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="Agent Connect Notification" FontSize="14" FontWeight="Medium"/>
-                                <TextBlock Text="Show a notification when the Playit agent successfully connects."
-                                           TextWrapping="Wrap"
-                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                           FontSize="12"
-                                           Margin="0,4,24,0"/>
-                            </StackPanel>
-                            <ui:ToggleSwitch x:Name="ToggleAgentConnectNotifications"
-                                             Grid.Column="1"
-                                             VerticalAlignment="Center"
-                                             Checked="ToggleAgentConnectNotifications_Changed"
-                                             Unchecked="ToggleAgentConnectNotifications_Changed"/>
-                        </Grid>
-                        <Grid Margin="0,12,0,0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="Remote Control Online Notification" FontSize="14" FontWeight="Medium"/>
-                                <TextBlock Text="Show a notification when the remote control service is online and a tunnel is found."
-                                           TextWrapping="Wrap"
-                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                           FontSize="12"
-                                           Margin="0,4,24,0"/>
-                            </StackPanel>
-                            <ui:ToggleSwitch x:Name="ToggleRemoteControlNotifications"
-                                             Grid.Column="1"
-                                             VerticalAlignment="Center"
-                                             Checked="ToggleRemoteControlNotifications_Changed"
-                                             Unchecked="ToggleRemoteControlNotifications_Changed"/>
-                        </Grid>
-                        <Grid Margin="0,12,0,0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="AI Summary Notification" FontSize="14" FontWeight="Medium"/>
-                                <TextBlock Text="Show a notification when AI session summarization starts and completes."
-                                           TextWrapping="Wrap"
-                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                           FontSize="12"
-                                           Margin="0,4,24,0"/>
-                            </StackPanel>
-                            <ui:ToggleSwitch x:Name="ToggleAiSummaryNotifications"
-                                             Grid.Column="1"
-                                             VerticalAlignment="Center"
-                                             Checked="ToggleAiSummaryNotifications_Changed"
-                                             Unchecked="ToggleAiSummaryNotifications_Changed"/>
                         </Grid>
                     </StackPanel>
                 </ui:CardExpander>
