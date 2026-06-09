@@ -23,7 +23,7 @@
 
 <br>
 
-<img src="docs/assets/screenshot-dashboard.png" alt="PocketMC Dashboard" width="880" style="border-radius:12px" />
+<video src="docs/assets/PocketMC.mp4" controls="controls" autoplay="autoplay" loop="loop" muted="muted" width="880" style="border-radius:12px"></video>
 
 <br>
 <br>
