@@ -23,7 +23,7 @@
 
 <br>
 
-<video src="docs/assets/PocketMC.mp4" controls="controls" autoplay="autoplay" loop="loop" muted="muted" width="880" style="border-radius:12px"></video>
+<img src="docs/assets/PocketMC.gif" alt="PocketMC Demo" width="880" style="border-radius:12px" />
 
 <br>
 <br>
