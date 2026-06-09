@@ -22,7 +22,7 @@
 
 
 <br>
-<video src="https://github.com/user-attachments/assets/0518dd2b-6d07-422f-b383-cd5e0d2ae75b" width="880" style="border-radius:12px"></video>
+<video src="https://github.com/user-attachments/assets/0518dd2b-6d07-422f-b383-cd5e0d2ae75b" width="880" style="border-radius:12px autoplay="autoplay"></video>
 <br>
 
 <br>
