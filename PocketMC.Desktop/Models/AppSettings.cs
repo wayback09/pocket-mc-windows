@@ -28,6 +28,11 @@ namespace PocketMC.Desktop.Models
         public string? CustomBackgroundImagePath { get; set; }
         public string? CurseForgeApiKey { get; set; }
 
+        // Telemetry
+        public bool EnableTelemetry { get; set; } = true;
+        public Guid? TelemetryClientId { get; set; }
+        public bool HasReportedInstall { get; set; }
+
         // AI Summarization
         [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
         public string? AiApiKey { get; set; }

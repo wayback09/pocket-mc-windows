@@ -105,6 +105,26 @@
                                              Checked="ToggleMinimizeToTrayOnClose_Changed"
                                              Unchecked="ToggleMinimizeToTrayOnClose_Changed"/>
                         </Grid>
+
+                        <Grid Margin="0,12,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Send anonymous usage statistics" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock Text="Help improve PocketMC by automatically sending anonymous telemetry (running server status, types, client version)."
+                                           TextWrapping="Wrap"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                           FontSize="12"
+                                           Margin="0,4,24,0"/>
+                            </StackPanel>
+                            <ui:ToggleSwitch x:Name="ToggleTelemetry"
+                                             Grid.Column="1"
+                                             VerticalAlignment="Center"
+                                             Checked="ToggleTelemetry_Changed"
+                                             Unchecked="ToggleTelemetry_Changed"/>
+                        </Grid>
                     </StackPanel>
                 </ui:CardExpander>
 

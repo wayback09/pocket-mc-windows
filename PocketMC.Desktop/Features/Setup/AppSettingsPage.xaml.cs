@@ -134,6 +134,7 @@ namespace PocketMC.Desktop.Features.Setup
             ToggleStartMinimizedToTray.IsChecked = _applicationState.Settings.StartMinimizedToTray;
             ToggleMinimizeToTrayOnClose.IsChecked = _applicationState.Settings.MinimizeToTrayOnClose;
             ToggleKeepComputerAwakeWhileServersRunning.IsChecked = _applicationState.Settings.KeepComputerAwakeWhileServersRunning;
+            ToggleTelemetry.IsChecked = _applicationState.Settings.EnableTelemetry;
 
             // AI Settings
             AiApiKeyInput.Text = _applicationState.Settings.GetCurrentAiKey() ?? "";
@@ -220,6 +221,26 @@ namespace PocketMC.Desktop.Features.Setup
                 _dialogService.ShowMessage(
                     "Settings Error",
                     $"Could not update app behavior settings:\n{ex.Message}",
+                    DialogType.Error);
+            }
+        }
+
+        private void ToggleTelemetry_Changed(object sender, RoutedEventArgs e)
+        {
+            if (_isInitializing) return;
+
+            var settings = _applicationState.Settings;
+            settings.EnableTelemetry = ToggleTelemetry.IsChecked == true;
+
+            try
+            {
+                _settingsManager.Save(settings);
+            }
+            catch (Exception ex)
+            {
+                _dialogService.ShowMessage(
+                    "Settings Error",
+                    $"Could not update telemetry settings:\n{ex.Message}",
                     DialogType.Error);
             }
         }
