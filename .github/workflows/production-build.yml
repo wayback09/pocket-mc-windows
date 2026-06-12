@@ -141,13 +141,13 @@ jobs:
 
           $payload = @{
             embeds = @(@{
-              title       = "ðŸ› ï¸ New Beta Portable Build Available!"
+              title       = "🛠️ New Beta Portable Build Available!"
               description = "A new test build has been uploaded."
               color       = 16753920
               fields      = @(
-                @{ name = "â¬‡ï¸ Download"; value = "[Click to download](https://github.com/$repo/actions/runs/$runId/artifacts/$artifactId)"; inline = $false },
-                @{ name = "ðŸ“ Run"; value = "Branch: ``$branch`` | Commit: ``$commit`` `n[View Run](https://github.com/$repo/actions/runs/$runId)"; inline = $false },
-                @{ name = "ðŸ’¬ Commit"; value = ('```text' + "`n$commitMessage`n" + '```'); inline = $false }
+                @{ name = "⬇️ Download"; value = "[Click to download](https://github.com/$repo/actions/runs/$runId/artifacts/$artifactId)"; inline = $false },
+                @{ name = "📝 Run"; value = "Branch: ``$branch`` | Commit: ``$commit`` `n[View Run](https://github.com/$repo/actions/runs/$runId)"; inline = $false },
+                @{ name = "💬 Commit"; value = ('```text' + "`n$commitMessage`n" + '```'); inline = $false }
               )
               footer      = @{ text = "PocketMC CI/CD" }
             })
@@ -248,12 +248,12 @@ jobs:
 
           $payload = @{
             embeds = @(@{
-              title       = "ðŸš€ New PocketMC Release: v${{ env.VERSION }}!"
+              title       = "🚀 New PocketMC Release: v${{ env.VERSION }}!"
               description = "Version **${{ env.VERSION }}** is now live!"
               color       = 3066993
               fields      = @(
-                @{ name = "ðŸ“¦ Release Notes"; value = $body; inline = $false },
-                @{ name = "â¬‡ï¸ Downloads"; value = "[GitHub Releases](https://github.com/PocketMC/pocket-mc-windows/releases/tag/v${{ env.VERSION }})"; inline = $false }
+                @{ name = "📦 Release Notes"; value = $body; inline = $false },
+                @{ name = "⬇️ Downloads"; value = "[GitHub Releases](https://github.com/PocketMC/pocket-mc-windows/releases/tag/v${{ env.VERSION }})"; inline = $false }
               )
               footer      = @{ text = "PocketMC Build System" }
             })
