@@ -20,6 +20,7 @@ namespace PocketMC.Desktop.Features.Shell
         private const int DwmUseImmersiveDarkModeBefore20H1 = 19;
 
         private readonly ApplicationState _applicationState;
+        private readonly WindowsCornerService _windowsCornerService;
         private readonly WallpaperMicaService _wallpaperMicaService;
         private FluentWindow? _boundWindow;
         private bool _isWindowActive = true;
@@ -27,9 +28,10 @@ namespace PocketMC.Desktop.Features.Shell
         [System.Runtime.InteropServices.DllImport("dwmapi.dll")]
         private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
 
-        public ShellVisualService(ApplicationState applicationState)
+        public ShellVisualService(ApplicationState applicationState, WindowsCornerService windowsCornerService)
         {
             _applicationState = applicationState;
+            _windowsCornerService = windowsCornerService;
             _wallpaperMicaService = new WallpaperMicaService();
         }
 
@@ -101,7 +103,7 @@ namespace PocketMC.Desktop.Features.Shell
                 HideFakeMicaLayer(window);
 
                 if (backdrop.Equals("Mica", StringComparison.OrdinalIgnoreCase) &&
-                    Environment.OSVersion.Version.Build >= 22000)
+                    _windowsCornerService.IsWindows11())
                 {
                     window.WindowBackdropType = WindowBackdropType.Mica;
                     window.Background = Brushes.Transparent;
@@ -110,7 +112,7 @@ namespace PocketMC.Desktop.Features.Shell
                 }
 
                 if (backdrop.Equals("Acrylic", StringComparison.OrdinalIgnoreCase) &&
-                    Environment.OSVersion.Version.Build >= 22000)
+                    _windowsCornerService.IsWindows11())
                 {
                     window.WindowBackdropType = WindowBackdropType.Acrylic;
                     window.Background = Brushes.Transparent;

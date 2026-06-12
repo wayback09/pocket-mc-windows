@@ -46,4 +46,92 @@ public sealed class ShellBackdropThemingSourceTests
         Assert.Contains("#CC202020", source);
         Assert.Contains("#B8202020", source);
     }
+
+    [Fact]
+    public void ShellVisualService_UsesSharedWindowsBuildDetection()
+    {
+        string source = File.ReadAllText(TestSourceFileResolver.Resolve(
+            "PocketMC.Desktop",
+            "Features",
+            "Shell",
+            "ShellVisualService.cs"));
+
+        Assert.Contains("WindowsCornerService", source);
+        Assert.Contains("_windowsCornerService.IsWindows11()", source);
+        Assert.DoesNotContain("Environment.OSVersion.Version.Build >= 22000", source);
+    }
+
+    [Fact]
+    public void WindowsCornerService_UsesRegistryBuildNumberAndVisualClipping()
+    {
+        string source = File.ReadAllText(TestSourceFileResolver.Resolve(
+            "PocketMC.Desktop",
+            "Features",
+            "Shell",
+            "WindowsCornerService.cs"));
+
+        Assert.Contains(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion", source);
+        Assert.Contains("CurrentBuildNumber", source);
+        Assert.Contains("Windows11MinimumBuild = 22000", source);
+        Assert.Contains("ApplyWindows10RoundedCorners(Window window)", source);
+        // Uses visual-tree clipping, not a template or AllowsTransparency
+        Assert.Contains("RectangleGeometry", source);
+        Assert.Contains("VisualTreeHelper", source);
+        Assert.Contains("rootVisual.Clip", source);
+        Assert.DoesNotContain("AllowsTransparencyProperty", source);
+        // Uses Win32 region to eliminate white corner artifacts
+        Assert.Contains("CreateRoundRectRgn", source);
+        Assert.Contains("SetWindowRgn", source);
+    }
+
+    [Fact]
+    public void WindowsCornerService_RemovesClipWhenMaximized()
+    {
+        string source = File.ReadAllText(TestSourceFileResolver.Resolve(
+            "PocketMC.Desktop",
+            "Features",
+            "Shell",
+            "WindowsCornerService.cs"));
+
+        Assert.Contains("WindowState.Maximized", source);
+        Assert.Contains("rootVisual.Clip = null", source);
+    }
+
+    [Fact]
+    public void WindowsCornerService_RegistersGlobalWindowHookForAllDialogs()
+    {
+        string source = File.ReadAllText(TestSourceFileResolver.Resolve(
+            "PocketMC.Desktop",
+            "Features",
+            "Shell",
+            "WindowsCornerService.cs"));
+
+        Assert.Contains("RegisterGlobalWindowHook()", source);
+        Assert.Contains("RegisterClassHandler", source);
+        Assert.Contains("typeof(Window)", source);
+        Assert.Contains("FrameworkElement.LoadedEvent", source);
+    }
+
+    [Fact]
+    public void AppStartup_CallsRegisterGlobalWindowHook()
+    {
+        string source = File.ReadAllText(TestSourceFileResolver.Resolve(
+            "PocketMC.Desktop",
+            "App.xaml.cs"));
+
+        Assert.Contains("RegisterGlobalWindowHook()", source);
+    }
+
+    [Fact]
+    public void MainWindow_AppliesWindows10CornerServiceOnlyFromCodeBehind()
+    {
+        string source = File.ReadAllText(TestSourceFileResolver.Resolve(
+            "PocketMC.Desktop",
+            "Features",
+            "Shell",
+            "MainWindow.xaml.cs"));
+
+        Assert.Contains("WindowsCornerService", source);
+        Assert.Contains("ApplyWindows10RoundedCorners(this)", source);
+    }
 }

@@ -57,6 +57,7 @@ namespace PocketMC.Desktop.Composition
             services.AddSingleton<SettingsManager>();
             services.AddSingleton<ITelemetryService, TelemetryService>();
             services.AddSingleton<WindowsStartupService>();
+            services.AddSingleton<WindowsCornerService>();
             services.AddSingleton<ApplicationState>();
             services.AddSingleton<JobObject>();
             services.AddSingleton<WindowsToastNotificationService>();

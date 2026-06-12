@@ -24,6 +24,7 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
     private readonly IServiceProvider _serviceProvider;
     private readonly IShellUIStateService _uiStateService;
     private readonly IShellVisualService _visualService;
+    private readonly WindowsCornerService _windowsCornerService;
     private readonly ShellStartupCoordinator _startupCoordinator;
     private readonly ShellViewModel _viewModel;
     private readonly ILogger<MainWindow> _logger;
@@ -47,6 +48,7 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
         IServiceProvider serviceProvider,
         IShellUIStateService uiStateService,
         IShellVisualService visualService,
+        WindowsCornerService windowsCornerService,
         ShellStartupCoordinator startupCoordinator,
         ShellViewModel viewModel,
         ILogger<MainWindow> logger)
@@ -54,6 +56,7 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
         _serviceProvider = serviceProvider;
         _uiStateService = uiStateService;
         _visualService = visualService;
+        _windowsCornerService = windowsCornerService;
         _startupCoordinator = startupCoordinator;
         _viewModel = viewModel;
         _logger = logger;
@@ -61,6 +64,7 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
         DataContext = _viewModel;
 
         InitializeComponent();
+        _windowsCornerService.ApplyWindows10RoundedCorners(this);
         ApplyDynamicWindowSize();
 
         if (visualService is ShellVisualService concreteVisual)

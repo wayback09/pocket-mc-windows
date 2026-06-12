@@ -71,6 +71,7 @@ public partial class App : Application
         SingleInstanceService.ShowApplicationRequested += OnShowApplicationRequested;
 
         await _host.StartAsync();
+        Services.GetRequiredService<WindowsCornerService>().RegisterGlobalWindowHook();
         Services.GetRequiredService<ServerSleepPreventionCoordinator>().Refresh();
 
         var mainWindow = Services.GetRequiredService<MainWindow>();
