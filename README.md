@@ -3,7 +3,7 @@
 <table border="0" cellpadding="16">
   <tr>
     <td align="center" width="200">
-      <img src="docs/assets/logo.png" alt="PocketMC" width="180" />
+      <img src="docs/assets/branding/logo.png" alt="PocketMC" width="180" />
     </td>
     <td align="center">
       <h1 style="border: none; margin-bottom: 10px;">PocketMC Windows</h1>
@@ -56,13 +56,13 @@ Your servers live on your machine, in the app root you choose. PocketMC is not a
 
 <table border="0" align="center" cellpadding="8">
   <tr align="center">
-    <td><img src="docs/assets/vanilla.png" alt="Vanilla Java" height="60" /></td>
-    <td><img src="docs/assets/papermc.png" alt="Paper" height="60" /></td>
-    <td><img src="docs/assets/fabric.png" alt="Fabric" height="60" /></td>
-    <td><img src="docs/assets/forge.png" alt="Forge" height="60" /></td>
-    <td><img src="docs/assets/neoforge.png" alt="NeoForge" height="60" /></td>
-    <td><img src="docs/assets/bds.png" alt="Bedrock Dedicated Server" height="60" /></td>
-    <td><img src="docs/assets/pocketmine-mp.png" alt="PocketMine-MP" height="60" /></td>
+    <td><img src="docs/assets/icons/vanilla.png" alt="Vanilla Java" height="60" /></td>
+    <td><img src="docs/assets/icons/papermc.png" alt="Paper" height="60" /></td>
+    <td><img src="docs/assets/icons/fabric.png" alt="Fabric" height="60" /></td>
+    <td><img src="docs/assets/icons/forge.png" alt="Forge" height="60" /></td>
+    <td><img src="docs/assets/icons/neoforge.png" alt="NeoForge" height="60" /></td>
+    <td><img src="docs/assets/icons/bds.png" alt="Bedrock Dedicated Server" height="60" /></td>
+    <td><img src="docs/assets/icons/pocketmine-mp.png" alt="PocketMine-MP" height="60" /></td>
   </tr>
   <tr align="center" valign="top">
     <td><sub><b>Vanilla Java</b></sub></td>
@@ -226,17 +226,17 @@ Logs are preprocessed and sanitized (IPs, emails) before being sent. You own the
 
 | | |
 | :---: | :---: |
-| **Dashboard**<br><img src="docs/assets/screenshot-dashboard.png" width="420" alt="Dashboard" /> | **Console**<br><img src="docs/assets/screenshot-console.png" width="420" alt="Console" /> |
-| **Server Settings**<br><img src="docs/assets/server-settings.png" width="420" alt="Server Settings" /> | **Backups**<br><img src="docs/assets/screenshot-backups.png" width="420" alt="Backups" /> |
-| **Mod Marketplace**<br><img src="docs/assets/mod-marketplace.png" width="420" alt="Mod Marketplace" /> | **Public Tunnels**<br><img src="docs/assets/tunnels.png" width="420" alt="Public Tunnels" /> |
-| **Interactive Ports Map**<br><img src="docs/assets/ports-map.png" width="420" alt="Interactive Ports Map" /> | **Java Runtimes**<br><img src="docs/assets/java-runtimes.png" width="420" alt="Java Runtimes" /> |
-| **Remote Control**<br><img src="docs/assets/remote-control.png" width="420" alt="Remote Control" /> | **App Settings**<br><img src="docs/assets/app-settings.png" width="420" alt="App Settings" /> |
+| **Dashboard**<br><img src="docs/assets/screenshots/screenshot-dashboard.png" width="420" alt="Dashboard" /> | **Console**<br><img src="docs/assets/screenshots/screenshot-console.png" width="420" alt="Console" /> |
+| **Server Settings**<br><img src="docs/assets/screenshots/server-settings.png" width="420" alt="Server Settings" /> | **Backups**<br><img src="docs/assets/screenshots/screenshot-backups.png" width="420" alt="Backups" /> |
+| **Mod Marketplace**<br><img src="docs/assets/screenshots/mod-marketplace.png" width="420" alt="Mod Marketplace" /> | **Public Tunnels**<br><img src="docs/assets/screenshots/tunnels.png" width="420" alt="Public Tunnels" /> |
+| **Interactive Ports Map**<br><img src="docs/assets/screenshots/ports-map.png" width="420" alt="Interactive Ports Map" /> | **Java Runtimes**<br><img src="docs/assets/screenshots/java-runtimes.png" width="420" alt="Java Runtimes" /> |
+| **Remote Control**<br><img src="docs/assets/screenshots/remote-control.png" width="420" alt="Remote Control" /> | **App Settings**<br><img src="docs/assets/screenshots/app-settings.png" width="420" alt="App Settings" /> |
 
 ### Remote Web Dashboard for your friend
 
 |Dashboard | Home | Console | Players |
 | :---: | :---: | :---: | :---: |
-| <img src="docs/assets/mobile-instances.png" width="280" alt="Web Dashboard - Players" /> | <img src="docs/assets/mobile-home.png" width="280" alt="Web Dashboard - Home" /> | <img src="docs/assets/mobile-console.png" width="280" alt="Web Dashboard - Console" /> | <img src="docs/assets/mobile-players.png" width="280" alt="Web Dashboard - Players" /> |
+| <img src="docs/assets/screenshots/mobile-instances.png" width="280" alt="Web Dashboard - Players" /> | <img src="docs/assets/screenshots/mobile-home.png" width="280" alt="Web Dashboard - Home" /> | <img src="docs/assets/screenshots/mobile-console.png" width="280" alt="Web Dashboard - Console" /> | <img src="docs/assets/screenshots/mobile-players.png" width="280" alt="Web Dashboard - Players" /> |
 
 <br>
 
