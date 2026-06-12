@@ -85,6 +85,7 @@ namespace PocketMC.Desktop.Features.Tunnel
 
             Loaded += OnLoaded;
             Unloaded += OnUnloaded;
+            KeyDown += PortsMapPage_KeyDown;
         }
 
         private async void OnLoaded(object sender, RoutedEventArgs e)
@@ -535,6 +536,32 @@ namespace PocketMC.Desktop.Features.Tunnel
             {
                 get => _editingPortText;
                 set => SetProperty(ref _editingPortText, value);
+            }
+        }
+
+        private async void PortsMapPage_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.F5 || (e.Key == Key.R && Keyboard.Modifiers == ModifierKeys.Control))
+            {
+                await RefreshMapAsync();
+                e.Handled = true;
+            }
+        }
+
+        private void TxtPort_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (sender is FrameworkElement fe && fe.DataContext is RouteViewModel route)
+            {
+                if (e.Key == Key.Enter)
+                {
+                    ExecuteSavePort(route);
+                    e.Handled = true;
+                }
+                else if (e.Key == Key.Escape)
+                {
+                    ExecuteCancelPort(route);
+                    e.Handled = true;
+                }
             }
         }
     }

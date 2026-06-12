@@ -215,7 +215,8 @@
                                                                                  Height="28"
                                                                                  Width="68"
                                                                                  VerticalAlignment="Center"
-                                                                                 HorizontalContentAlignment="Center"/>
+                                                                                 HorizontalContentAlignment="Center"
+                                                                                 KeyDown="TxtPort_KeyDown"/>
                                                                      <ui:Button Grid.Column="1" 
                                                                                 Icon="{ui:SymbolIcon Checkmark20}"
                                                                                 Appearance="Transparent"

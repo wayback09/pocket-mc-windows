@@ -127,12 +127,14 @@
                                Content="Cancel"
                                Appearance="Secondary"
                                Margin="0,0,8,0"
-                               Click="BtnBack_Click"/>
+                               Click="BtnBack_Click"
+                               IsCancel="True"/>
                     <ui:Button x:Name="BtnCreate"
                                Content="Create and Download"
                                Appearance="Primary"
                                Icon="{ui:SymbolIcon ArrowDownload24}"
-                               Click="BtnCreate_Click"/>
+                               Click="BtnCreate_Click"
+                               IsDefault="True"/>
                 </StackPanel>
             </Grid>
         </Border>

@@ -29,7 +29,7 @@ using PocketMC.Desktop.Features.Instances.ImportExport;
 
 namespace PocketMC.Desktop.Features.InstanceCreation
 {
-    public partial class NewInstancePage : Page
+    public partial class NewInstancePage : Page, ISupportsKeyboardBackNavigation
     {
         private readonly IServiceProvider _serviceProvider;
         private readonly IAppNavigationService _navigationService;
@@ -846,6 +846,19 @@ namespace PocketMC.Desktop.Features.InstanceCreation
             {
                 _isForwardingMouseWheel = false;
             }
+        }
+
+        public bool HandleBackNavigation()
+        {
+            var focused = FocusManager.GetFocusedElement(Window.GetWindow(this));
+            if (focused is System.Windows.Controls.Primitives.TextBoxBase || 
+                focused is System.Windows.Controls.PasswordBox)
+            {
+                return false;
+            }
+
+            BtnBack_Click(BtnCancel, new RoutedEventArgs());
+            return true;
         }
 
         private static T? FindAncestor<T>(DependencyObject? current) where T : DependencyObject

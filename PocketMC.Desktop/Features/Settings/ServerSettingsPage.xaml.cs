@@ -26,6 +26,7 @@ namespace PocketMC.Desktop.Features.Settings
             Loaded += ServerSettingsPage_Loaded;
             Unloaded += ServerSettingsPage_Unloaded;
             MainTabControl.SelectionChanged += MainTabControl_SelectionChanged;
+            KeyDown += ServerSettingsPage_KeyDown;
         }
 
         private bool _isFirstLoad = true;
@@ -295,5 +296,16 @@ namespace PocketMC.Desktop.Features.Settings
             }
         }
 
+        private void ServerSettingsPage_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.S && Keyboard.Modifiers == ModifierKeys.Control)
+            {
+                if (ViewModel.SaveCommand.CanExecute(null))
+                {
+                    ViewModel.SaveCommand.Execute(null);
+                    e.Handled = true;
+                }
+            }
+        }
     }
 }

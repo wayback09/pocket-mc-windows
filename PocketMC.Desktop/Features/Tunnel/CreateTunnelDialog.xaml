@@ -166,14 +166,16 @@
                        x:Name="BtnCancel"
                        Content="Cancel"
                        Width="100"
-                       Click="BtnCancel_Click"/>
+                       Click="BtnCancel_Click"
+                       IsCancel="True"/>
 
             <ui:Button Grid.Column="4"
                        x:Name="BtnCreate"
                        Content="Create"
                        Appearance="Primary"
                        Width="120"
-                       Click="BtnCreate_Click"/>
+                       Click="BtnCreate_Click"
+                       IsDefault="True"/>
         </Grid>
     </Grid>
 </ui:FluentWindow>

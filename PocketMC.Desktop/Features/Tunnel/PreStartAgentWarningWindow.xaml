@@ -45,6 +45,7 @@
                     Background="#89B4FA" Foreground="#1E1E2E"
                     FontWeight="Bold"
                     BorderThickness="0"
+                    IsDefault="True"
                     Click="ConnectAgentButton_Click"/>
         </StackPanel>
     </Grid>

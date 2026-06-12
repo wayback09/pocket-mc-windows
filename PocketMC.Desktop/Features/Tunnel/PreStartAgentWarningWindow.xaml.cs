@@ -55,5 +55,15 @@ namespace PocketMC.Desktop.Features.Tunnel
             _tcs.TrySetResult(true);
             Close();
         }
+
+        protected override void OnKeyDown(System.Windows.Input.KeyEventArgs e)
+        {
+            if (e.Key == System.Windows.Input.Key.Escape)
+            {
+                Close();
+                e.Handled = true;
+            }
+            base.OnKeyDown(e);
+        }
     }
 }

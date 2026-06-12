@@ -574,6 +574,25 @@ namespace PocketMC.Desktop.Features.Console
             {
                 TxtCommand.Focus();
                 e.Handled = true; // Don't print the '/' in the box - it's a focus shortcut
+                return;
+            }
+
+            // Ctrl + F to focus search logs
+            if (e.Key == Key.F && Keyboard.Modifiers == ModifierKeys.Control)
+            {
+                TxtLogSearch.Focus();
+                TxtLogSearch.SelectAll();
+                e.Handled = true;
+                return;
+            }
+
+            // Ctrl + L to clear screen logs
+            if (e.Key == Key.L && Keyboard.Modifiers == ModifierKeys.Control)
+            {
+                Logs.Clear();
+                FilteredLogs.Clear();
+                e.Handled = true;
+                return;
             }
         }
 
@@ -582,6 +601,20 @@ namespace PocketMC.Desktop.Features.Console
             if (e.Key == Key.Enter)
             {
                 await SendCommand();
+                e.Handled = true;
+                return;
+            }
+
+            if (e.Key == Key.Escape)
+            {
+                if (!string.IsNullOrEmpty(TxtCommand.Text))
+                {
+                    TxtCommand.Text = string.Empty;
+                }
+                else
+                {
+                    Keyboard.ClearFocus();
+                }
                 e.Handled = true;
                 return;
             }
@@ -620,6 +653,22 @@ namespace PocketMC.Desktop.Features.Console
                     // If TxtCommand.Text isn't null, WPF usually moves caret to start/end on programmatic change.
                 }
 
+                e.Handled = true;
+            }
+        }
+
+        private void TxtLogSearch_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Escape)
+            {
+                if (!string.IsNullOrEmpty(TxtLogSearch.Text))
+                {
+                    TxtLogSearch.Text = string.Empty;
+                }
+                else
+                {
+                    Keyboard.ClearFocus();
+                }
                 e.Handled = true;
             }
         }

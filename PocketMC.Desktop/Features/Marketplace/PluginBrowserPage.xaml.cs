@@ -6,6 +6,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Shell.Interfaces;
 using PocketMC.Desktop.Features.Shell;
@@ -109,6 +110,7 @@ namespace PocketMC.Desktop.Features.Marketplace
                 }
                 await RefreshResultsAsync();
             };
+            KeyDown += PluginBrowserPage_KeyDown;
         }
 
 
@@ -411,6 +413,36 @@ namespace PocketMC.Desktop.Features.Marketplace
                     _mcVersion,
                     _compat.LoaderName,
                     downloadUrl: url);
+            }
+        }
+
+        private async void PluginBrowserPage_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.F && Keyboard.Modifiers == ModifierKeys.Control)
+            {
+                TxtSearch.Focus();
+                e.Handled = true;
+            }
+            else if (e.Key == Key.F5 || (e.Key == Key.R && Keyboard.Modifiers == ModifierKeys.Control))
+            {
+                await RefreshResultsAsync();
+                e.Handled = true;
+            }
+        }
+
+        private void TxtSearch_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Escape)
+            {
+                if (!string.IsNullOrEmpty(TxtSearch.Text))
+                {
+                    TxtSearch.Text = string.Empty;
+                }
+                else
+                {
+                    Keyboard.ClearFocus();
+                }
+                e.Handled = true;
             }
         }
     }

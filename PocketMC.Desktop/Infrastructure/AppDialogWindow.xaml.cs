@@ -122,6 +122,27 @@ namespace PocketMC.Desktop.Infrastructure
             Result = PocketMC.Desktop.Core.Interfaces.DialogResult.Cancel;
             Close();
         }
+
+        protected override void OnKeyDown(System.Windows.Input.KeyEventArgs e)
+        {
+            if (e.Key == System.Windows.Input.Key.Escape)
+            {
+                if (BtnTertiary.Visibility == Visibility.Visible)
+                {
+                    BtnTertiary_Click(BtnTertiary, new RoutedEventArgs());
+                }
+                else if (BtnSecondary.Visibility == Visibility.Visible)
+                {
+                    BtnSecondary_Click(BtnSecondary, new RoutedEventArgs());
+                }
+                else
+                {
+                    Close();
+                }
+                e.Handled = true;
+            }
+            base.OnKeyDown(e);
+        }
     }
 
     public enum AppDialogType

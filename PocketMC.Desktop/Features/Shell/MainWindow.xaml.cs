@@ -33,6 +33,7 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
     private ITitleBarContextSource? _titleBarContextSource;
     private readonly Dictionary<Type, Page> _shellPageCache = new();
     private bool _explicitExitRequested;
+    private Page? _currentPage;
     private static readonly HashSet<Type> ShellOwnedScrollPageTypes = new()
     {
         typeof(DashboardPage),
@@ -111,7 +112,10 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
     private void OnNavigated(NavigationView sender, NavigatedEventArgs args)
     {
         if (args.Page is Page navigatedPage)
+        {
+            _currentPage = navigatedPage;
             DisableShellOwnedScrollHost(navigatedPage);
+        }
 
         var pageType = args.Page?.GetType();
         if (IsShellPageType(pageType))
@@ -138,6 +142,7 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
         bool replaced = RootNavigation.ReplaceContent(shellPage, parameter);
         if (replaced)
         {
+            _currentPage = shellPage;
             _lastShellPageType = pageType;
             DisableShellOwnedScrollHost(shellPage);
             DetachTitleBarContextSource();
@@ -153,6 +158,7 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
         bool replaced = RootNavigation.ReplaceContent(page, null);
         if (replaced)
         {
+            _currentPage = page;
             DisableShellOwnedScrollHost(page);
             AttachTitleBarContextSource(page as ITitleBarContextSource);
         }
@@ -333,7 +339,8 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
         SetNavigationLocked(true);
         var setupPage = ActivatorUtilities.CreateInstance<RootDirectorySetupPage>(_serviceProvider);
         setupPage.DirectorySelected += (s, path) => _startupCoordinator.CompleteRootDirectorySelection(path);
-        RootNavigation.ReplaceContent(setupPage, null);
+        bool replaced = RootNavigation.ReplaceContent(setupPage, null);
+        if (replaced) _currentPage = setupPage;
     }
 
     public void CompleteRootDirectorySetup() => SetNavigationLocked(false);
@@ -490,6 +497,121 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
         Show();
         if (WindowState == WindowState.Minimized) WindowState = WindowState.Normal;
         Activate();
+    }
+
+    protected override void OnKeyDown(KeyEventArgs e)
+    {
+        base.OnKeyDown(e);
+
+        if (e.Handled) return;
+
+        // If navigation is locked (e.g. initial setup), ignore hotkeys
+        if (_viewModel.IsNavigationLocked) return;
+
+        // Escape to go back, but only if not typing in a text input
+        if (e.Key == Key.Escape)
+        {
+            var focused = FocusManager.GetFocusedElement(this);
+            if (focused is not System.Windows.Controls.Primitives.TextBoxBase && 
+                focused is not System.Windows.Controls.PasswordBox)
+            {
+                if (_currentPage is ISupportsKeyboardBackNavigation support)
+                {
+                    if (support.HandleBackNavigation())
+                    {
+                        e.Handled = true;
+                        return;
+                    }
+                }
+
+                var nav = _serviceProvider.GetService<IAppNavigationService>();
+                if (nav != null && nav.NavigateBack())
+                {
+                    e.Handled = true;
+                    return;
+                }
+            }
+        }
+
+        // Alt + Left or BrowserBack to navigate back
+        if ((e.Key == Key.Left && Keyboard.Modifiers == ModifierKeys.Alt) || e.Key == Key.BrowserBack)
+        {
+            if (_currentPage is ISupportsKeyboardBackNavigation support)
+            {
+                if (support.HandleBackNavigation())
+                {
+                    e.Handled = true;
+                    return;
+                }
+            }
+
+            var nav = _serviceProvider.GetService<IAppNavigationService>();
+            if (nav != null && nav.NavigateBack())
+            {
+                e.Handled = true;
+                return;
+            }
+        }
+
+        // Ctrl + N to open New Instance page
+        if (e.Key == Key.N && Keyboard.Modifiers == ModifierKeys.Control)
+        {
+            var nav = _serviceProvider.GetService<IAppNavigationService>();
+            if (nav != null)
+            {
+                var page = ActivatorUtilities.CreateInstance<PocketMC.Desktop.Features.InstanceCreation.NewInstancePage>(_serviceProvider);
+                if (nav.NavigateToDetailPage(page, "New Instance", DetailRouteKind.NewInstance, DetailBackNavigation.Dashboard, true))
+                {
+                    e.Handled = true;
+                    return;
+                }
+            }
+        }
+
+        // Ctrl + 1..6 or Ctrl + , navigation shortcuts
+        if (Keyboard.Modifiers == ModifierKeys.Control)
+        {
+            var nav = _serviceProvider.GetService<IAppNavigationService>();
+            if (nav != null)
+            {
+                bool handled = false;
+                switch (e.Key)
+                {
+                    case Key.D1:
+                    case Key.NumPad1:
+                        handled = nav.NavigateToDashboard();
+                        break;
+                    case Key.D2:
+                    case Key.NumPad2:
+                        handled = nav.NavigateToTunnel();
+                        break;
+                    case Key.D3:
+                    case Key.NumPad3:
+                        handled = nav.NavigateToShellPage(typeof(RemoteControlPage));
+                        break;
+                    case Key.D4:
+                    case Key.NumPad4:
+                        handled = nav.NavigateToShellPage(typeof(AppSettingsPage));
+                        break;
+                    case Key.D5:
+                    case Key.NumPad5:
+                        handled = nav.NavigateToShellPage(typeof(JavaSetupPage));
+                        break;
+                    case Key.D6:
+                    case Key.NumPad6:
+                        handled = nav.NavigateToShellPage(typeof(AboutPage));
+                        break;
+                    case Key.OemComma:
+                        handled = nav.NavigateToShellPage(typeof(AppSettingsPage));
+                        break;
+                }
+                if (handled)
+                {
+                    e.Handled = true;
+                    return;
+                }
+            }
+        }
     }
 
     private async void TrayExit_Click(object sender, RoutedEventArgs e)

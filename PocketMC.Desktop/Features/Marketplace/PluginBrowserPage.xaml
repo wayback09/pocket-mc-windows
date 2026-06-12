@@ -34,7 +34,8 @@
             <ui:Card Padding="16">
                 <StackPanel Orientation="Horizontal">
                     <ui:AutoSuggestBox x:Name="TxtSearch" PlaceholderText="Search mods/plugins..." Width="260" Margin="0,0,16,0"
-                                       Icon="{ui:SymbolIcon Search24}" TextChanged="TxtSearch_TextChanged"/>
+                                       Icon="{ui:SymbolIcon Search24}" TextChanged="TxtSearch_TextChanged"
+                                       KeyDown="TxtSearch_KeyDown"/>
 
                     <TextBlock Text="Source:" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                     <ComboBox x:Name="CmbSource" Width="130" Margin="0,0,16,0" SelectionChanged="RefreshList_SelectionChanged">

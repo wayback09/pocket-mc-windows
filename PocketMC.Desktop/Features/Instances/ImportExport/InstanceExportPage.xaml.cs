@@ -7,10 +7,11 @@ using System.Windows.Input;
 using System.Windows.Media;
 using Microsoft.Win32;
 using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Desktop.Features.Shell.Interfaces;
 
 namespace PocketMC.Desktop.Features.Instances.ImportExport;
 
-public partial class InstanceExportPage : Page
+public partial class InstanceExportPage : Page, ISupportsKeyboardBackNavigation
 {
     private readonly IAppNavigationService _navigationService;
     private readonly MouseWheelEventHandler _previewMouseWheelHandler;
@@ -213,6 +214,19 @@ public partial class InstanceExportPage : Page
         }
 
         return null;
+    }
+
+    public bool HandleBackNavigation()
+    {
+        var focused = FocusManager.GetFocusedElement(Window.GetWindow(this));
+        if (focused is System.Windows.Controls.Primitives.TextBoxBase || 
+            focused is System.Windows.Controls.PasswordBox)
+        {
+            return false;
+        }
+
+        BtnBack_Click(BtnCancel, new RoutedEventArgs());
+        return true;
     }
 
     private static void DisableParentScrollViewer(DependencyObject obj)

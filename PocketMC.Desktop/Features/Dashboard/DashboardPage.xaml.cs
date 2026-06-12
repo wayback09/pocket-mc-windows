@@ -1,6 +1,7 @@
 using System;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using PocketMC.Desktop.Infrastructure;
 
 namespace PocketMC.Desktop.Features.Dashboard
@@ -17,6 +18,7 @@ namespace PocketMC.Desktop.Features.Dashboard
 
             Loaded += DashboardPage_Loaded;
             Unloaded += DashboardPage_Unloaded;
+            KeyDown += DashboardPage_KeyDown;
         }
 
         private void DashboardPage_Loaded(object sender, RoutedEventArgs e)
@@ -141,6 +143,18 @@ namespace PocketMC.Desktop.Features.Dashboard
                 if (vm.BedrockIpDisplayText == "\u2713 Copied")
                 {
                     vm.BedrockIpDisplayText = null!; // resets to computed property
+                }
+            }
+        }
+
+        private void DashboardPage_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.F5 || (e.Key == Key.R && Keyboard.Modifiers == ModifierKeys.Control))
+            {
+                if (ViewModel.RefreshInstancesCommand.CanExecute(null))
+                {
+                    ViewModel.RefreshInstancesCommand.Execute(null);
+                    e.Handled = true;
                 }
             }
         }
