@@ -77,7 +77,7 @@ namespace PocketMC.Desktop.Features.Dashboard
                 onStarted(vm);
 
                 var agentState = await _agentProvisioning.GetConnectionStateAsync();
-                if (agentState != AgentConnectionState.Connected)
+                if (agentState != AgentConnectionState.Connected && agentState != AgentConnectionState.Connecting)
                 {
                     var dialog = new PreStartAgentWarningWindow(_agentProvisioning)
                     {
@@ -234,7 +234,7 @@ namespace PocketMC.Desktop.Features.Dashboard
                 onStarted(vm);
 
                 var agentState = await _agentProvisioning.GetConnectionStateAsync();
-                if (agentState != AgentConnectionState.Connected)
+                if (agentState != AgentConnectionState.Connected && agentState != AgentConnectionState.Connecting)
                 {
                     var dialog = new PreStartAgentWarningWindow(_agentProvisioning)
                     {

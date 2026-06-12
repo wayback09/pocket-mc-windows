@@ -708,7 +708,7 @@ namespace PocketMC.Desktop.Features.Console
             try
             {
                 var agentState = await _agentProvisioning.GetConnectionStateAsync();
-                if (agentState != PocketMC.Desktop.Features.Tunnel.AgentConnectionState.Connected)
+                if (agentState != PocketMC.Desktop.Features.Tunnel.AgentConnectionState.Connected && agentState != PocketMC.Desktop.Features.Tunnel.AgentConnectionState.Connecting)
                 {
                     var dialog = new PocketMC.Desktop.Features.Tunnel.PreStartAgentWarningWindow(_agentProvisioning)
                     {
