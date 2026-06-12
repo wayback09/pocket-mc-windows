@@ -193,7 +193,7 @@ namespace PocketMC.Desktop.Features.InstanceCreation
             string serverType = GetSelectedServerType();
             if (serverType == "Forge" || serverType == "NeoForge")
             {
-                TxtForgeWarning.Text = $"⚠ {serverType} support is in beta. First launch runs the installer automatically. This may take several minutes.";
+                TxtForgeWarning.Text = $"⚠ {serverType} support is in beta - expect instability.";
                 TxtForgeWarning.Visibility = Visibility.Visible;
             }
             else
@@ -682,8 +682,14 @@ namespace PocketMC.Desktop.Features.InstanceCreation
             ErrorCallout.Visibility = Visibility.Visible;
         }
 
-        private string GetSelectedServerType() =>
-            (CmbServerType.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "Vanilla";
+        private string GetSelectedServerType()
+        {
+            if (CmbServerType.SelectedItem is ComboBoxItem item)
+            {
+                return item.Tag?.ToString() ?? item.Content?.ToString() ?? "Vanilla";
+            }
+            return "Vanilla";
+        }
 
         private static void CleanupGeyserFiles(string instancePath)
         {

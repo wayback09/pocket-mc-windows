@@ -191,13 +191,27 @@
                                   HorizontalAlignment="Stretch"
                                   MinHeight="40"
                                   SelectionChanged="CmbServerType_SelectionChanged">
-                            <ComboBoxItem Content="Vanilla" IsSelected="True"/>
-                            <ComboBoxItem Content="Paper"/>
-                            <ComboBoxItem Content="Fabric"/>
-                            <ComboBoxItem Content="Forge"/>
-                            <ComboBoxItem Content="NeoForge"/>
-                            <ComboBoxItem Content="Bedrock (BDS)"/>
-                            <ComboBoxItem Content="Pocketmine (PHP)"/>
+                            <ComboBoxItem Tag="Vanilla" Content="Vanilla" IsSelected="True"/>
+                            <ComboBoxItem Tag="Paper" Content="Paper"/>
+                            <ComboBoxItem Tag="Fabric" Content="Fabric"/>
+                            <ComboBoxItem Tag="Forge">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Forge"/>
+                                    <Border Background="#26FFB300" BorderBrush="#80FFB300" BorderThickness="1" CornerRadius="4" Margin="6,0,0,0" Padding="4,0" VerticalAlignment="Center">
+                                        <TextBlock Text="BETA" FontSize="9" FontWeight="Bold" Foreground="#FFFFD54F" VerticalAlignment="Center"/>
+                                    </Border>
+                                </StackPanel>
+                            </ComboBoxItem>
+                            <ComboBoxItem Tag="NeoForge">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="NeoForge"/>
+                                    <Border Background="#26FFB300" BorderBrush="#80FFB300" BorderThickness="1" CornerRadius="4" Margin="6,0,0,0" Padding="4,0" VerticalAlignment="Center">
+                                        <TextBlock Text="BETA" FontSize="9" FontWeight="Bold" Foreground="#FFFFD54F" VerticalAlignment="Center"/>
+                                    </Border>
+                                </StackPanel>
+                            </ComboBoxItem>
+                            <ComboBoxItem Tag="Bedrock (BDS)" Content="Bedrock (BDS)"/>
+                            <ComboBoxItem Tag="Pocketmine (PHP)" Content="Pocketmine (PHP)"/>
                         </ComboBox>
 
                         <!-- Minecraft Version -->
