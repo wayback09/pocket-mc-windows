@@ -63,7 +63,7 @@ public sealed class ServerConfigurationService
     public ServerConfiguration Load(InstanceMetadata metadata, string serverDir)
     {
         var props = ServerPropertiesParser.Read(GetPropertiesPath(serverDir));
-        var profile = ServerSettingsProfile.FromMetadata(metadata);
+        var profile = ServerSettingsProfile.FromMetadata(metadata, serverDir);
 
         // Sync metadata if needed (NET-15)
         if (TryGetDisplayName(props, profile, out var pMotd)) metadata.Motd = pMotd;
@@ -124,7 +124,7 @@ public sealed class ServerConfigurationService
 
     public void Save(InstanceMetadata metadata, string serverDir, ServerConfiguration configuration)
     {
-        var profile = ServerSettingsProfile.FromMetadata(metadata);
+        var profile = ServerSettingsProfile.FromMetadata(metadata, serverDir);
 
         metadata.MinRamMb = configuration.MinRamMb;
         metadata.MaxRamMb = configuration.MaxRamMb;

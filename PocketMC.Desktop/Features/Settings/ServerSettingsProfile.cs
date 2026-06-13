@@ -48,8 +48,8 @@ public sealed class ServerSettingsProfile
 
     public string[] BedrockPermissionLevels => new[] { "visitor", "member", "operator" };
 
-    public static ServerSettingsProfile FromMetadata(InstanceMetadata metadata)
+    public static ServerSettingsProfile FromMetadata(InstanceMetadata metadata, string serverDir)
     {
-        return new ServerSettingsProfile(metadata.Compatibility.Family, metadata.HasGeyser);
+        return new ServerSettingsProfile(metadata.Compatibility.Family, PocketMC.Desktop.Helpers.GeyserDetector.IsGeyserInstalled(serverDir));
     }
 }

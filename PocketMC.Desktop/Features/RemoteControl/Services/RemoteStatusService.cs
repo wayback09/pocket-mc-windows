@@ -83,7 +83,7 @@ public sealed class RemoteStatusService
             IsOp = oppedPlayers.Contains(name)
         }).ToList();
 
-        int serverPort = metadata.ServerPort ?? (metadata.HasGeyser && metadata.GeyserBedrockPort.HasValue ? metadata.GeyserBedrockPort.Value : 25565);
+        int serverPort = metadata.ServerPort ?? (PocketMC.Desktop.Helpers.GeyserDetector.IsGeyserInstalled(_registry.GetPath(metadata.Id)) && metadata.GeyserBedrockPort.HasValue ? metadata.GeyserBedrockPort.Value : 25565);
         var serverIps = new List<ServerIpDto>();
 
         string? tunnelIp = _applicationState.GetTunnelAddress(instanceId);
@@ -115,7 +115,7 @@ public sealed class RemoteStatusService
         {
             serverIps.Add(new ServerIpDto { Label = PocketMC.Desktop.Helpers.CommandFormatter.IsBedrock(metadata.ServerType) ? "LAN" : "Java (LAN)", Address = $"{localIp}:{serverPort}" });
 
-            if (metadata.HasGeyser && metadata.GeyserBedrockPort.HasValue)
+            if (PocketMC.Desktop.Helpers.GeyserDetector.IsGeyserInstalled(_registry.GetPath(metadata.Id)) && metadata.GeyserBedrockPort.HasValue)
             {
                 serverIps.Add(new ServerIpDto { Label = "Bedrock (LAN)", Address = $"{localIp}:{metadata.GeyserBedrockPort.Value}" });
             }

@@ -18,7 +18,7 @@ public sealed class ServerSettingsProfileTests
         string defaultPort,
         string displayNamePropertyKey)
     {
-        var profile = ServerSettingsProfile.FromMetadata(new InstanceMetadata { ServerType = serverType });
+        var profile = ServerSettingsProfile.FromMetadata(new InstanceMetadata { ServerType = serverType }, string.Empty);
 
         Assert.Equal(isJava, profile.IsJava);
         Assert.Equal(isBedrockDedicated, profile.IsBedrockDedicated);
@@ -30,7 +30,7 @@ public sealed class ServerSettingsProfileTests
     [Fact]
     public void JavaProfile_EnablesJavaOnlySections()
     {
-        var profile = ServerSettingsProfile.FromMetadata(new InstanceMetadata { ServerType = "Forge" });
+        var profile = ServerSettingsProfile.FromMetadata(new InstanceMetadata { ServerType = "Forge" }, string.Empty);
 
         Assert.True(profile.SupportsJavaRuntimeSettings);
         Assert.True(profile.SupportsJavaWorldGenerator);
@@ -41,7 +41,7 @@ public sealed class ServerSettingsProfileTests
     [Fact]
     public void BedrockProfile_EnablesBedrockRulesAndHidesJavaOnlySections()
     {
-        var profile = ServerSettingsProfile.FromMetadata(new InstanceMetadata { ServerType = "Bedrock Dedicated Server" });
+        var profile = ServerSettingsProfile.FromMetadata(new InstanceMetadata { ServerType = "Bedrock Dedicated Server" }, string.Empty);
 
         Assert.False(profile.SupportsJavaRuntimeSettings);
         Assert.False(profile.SupportsJavaWorldGenerator);

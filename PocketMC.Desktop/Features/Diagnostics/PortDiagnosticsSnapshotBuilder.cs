@@ -94,7 +94,7 @@ public sealed class PortDiagnosticsSnapshotBuilder
             InstanceId = metadata.Id,
             InstanceName = metadata.Name,
             ServerType = metadata.ServerType,
-            HasGeyser = metadata.HasGeyser,
+            HasGeyser = PocketMC.Desktop.Helpers.GeyserDetector.IsGeyserInstalled(instancePath),
             InstancePathPresent = !string.IsNullOrWhiteSpace(instancePath) && Directory.Exists(instancePath),
             CurrentPreflightSuccessful = preflightResult?.IsSuccessful ?? false,
             CurrentPreflightFailureCode = preflightResult?.FailureCode ?? PortFailureCode.UnknownPortFailure,

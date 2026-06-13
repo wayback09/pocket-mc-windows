@@ -208,7 +208,7 @@ namespace PocketMC.Desktop.Features.Tunnel
                         AppDialog.ShowError("Port Collision", $"Port {newPort} is already in use as the main port for server '{s.Name}'.");
                         return;
                     }
-                    if (s.HasGeyser && s.GeyserBedrockPort == newPort && (s.Id != route.ServerId || route.PortType != "Geyser"))
+                    if (PocketMC.Desktop.Helpers.GeyserDetector.IsGeyserInstalled(_instanceRegistry.GetPath(s.Id)) && s.GeyserBedrockPort == newPort && (s.Id != route.ServerId || route.PortType != "Geyser"))
                     {
                         AppDialog.ShowError("Port Collision", $"Port {newPort} is already in use as the Geyser bedrock bridge port for server '{s.Name}'.");
                         return;
@@ -364,7 +364,7 @@ namespace PocketMC.Desktop.Features.Tunnel
                             {
                                 portName = isBedrock ? "Bedrock/UDP" : "Java/TCP";
                             }
-                            else if (lease.Port == server.GeyserBedrockPort && server.HasGeyser)
+                            else if (lease.Port == server.GeyserBedrockPort && PocketMC.Desktop.Helpers.GeyserDetector.IsGeyserInstalled(_instanceRegistry.GetPath(server.Id)))
                             {
                                 portName = "Geyser/UDP";
                             }
@@ -380,7 +380,7 @@ namespace PocketMC.Desktop.Features.Tunnel
                         int mainPort = server.ServerPort ?? (isBedrock ? 19132 : 25565);
                         ports.Add((mainPort, isBedrock ? PortProtocol.Udp : PortProtocol.Tcp, isBedrock ? "Bedrock/UDP" : "Java/TCP"));
 
-                        if (server.HasGeyser)
+                        if (PocketMC.Desktop.Helpers.GeyserDetector.IsGeyserInstalled(_instanceRegistry.GetPath(server.Id)))
                         {
                             ports.Add((server.GeyserBedrockPort ?? 19132, PortProtocol.Udp, "Geyser/UDP"));
                         }
@@ -416,7 +416,7 @@ namespace PocketMC.Desktop.Features.Tunnel
                             roleDetail = isBedrock ? "Native game server entrypoint" : "Standard Java server endpoint";
                             portType = "Main";
                         }
-                        else if (p.Port == server.GeyserBedrockPort && server.HasGeyser)
+                        else if (p.Port == server.GeyserBedrockPort && PocketMC.Desktop.Helpers.GeyserDetector.IsGeyserInstalled(_instanceRegistry.GetPath(server.Id)))
                         {
                             roleName = "Geyser Bedrock Bridge";
                             roleDetail = "Allows Bedrock players to join Java";

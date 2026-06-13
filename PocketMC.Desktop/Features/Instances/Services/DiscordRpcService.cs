@@ -312,7 +312,7 @@ public sealed class DiscordRpcService : IDiscordRpcService
             return $"{prefix} • Bedrock BDS";
         }
 
-        if (metadata.HasGeyser)
+        if (PocketMC.Desktop.Helpers.GeyserDetector.IsGeyserInstalled(_instanceRegistry.GetPath(metadata.Id)))
         {
             // Java with Geyser: show Java address AND Bedrock/Geyser address
             string? javaAddr = _applicationState.GetTunnelAddress(metadata.Id);

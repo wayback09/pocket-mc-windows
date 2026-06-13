@@ -85,7 +85,7 @@ namespace PocketMC.Desktop.Features.Settings
         private string _playitBedrockAddress = "Resolving Bedrock tunnel...";
         public string PlayitBedrockAddress { get => _playitBedrockAddress; set => SetProperty(ref _playitBedrockAddress, value); }
 
-        public bool HasGeyser => Metadata.HasGeyser;
+        public bool HasGeyser => PocketMC.Desktop.Helpers.GeyserDetector.IsGeyserInstalled(ServerDir);
         public bool IsJavaSettings => Profile.IsJava;
         public bool IsBedrockSettings => Profile.SupportsBedrockRules;
         public bool SupportsJavaRuntimeSettings => Profile.SupportsJavaRuntimeSettings;
@@ -128,7 +128,7 @@ namespace PocketMC.Desktop.Features.Settings
             _applicationState = (ApplicationState)serviceProvider.GetService(typeof(ApplicationState))!;
             _appRootPath = _applicationState.GetRequiredAppRootPath();
             ServerDir = _registry.GetPath(metadata.Id) ?? throw new InvalidOperationException();
-            Profile = ServerSettingsProfile.FromMetadata(metadata);
+            Profile = ServerSettingsProfile.FromMetadata(metadata, ServerDir);
 
             _instanceStateChangedHandler = (id, state) => { if (id == Metadata.Id) dispatcher.Invoke(UpdateRunningState); };
             _lifecycleService.OnInstanceStateChanged += _instanceStateChangedHandler;

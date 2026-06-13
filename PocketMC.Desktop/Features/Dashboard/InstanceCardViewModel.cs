@@ -176,22 +176,10 @@ public class InstanceCardViewModel : INotifyPropertyChanged
     {
         get
         {
-            if (!_metadata.HasGeyser) return false;
             try
             {
                 string? path = _registry.GetPath(Id);
-                if (string.IsNullOrEmpty(path) || !Directory.Exists(path)) return false;
-
-                string pluginsDir = Path.Combine(path, "plugins");
-                string modsDir = Path.Combine(path, "mods");
-
-                bool geyserInPlugins = Directory.Exists(pluginsDir) && 
-                                       Directory.EnumerateFiles(pluginsDir, "Geyser*.jar", SearchOption.TopDirectoryOnly).Any();
-
-                bool geyserInMods = Directory.Exists(modsDir) && 
-                                     Directory.EnumerateFiles(modsDir, "Geyser*.jar", SearchOption.TopDirectoryOnly).Any();
-
-                return geyserInPlugins || geyserInMods;
+                return PocketMC.Desktop.Helpers.GeyserDetector.IsGeyserInstalled(path);
             }
             catch
             {
