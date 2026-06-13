@@ -145,6 +145,6 @@ public sealed class AddonUpdateServiceAtomicTests : IDisposable
             new HttpClient(new MarketplaceDelegateHttpMessageHandler((request, _) => responder(request))));
         var downloader = new DownloaderService(factory, NullLogger<DownloaderService>.Instance);
         var installer = new MarketplaceFileInstaller(downloader, NullLogger<MarketplaceFileInstaller>.Instance);
-        return new AddonUpdateService(new AddonManifestService(), null!, null!, null!, factory, downloader, installer);
+        return new AddonUpdateService(new AddonManifestService(), null!, null!, factory, downloader, installer);
     }
 }

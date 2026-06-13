@@ -11,7 +11,7 @@ namespace PocketMC.Desktop.Features.Mods;
 /// Implementations are expected to be engine-specific:
 /// <list type="bullet">
 ///   <item><see cref="PocketMC.Desktop.Features.Mods.JavaAddonManager"/> — JAR-based plugins/mods for Paper, Fabric, Forge.</item>
-///   <item><see cref="PocketMC.Desktop.Features.Mods.PocketmineAddonManager"/> — <c>.phar</c> plugins managed via Poggit.</item>
+///   <item><see cref="PocketMC.Desktop.Features.Mods.PocketmineAddonManager"/> — <c>.phar</c> plugins.</item>
 ///   <item><see cref="PocketMC.Desktop.Features.Mods.BedrockAddonInstaller"/> — <c>.mcpack</c>/<c>.mcaddon</c> installed to behavior/resource packs.</item>
 /// </list>
 /// </summary>

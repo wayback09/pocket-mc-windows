@@ -39,22 +39,18 @@ namespace PocketMC.Desktop.Features.Marketplace
         private readonly AddonManifestService _manifestService;
         private readonly ModrinthService _modrinth;
         private readonly CurseForgeService _curseForge;
-        private readonly PoggitService _poggit;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly DownloaderService _downloader;
         private readonly MarketplaceFileInstaller _fileInstaller;
-
         public AddonUpdateService(
             AddonManifestService manifestService,
             ModrinthService modrinth,
             CurseForgeService curseForge,
-            PoggitService poggit,
             IHttpClientFactory httpClientFactory)
             : this(
                 manifestService,
                 modrinth,
                 curseForge,
-                poggit,
                 httpClientFactory,
                 new DownloaderService(httpClientFactory, NullLogger<DownloaderService>.Instance),
                 null)
@@ -65,7 +61,6 @@ namespace PocketMC.Desktop.Features.Marketplace
             AddonManifestService manifestService,
             ModrinthService modrinth,
             CurseForgeService curseForge,
-            PoggitService poggit,
             IHttpClientFactory httpClientFactory,
             DownloaderService downloader,
             MarketplaceFileInstaller? fileInstaller)
@@ -73,7 +68,6 @@ namespace PocketMC.Desktop.Features.Marketplace
             _manifestService = manifestService;
             _modrinth = modrinth;
             _curseForge = curseForge;
-            _poggit = poggit;
             _httpClientFactory = httpClientFactory;
             _downloader = downloader;
             _fileInstaller = fileInstaller ?? new MarketplaceFileInstaller(downloader, NullLogger<MarketplaceFileInstaller>.Instance);
@@ -241,7 +235,6 @@ namespace PocketMC.Desktop.Features.Marketplace
             {
                 "Modrinth" => _modrinth,
                 "CurseForge" => _curseForge,
-                "Poggit" => _poggit,
                 _ => null
             };
         }

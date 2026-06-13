@@ -779,14 +779,16 @@
                                              Visibility="{Binding Addons.SupportsPlugins, Converter={StaticResource VisibleIfTrue}}">
                                         <StackPanel>
                                             <TextBlock Visibility="{Binding Addons.IsPocketmine, Converter={StaticResource VisibleIfTrue}}"
-                                                       Text="ℹ PocketMine plugins are .phar files. Use the Poggit marketplace button to browse and install them." Foreground="#89B4FA" Margin="0,0,0,10" FontSize="12" TextWrapping="Wrap"/>
+                                                       Text="ℹ PocketMine plugins are .phar files. Use the Add Plugin button to install them." Foreground="#89B4FA" Margin="0,0,0,10" FontSize="12" TextWrapping="Wrap"/>
                                             <Grid>
                                                 <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                                                 <StackPanel Orientation="Horizontal">
                                                     <ui:Button Content="Local File" Command="{Binding Addons.AddPluginCommand}" Appearance="Secondary" Margin="0,0,12,0" Icon="{ui:SymbolIcon Add20}"/>
-                                                    <ui:Button Content="Plugin Marketplace" Command="{Binding Addons.BrowseModrinthPluginsCommand}" Appearance="Primary" Icon="{ui:SymbolIcon Globe20}"/>
+                                                    <ui:Button Content="Plugin Marketplace" Command="{Binding Addons.BrowseModrinthPluginsCommand}" Appearance="Primary" Icon="{ui:SymbolIcon Globe20}"
+                                                               Visibility="{Binding Addons.IsPocketmine, Converter={StaticResource InvertedVisibilityConverter}}"/>
                                                 </StackPanel>
-                                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center"
+                                                            Visibility="{Binding Addons.IsPocketmine, Converter={StaticResource InvertedVisibilityConverter}}">
                                                     <ui:ProgressRing IsIndeterminate="True" Width="16" Height="16" Margin="0,0,8,0">
                                                         <ui:ProgressRing.Style>
                                                             <Style TargetType="ui:ProgressRing">

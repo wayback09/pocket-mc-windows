@@ -25,7 +25,6 @@ namespace PocketMC.Desktop.Models
 
         public bool SupportsModrinth { get; }
         public bool SupportsCurseForge { get; }
-        public bool SupportsPoggit { get; }
 
         public string PrimaryAddonSubDir { get; }
         public string LoaderName { get; }
@@ -101,7 +100,6 @@ namespace PocketMC.Desktop.Models
             {
                 Family = EngineFamily.Pocketmine;
                 SupportsPlugins = true;
-                SupportsPoggit = true;
                 PrimaryAddonSubDir = "plugins";
                 LoaderName = "pocketmine";
                 CompatibleLoaderNames = new[] { "pocketmine" };

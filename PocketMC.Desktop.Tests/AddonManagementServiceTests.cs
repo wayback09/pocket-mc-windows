@@ -454,7 +454,7 @@ public sealed class AddonManagementServiceTests : IDisposable
     private sealed class RecordingAddonUpdateService : AddonUpdateService
     {
         public RecordingAddonUpdateService()
-            : base(new AddonManifestService(), null!, null!, null!, null!, null!, null)
+            : base(new AddonManifestService(), null!, null!, null!, null!, null)
         {
         }
 

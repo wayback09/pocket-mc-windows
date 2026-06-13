@@ -30,7 +30,6 @@ namespace PocketMC.Desktop.Features.Marketplace
         private readonly IAppNavigationService _navigationService;
         private readonly ModrinthService _modrinth;
         private readonly CurseForgeService _curseForge;
-        private readonly PoggitService _poggit;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly MarketplaceFileInstaller _fileInstaller;
         private readonly string? _serverDir;
@@ -52,7 +51,6 @@ namespace PocketMC.Desktop.Features.Marketplace
             IAppNavigationService navigationService,
             ModrinthService modrinth,
             CurseForgeService curseForge,
-            PoggitService poggit,
             DependencyResolverService resolver,
             AddonManifestService manifestService,
             IHttpClientFactory httpClientFactory,
@@ -67,7 +65,6 @@ namespace PocketMC.Desktop.Features.Marketplace
             _navigationService = navigationService;
             _modrinth = modrinth;
             _curseForge = curseForge;
-            _poggit = poggit;
             _resolver = resolver;
             _manifestService = manifestService;
             _httpClientFactory = httpClientFactory;
@@ -86,8 +83,6 @@ namespace PocketMC.Desktop.Features.Marketplace
             {
                 baseTitle = "Pocketmine Plugins";
                 CmbSource.Items.Clear();
-                CmbSource.Items.Add(new ComboBoxItem { Content = "Poggit" });
-                CmbSource.SelectedIndex = 0;
             }
             TxtTitle.Text = baseTitle;
             TxtMcVersion.Text = _mcVersion == "*" ? "All Versions" : $"Minecraft {_mcVersion}";
@@ -156,7 +151,6 @@ namespace PocketMC.Desktop.Features.Marketplace
             try
             {
                 bool isCurseForge = CmbSource.SelectedItem is ComboBoxItem c && c.Content.ToString() == "CurseForge";
-                bool isPoggit = CmbSource.SelectedItem is ComboBoxItem pt && pt.Content.ToString() == "Poggit";
                 string query = TxtSearch.Text ?? "";
                 string sort = (CmbSort.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "relevance";
 
@@ -167,10 +161,6 @@ namespace PocketMC.Desktop.Features.Marketplace
                 {
                     // Standard CurseForge uses 432 for Java. If it's bedrock, we override type to '6945' inside the CurseForgeService search...
                     hits = await _curseForge.SearchAsync(_compat.Family == EngineFamily.Bedrock ? "6945" : _projectType, mcVersionArg, _compat.LoaderName, query, _currentOffset);
-                }
-                else if (isPoggit)
-                {
-                    hits = await _poggit.SearchAsync(query, _currentOffset);
                 }
                 else
                 {
@@ -189,7 +179,7 @@ namespace PocketMC.Desktop.Features.Marketplace
                             Downloads = hit.Downloads,
                             Slug = hit.Slug,
                             ProjectId = hit.ProjectId,
-                            Provider = isCurseForge ? "CurseForge" : (isPoggit ? "Poggit" : "Modrinth")
+                            Provider = isCurseForge ? "CurseForge" : "Modrinth"
                         };
 
                         if (_serverDir != null)
@@ -256,27 +246,8 @@ namespace PocketMC.Desktop.Features.Marketplace
                 IAddonProvider provider = vm.Provider switch
                 {
                     "CurseForge" => _curseForge,
-                    "Poggit" => _poggit,
                     _ => _modrinth
                 };
-
-                // Poggit doesn't support recursive deps yet
-                if (vm.Provider == "Poggit")
-                {
-                    var pVersion = await _poggit.GetLatestVersionAsync(projectId);
-                    if (pVersion == null) 
-                    { 
-                        vm.IsActionEnabled = true; 
-                        vm.State = InstallState.NotInstalled; 
-                        return; 
-                    }
-                    await InstallSingleFileAsync(pVersion.DownloadUrl, pVersion.FileName, "Poggit", pVersion.ProjectId, pVersion.Id, pVersion.Hash, pVersion.HashType, vm.Title, vm.IconUrl, vm.Title);
-                    
-                    vm.State = InstallState.Installed;
-                    vm.IsActionEnabled = true;
-                    return;
-                }
-
                 var resolved = await _resolver.ResolveAsync(provider, _serverDir!, projectId, mcVersionArg, _compat.LoaderName, _compat);
                 var rootResolved = resolved.FirstOrDefault();
                 if (rootResolved == null || string.IsNullOrEmpty(rootResolved.DownloadUrl) || !string.IsNullOrEmpty(rootResolved.Error))

@@ -42,7 +42,6 @@ namespace PocketMC.Desktop.Tests
                 null!,
                 null!,
                 null!,
-                null!,
                 null!
             );
             _serviceProvider.Register<AddonUpdateService>(updateService);

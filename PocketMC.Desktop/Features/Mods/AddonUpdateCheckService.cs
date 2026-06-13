@@ -11,8 +11,7 @@ public sealed class AddonUpdateCheckService
     private static readonly HashSet<string> SupportedProviders = new(StringComparer.OrdinalIgnoreCase)
     {
         "Modrinth",
-        "CurseForge",
-        "Poggit"
+        "CurseForge"
     };
 
     private readonly AddonManifestService _manifestService;

@@ -221,13 +221,10 @@ namespace PocketMC.Desktop.Composition
                     DecompressionMethods.GZip | DecompressionMethods.Deflate
             });
 
-            services.AddSingleton<PoggitService>();
             services.AddSingleton<PocketMC.Desktop.Features.Marketplace.Models.IAddonProvider>(
                 provider => provider.GetRequiredService<ModrinthService>());
             services.AddSingleton<PocketMC.Desktop.Features.Marketplace.Models.IAddonProvider>(
                 provider => provider.GetRequiredService<CurseForgeService>());
-            services.AddSingleton<PocketMC.Desktop.Features.Marketplace.Models.IAddonProvider>(
-                provider => provider.GetRequiredService<PoggitService>());
             services.AddSingleton<AddonManifestService>();
             services.AddSingleton<MarketplaceFileInstaller>();
             services.AddSingleton<AddonUpdateService>();

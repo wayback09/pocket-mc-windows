@@ -307,37 +307,6 @@ public sealed class InstanceUpdateServiceTests : IDisposable
         Assert.True(File.Exists(Path.Combine(serverDir, "bedrock_server.exe")));
     }
 
-    [Fact]
-    public async Task PocketMinePoggitPlugins_CanBePlanned()
-    {
-        string serverDir = CreateInstanceDirectory("poggit");
-        Directory.CreateDirectory(Path.Combine(serverDir, "plugins"));
-        File.WriteAllText(Path.Combine(serverDir, "plugins", "old.phar"), "old");
-        await WriteManifestAsync(serverDir, new AddonManifestEntry
-        {
-            Provider = "Poggit",
-            ProjectId = "EssentialsPE",
-            VersionId = "1.0.0",
-            FileName = "old.phar"
-        });
-
-        var updateService = new RecordingAddonUpdateService();
-        updateService.Results["EssentialsPE"] = UpdateResult("2.0.0", "EssentialsPE.phar");
-
-        var planner = CreateAddonMigrationPlanner(updateService, new FakeAddonProvider("Poggit"));
-
-        AddonMigrationPlan plan = await planner.BuildPlanAsync(
-            serverDir,
-            new InstanceMetadata { ServerType = "Pocketmine-MP", MinecraftVersion = "5.0.0" },
-            "5.1.0",
-            new EngineCompatibility("Pocketmine-MP"),
-            InstanceUpdateMode.ServerAndCompatibleMarketplaceAddons);
-
-        AddonMigrationItem item = Assert.Single(plan.Items);
-        Assert.Equal("Poggit", item.Provider);
-        Assert.Equal("plugins", item.TargetSubDirectory);
-        Assert.Equal("EssentialsPE.phar", item.TargetFileName);
-    }
 
     [Fact]
     public async Task DependencyResolution_IsIncludedInMigrationPlan()
@@ -446,31 +415,6 @@ public sealed class InstanceUpdateServiceTests : IDisposable
             InstanceUpdateMode.ServerAndCompatibleMarketplaceAddons));
     }
 
-    [Fact]
-    public async Task AddonMigrationPlan_PocketMineEngine_RejectsNonPharExtensions()
-    {
-        string serverDir = CreateInstanceDirectory("pocketmine-rejects");
-        Directory.CreateDirectory(Path.Combine(serverDir, "plugins"));
-        await WriteManifestAsync(serverDir, new AddonManifestEntry
-        {
-            Provider = "Poggit",
-            ProjectId = "badplugin",
-            VersionId = "old",
-            FileName = "badplugin.phar"
-        });
-
-        var updateService = new RecordingAddonUpdateService();
-        updateService.Results["badplugin"] = UpdateResult("new", "badplugin.jar"); // invalid for PocketMine
-
-        var planner = CreateAddonMigrationPlanner(updateService, new FakeAddonProvider("Poggit"));
-
-        await Assert.ThrowsAsync<NotSupportedException>(() => planner.BuildPlanAsync(
-            serverDir,
-            new InstanceMetadata { ServerType = "Pocketmine-MP", MinecraftVersion = "5.0.0" },
-            "5.1.0",
-            new EngineCompatibility("Pocketmine-MP"),
-            InstanceUpdateMode.ServerAndCompatibleMarketplaceAddons));
-    }
 
     [Fact]
     public async Task AddonMigrationStager_RejectsIncompatibleExtensions()
@@ -691,7 +635,7 @@ public sealed class InstanceUpdateServiceTests : IDisposable
         public Dictionary<string, AddonUpdateCheckResult> Results { get; } = new(StringComparer.OrdinalIgnoreCase);
 
         public RecordingAddonUpdateService()
-            : base(new AddonManifestService(), null!, null!, null!, new StaticHttpClientFactory(new HttpClient()))
+            : base(new AddonManifestService(), null!, null!, new StaticHttpClientFactory(new HttpClient()))
         {
         }
 

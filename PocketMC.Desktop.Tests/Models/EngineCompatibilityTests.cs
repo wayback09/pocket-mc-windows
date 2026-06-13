@@ -47,13 +47,6 @@ namespace PocketMC.Desktop.Tests.Models
             Assert.False(compat.SupportsPlugins);
         }
 
-        [Fact]
-        public void Pocketmine_ShouldSupportPoggit()
-        {
-            var compat = new EngineCompatibility("Pocketmine-MP");
-            Assert.True(compat.SupportsPoggit);
-            Assert.False(compat.SupportsModrinth);
-        }
 
         [Theory]
         [InlineData("Paper 1.21", new[] { "paper", "spigot", "bukkit" })]
