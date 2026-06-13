@@ -74,7 +74,7 @@ namespace PocketMC.Desktop.Features.Shell
 
         private void OpenYouTube_Click(object sender, RoutedEventArgs e)
         {
-            var url = "https://www.youtube.com/@PocketMCApp"; // Standardized handle
+            var url = "https://www.youtube.com/@OfficialPocketMC";
             try
             {
                 var psi = new ProcessStartInfo(url) { UseShellExecute = true };
@@ -88,7 +88,7 @@ namespace PocketMC.Desktop.Features.Shell
 
         private void OpenReddit_Click(object sender, RoutedEventArgs e)
         {
-            var url = "https://www.reddit.com/r/pocketmc";
+            var url = "https://www.reddit.com/r/PocketMC/";
             try
             {
                 var psi = new ProcessStartInfo(url) { UseShellExecute = true };
