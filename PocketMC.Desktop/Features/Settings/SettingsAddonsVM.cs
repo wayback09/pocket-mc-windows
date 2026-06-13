@@ -101,6 +101,8 @@ namespace PocketMC.Desktop.Features.Settings
 
         public bool SupportsPlugins => _metadata.Compatibility.SupportsPlugins;
         public bool SupportsMods => _metadata.Compatibility.SupportsMods;
+        public bool SupportsModrinth => _metadata.Compatibility.SupportsModrinth;
+        public bool SupportsModpacks => _metadata.Compatibility.SupportsModpacks;
         public bool SupportsBedrockAddons => _metadata.Compatibility.SupportsBedrockAddons;
 
         // ── Commands ─────────────────────────────────────────────────────

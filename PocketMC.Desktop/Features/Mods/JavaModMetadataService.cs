@@ -37,6 +37,7 @@ namespace PocketMC.Desktop.Features.Mods
 
                 var metadata = ScanJarInternal(fi);
                 metadata.FileName = fi.Name;
+                ApplyFilenameHeuristics(fi.Name, metadata);
                 _cache[key] = metadata;
                 return metadata;
             }
@@ -49,6 +50,21 @@ namespace PocketMC.Desktop.Features.Mods
                     LoaderType = "Unknown",
                     Warnings = new List<string> { $"Failed to scan JAR: {ex.Message}" }
                 };
+            }
+        }
+
+        private static void ApplyFilenameHeuristics(string filename, JavaModMetadata metadata)
+        {
+            string lowerName = filename.ToLowerInvariant();
+            string[] suspiciousNames = { "sodium", "iris", "optifine", "canvas", "xaero", "journeymap", "minimap", "replaymod", "rubidium", "embeddium", "oculus" };
+            if (suspiciousNames.Any(n => lowerName.Contains(n)))
+            {
+                metadata.SideSupport = ModSideSupport.ClientOnly;
+                metadata.SideLabel = "Client-only";
+                if (!metadata.Warnings.Any(w => w.Contains("client-only")))
+                {
+                    metadata.Warnings.Add("This mod's filename suggests it is a client-side rendering or utility mod. It may crash the server.");
+                }
             }
         }
 
@@ -431,7 +447,6 @@ namespace PocketMC.Desktop.Features.Mods
                 {
                     metadata.SideSupport = ModSideSupport.OptionalOnServer;
                     metadata.SideLabel = "Optional on server";
-                    metadata.Warnings.Add("Forge displayTest is set; server/client version enforcement may be relaxed.");
                 }
                 else
                 {
@@ -615,8 +630,14 @@ namespace PocketMC.Desktop.Features.Mods
         {
             var regexTimeout = TimeSpan.FromMilliseconds(100);
             var pattern = $@"^\s*{Regex.Escape(key)}\s*=\s*true\s*$";
-            foreach (string line in EnumerateActiveTomlLines(toml))
+            foreach (var (line, section) in EnumerateActiveTomlLines(toml))
             {
+                if (section.StartsWith("[dependencies", StringComparison.OrdinalIgnoreCase) || 
+                    section.StartsWith("[[dependencies", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+                
                 if (Regex.IsMatch(line, pattern, RegexOptions.IgnoreCase, regexTimeout))
                 {
                     return true;
@@ -634,8 +655,14 @@ namespace PocketMC.Desktop.Features.Mods
         {
             var regexTimeout = TimeSpan.FromMilliseconds(100);
             var pattern = $@"^\s*{Regex.Escape(key)}\s*=";
-            foreach (string line in EnumerateActiveTomlLines(toml))
+            foreach (var (line, section) in EnumerateActiveTomlLines(toml))
             {
+                if (section.StartsWith("[dependencies", StringComparison.OrdinalIgnoreCase) || 
+                    section.StartsWith("[[dependencies", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
                 if (Regex.IsMatch(line, pattern, RegexOptions.IgnoreCase, regexTimeout))
                 {
                     return true;
@@ -652,10 +679,11 @@ namespace PocketMC.Desktop.Features.Mods
         /// it is sufficient for detecting bare key = value pairs without false
         /// positives from description blocks, comments, or string values.
         /// </summary>
-        private static IEnumerable<string> EnumerateActiveTomlLines(string toml)
+        private static IEnumerable<(string Line, string Section)> EnumerateActiveTomlLines(string toml)
         {
             bool inMultiLineString = false;
             string multiLineDelimiter = "";
+            string currentSection = "";
 
             foreach (string rawLine in toml.Split('\n'))
             {
@@ -707,7 +735,11 @@ namespace PocketMC.Desktop.Features.Mods
 
                 if (!string.IsNullOrWhiteSpace(active))
                 {
-                    yield return active;
+                    if (active.StartsWith("["))
+                    {
+                        currentSection = active;
+                    }
+                    yield return (active, currentSection);
                 }
             }
         }

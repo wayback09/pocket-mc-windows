@@ -984,8 +984,10 @@
                                                 <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                                                 <StackPanel Orientation="Horizontal">
                                                     <ui:Button Content="Add Mod JAR" Command="{Binding Addons.AddModCommand}" Appearance="Secondary" Margin="0,0,12,0" Icon="{ui:SymbolIcon Add20}"/>
-                                                    <ui:Button Content="Browse Marketplace" Command="{Binding Addons.BrowseModrinthModsCommand}" Appearance="Primary" Margin="0,0,12,0" Icon="{ui:SymbolIcon Globe20}"/>
-                                                    <ui:Button Content="Import Pack" Command="{Binding Addons.ImportModpackCommand}" Appearance="Secondary" Icon="{ui:SymbolIcon FolderZip20}"/>
+                                                    <ui:Button Content="Browse Marketplace" Command="{Binding Addons.BrowseModrinthModsCommand}" Appearance="Primary" Margin="0,0,12,0" Icon="{ui:SymbolIcon Globe20}"
+                                                               Visibility="{Binding Addons.SupportsModrinth, Converter={StaticResource VisibleIfTrue}}"/>
+                                                    <ui:Button Content="Import Pack" Command="{Binding Addons.ImportModpackCommand}" Appearance="Secondary" Icon="{ui:SymbolIcon FolderZip20}"
+                                                               Visibility="{Binding Addons.SupportsModpacks, Converter={StaticResource VisibleIfTrue}}"/>
                                                 </StackPanel>
                                                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                                                     <ui:ProgressRing IsIndeterminate="True" Width="16" Height="16" Margin="0,0,8,0">
@@ -1003,7 +1005,8 @@
                                                     <ui:Button Content="Update All" Appearance="Info"
                                                                Command="{Binding Addons.UpdateAllModsCommand}"
                                                                Icon="{ui:SymbolIcon ArrowSync20}"
-                                                               ToolTip="Check all installed mods for updates"/>
+                                                               ToolTip="Check all installed mods for updates"
+                                                               Visibility="{Binding Addons.SupportsModrinth, Converter={StaticResource VisibleIfTrue}}"/>
                                                 </StackPanel>
                                             </Grid>
                                             <TextBlock Text="{Binding Addons.UpdateAllStatusText}" FontSize="11" Foreground="#89B4FA" Margin="0,8,0,0">
@@ -1168,7 +1171,8 @@
                                                                        Command="{Binding DataContext.Addons.UpdateModCommand, RelativeSource={RelativeSource AncestorType=Page}}"
                                                                        CommandParameter="{Binding}"
                                                                        Icon="{ui:SymbolIcon ArrowSync20}"
-                                                                       ToolTip="Check for updates from the marketplace">
+                                                                       ToolTip="Check for updates from the marketplace"
+                                                                       Visibility="{Binding DataContext.Addons.SupportsModrinth, RelativeSource={RelativeSource AncestorType=Page}, Converter={StaticResource VisibleIfTrue}}">
                                                                 <ui:Button.Style>
                                                                     <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
                                                                         <Setter Property="IsEnabled" Value="True"/>
