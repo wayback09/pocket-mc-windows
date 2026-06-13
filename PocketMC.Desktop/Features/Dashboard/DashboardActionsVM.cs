@@ -115,6 +115,23 @@ namespace PocketMC.Desktop.Features.Dashboard
                     return;
                 }
 
+                if (vm.Metadata.AutoUpdateAddons)
+                {
+                    try
+                    {
+                        var autoUpdateService = _serviceProvider.GetRequiredService<AddonAutoUpdateService>();
+                        var instancePath = _registry.GetPath(vm.Id);
+                        if (instancePath != null)
+                        {
+                            await autoUpdateService.CheckAndPromptUpdatesAsync(vm.Metadata, instancePath);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to run addon auto-updater for {ServerName}.", vm.Name);
+                    }
+                }
+
                 await _lifecycleService.StartAsync(vm.Metadata);
                 vm.ClearPortIssue();
                 // The update state will be handled by listening to OnInstanceStateChanged in DashboardViewModel or CardVM.

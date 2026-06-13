@@ -193,6 +193,13 @@
                                             <TextBlock Text="Automatically start this specific server instance when PocketMC starts." Style="{StaticResource SettingsSubtext}" Margin="0,0,0,8"/>
                                             <ui:ToggleSwitch IsChecked="{Binding General.AutoStartWithApp, Mode=TwoWay}" Content="Auto-start server at PocketMC startup" Margin="0,0,0,20"/>
 
+                                            <!-- Auto-Update Addons on Start -->
+                                            <StackPanel Visibility="{Binding Addons.SupportsModrinth, Converter={StaticResource VisibleIfTrue}}">
+                                                <TextBlock Text="Auto-Update Addons" Style="{StaticResource SettingsHeader}" Margin="0,0,0,4"/>
+                                                <TextBlock Text="Automatically check for and install addon updates when this server starts. Updates will be shown in a dialog during the setup phase." Style="{StaticResource SettingsSubtext}" Margin="0,0,0,8"/>
+                                                <ui:ToggleSwitch IsChecked="{Binding General.AutoUpdateAddons, Mode=TwoWay}" Content="Auto-update addons on server start" Margin="0,0,0,20"/>
+                                            </StackPanel>
+
                                             <Separator Margin="0,0,0,20" Opacity="0.15"/>
 
                                             <!-- Interactive Dummy Server Card -->
@@ -939,29 +946,14 @@
                                                                        CommandParameter="{Binding Path}"
                                                                        Icon="{ui:SymbolIcon FolderOpen20}"
                                                                        ToolTip="Open file location"/>
-                                                            <ui:Button Content="Check update" Appearance="Info" Margin="0,0,8,0" VerticalAlignment="Center"
+                                                            <ui:Button Content="Check update" Appearance="Info" Foreground="White" Margin="0,0,8,0" VerticalAlignment="Center"
                                                                        Command="{Binding DataContext.Addons.UpdatePluginCommand, RelativeSource={RelativeSource AncestorType=Page}}"
                                                                        CommandParameter="{Binding}"
                                                                        IsEnabled="{Binding IsUpdating, Converter={StaticResource InvertedBooleanConverter}}"
                                                                        Visibility="{Binding IsDisabled, Converter={StaticResource InvertedVisibilityConverter}}"
                                                                        Icon="{ui:SymbolIcon ArrowSync20}"
                                                                        ToolTip="Check for updates from the marketplace"/>
-                                                            <ui:Button Content="Install Update" Appearance="Success" Margin="0,0,8,0" VerticalAlignment="Center"
-                                                                       Command="{Binding DataContext.Addons.InstallAddonUpdateCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                                                       CommandParameter="{Binding}"
-                                                                       Icon="{ui:SymbolIcon ArrowDownload20}"
-                                                                       ToolTip="Download and install the available update">
-                                                                <ui:Button.Style>
-                                                                    <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
-                                                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                                                        <Style.Triggers>
-                                                                            <DataTrigger Binding="{Binding UpdateStatus}" Value="UpdateAvailable">
-                                                                                <Setter Property="Visibility" Value="Visible"/>
-                                                                            </DataTrigger>
-                                                                        </Style.Triggers>
-                                                                    </Style>
-                                                                </ui:Button.Style>
-                                                            </ui:Button>
+
                                                             <ui:Button Content="Delete" Appearance="Danger" VerticalAlignment="Center"
                                                                        Command="{Binding DataContext.Addons.DeletePluginCommand, RelativeSource={RelativeSource AncestorType=Page}}"
                                                                        CommandParameter="{Binding Path}"
@@ -1167,7 +1159,7 @@
                                                                        CommandParameter="{Binding Path}"
                                                                        Icon="{ui:SymbolIcon FolderOpen20}"
                                                                        ToolTip="Open file location"/>
-                                                            <ui:Button Content="Check update" Appearance="Info" Margin="0,0,8,0" VerticalAlignment="Center"
+                                                            <ui:Button Content="Check update" Appearance="Info" Foreground="White" Margin="0,0,8,0" VerticalAlignment="Center"
                                                                        Command="{Binding DataContext.Addons.UpdateModCommand, RelativeSource={RelativeSource AncestorType=Page}}"
                                                                        CommandParameter="{Binding}"
                                                                        Icon="{ui:SymbolIcon ArrowSync20}"
@@ -1187,22 +1179,7 @@
                                                                     </Style>
                                                                 </ui:Button.Style>
                                                             </ui:Button>
-                                                            <ui:Button Content="Install Update" Appearance="Success" Margin="0,0,8,0" VerticalAlignment="Center"
-                                                                       Command="{Binding DataContext.Addons.InstallAddonUpdateCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                                                       CommandParameter="{Binding}"
-                                                                       Icon="{ui:SymbolIcon ArrowDownload20}"
-                                                                       ToolTip="Download and install the available update">
-                                                                <ui:Button.Style>
-                                                                    <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
-                                                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                                                        <Style.Triggers>
-                                                                            <DataTrigger Binding="{Binding UpdateStatus}" Value="UpdateAvailable">
-                                                                                <Setter Property="Visibility" Value="Visible"/>
-                                                                            </DataTrigger>
-                                                                        </Style.Triggers>
-                                                                    </Style>
-                                                                </ui:Button.Style>
-                                                            </ui:Button>
+
                                                             <ui:Button Content="Delete" Appearance="Danger" VerticalAlignment="Center"
                                                                        Command="{Binding DataContext.Addons.DeleteModCommand, RelativeSource={RelativeSource AncestorType=Page}}"
                                                                        CommandParameter="{Binding Path}"

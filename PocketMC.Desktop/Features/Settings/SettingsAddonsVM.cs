@@ -24,6 +24,8 @@ using PocketMC.Desktop.Core.Presentation;
 using PocketMC.Desktop.Features.Mods;
 using PocketMC.Desktop.Features.Marketplace;
 using System.Windows.Media;
+using PocketMC.Desktop.Infrastructure;
+using System.Threading;
 
 namespace PocketMC.Desktop.Features.Settings
 {
@@ -128,7 +130,7 @@ namespace PocketMC.Desktop.Features.Settings
         public ICommand UpdateModCommand { get; }
         public ICommand UpdateAllPluginsCommand { get; }
         public ICommand UpdateAllModsCommand { get; }
-        public ICommand InstallAddonUpdateCommand { get; }
+
 
         // Extra context commands
         public ICommand OpenFolderCommand { get; }
@@ -225,10 +227,7 @@ namespace PocketMC.Desktop.Features.Settings
             UpdateAllModsCommand = new RelayCommand(
                 async _ => await UpdateAllAddonsAsync(isPlugins: false),
                 _ => !_isUpdatingAll && Mods.Any(m => m.IsTracked));
-            InstallAddonUpdateCommand = new RelayCommand(
-                async p => await InstallUpdateForAddonAsync(p),
-                p => p is ModItemViewModel { UpdateStatus: AddonUpdateStatus.UpdateAvailable, IsUpdating: false } or
-                     PluginItemViewModel { UpdateStatus: AddonUpdateStatus.UpdateAvailable, IsUpdating: false });
+
 
             OpenFolderCommand = new RelayCommand(p => OpenContainingFolder(p as string));
             ToggleModActiveCommand = new RelayCommand(async p => await ToggleAddonStateAsync(p), CanToggleAddon);
@@ -792,14 +791,28 @@ namespace PocketMC.Desktop.Features.Settings
                     {
                         setStatus("Installing update...");
                         setUpdating(true);
-                        await PerformUpdateInstallAsync(
-                            inventoryItem.FileName,
-                            result.UpdateInfo,
-                            manifestEntry.Provider,
-                            manifestEntry.ProjectId,
-                            displayName,
-                            setStatus,
-                            setUpdateStatus);
+                        try
+                        {
+                            await PerformUpdateInstallAsync(
+                                inventoryItem.FileName,
+                                result.UpdateInfo,
+                                manifestEntry.Provider,
+                                manifestEntry.ProjectId,
+                                displayName,
+                                setStatus,
+                                setUpdateStatus);
+                            _dialogService.ShowMessage("Update Installed",
+                                $"'{displayName}' has been updated to {result.UpdateInfo.LatestVersionName ?? result.UpdateInfo.LatestVersionId ?? "the latest version"}.",
+                                DialogType.Information);
+                            LoadAddons();
+                            _onAddonChanged();
+                        }
+                        catch (Exception installEx)
+                        {
+                            _dialogService.ShowMessage("Update Failed",
+                                $"Could not install update for '{displayName}': {installEx.Message}",
+                                DialogType.Error);
+                        }
                     }
                 }
             }
@@ -826,7 +839,9 @@ namespace PocketMC.Desktop.Features.Settings
             string projectId,
             string displayName,
             Action<string> setStatus,
-            Action<AddonUpdateStatus> setUpdateStatus)
+            Action<AddonUpdateStatus> setUpdateStatus,
+            IProgress<DownloadProgress>? progress = null,
+            CancellationToken cancellationToken = default)
         {
             try
             {
@@ -850,74 +865,27 @@ namespace PocketMC.Desktop.Features.Settings
                     checkResult,
                     provider,
                     projectId,
-                    _metadata.Compatibility);
+                    _metadata.Compatibility,
+                    progress,
+                    cancellationToken);
 
                 setUpdateStatus(AddonUpdateStatus.UpToDate);
                 setStatus($"Updated to {updateInfo.LatestVersionName ?? updateInfo.LatestVersionId ?? "latest"}");
-                _dialogService.ShowMessage("Update Installed",
-                    $"'{displayName}' has been updated to {updateInfo.LatestVersionName ?? updateInfo.LatestVersionId ?? "the latest version"}.",
-                    DialogType.Information);
-                LoadAddons();
-                _onAddonChanged();
             }
-            catch (Exception ex)
+            catch (OperationCanceledException)
+            {
+                setStatus("Update cancelled");
+                throw;
+            }
+            catch (Exception)
             {
                 setUpdateStatus(AddonUpdateStatus.ProviderError);
                 setStatus("Update install failed");
-                _dialogService.ShowMessage("Update Failed",
-                    $"Could not install update for '{displayName}': {ex.Message}",
-                    DialogType.Error);
+                throw;
             }
         }
 
-        /// <summary>
-        /// Handles install-update requests from the UI button (works for both mod and plugin VMs).
-        /// </summary>
-        private async Task InstallUpdateForAddonAsync(object? param)
-        {
-            switch (param)
-            {
-                case ModItemViewModel mod when mod.UpdateInfo != null && mod.ManifestEntry != null:
-                    mod.IsUpdating = true;
-                    mod.UpdateStatusText = "Installing update...";
-                    try
-                    {
-                        await PerformUpdateInstallAsync(
-                            mod.FileName,
-                            mod.UpdateInfo,
-                            mod.ManifestEntry.Provider,
-                            mod.ManifestEntry.ProjectId,
-                            mod.Name,
-                            s => mod.UpdateStatusText = s,
-                            status => mod.UpdateStatus = status);
-                    }
-                    finally
-                    {
-                        mod.IsUpdating = false;
-                    }
-                    break;
 
-                case PluginItemViewModel plugin when plugin.UpdateInfo != null && plugin.ManifestEntry != null:
-                    plugin.IsUpdating = true;
-                    plugin.UpdateStatusText = "Installing update...";
-                    try
-                    {
-                        await PerformUpdateInstallAsync(
-                            plugin.FileName,
-                            plugin.UpdateInfo,
-                            plugin.ManifestEntry.Provider,
-                            plugin.ManifestEntry.ProjectId,
-                            plugin.Name,
-                            s => plugin.UpdateStatusText = s,
-                            status => plugin.UpdateStatus = status);
-                    }
-                    finally
-                    {
-                        plugin.IsUpdating = false;
-                    }
-                    break;
-            }
-        }
 
         // ── Update All logic ──────────────────────────────────────────────────
 
@@ -1047,7 +1015,7 @@ namespace PocketMC.Desktop.Features.Settings
                     ? $"{available} update(s) available, {failed} check(s) failed"
                     : $"{available} update(s) available";
 
-                // Prompt user to batch-install all available updates
+                // Prompt user to batch-install all available updates via the update dialog
                 if (available > 0)
                 {
                     var updatableItems = trackedItems
@@ -1061,78 +1029,7 @@ namespace PocketMC.Desktop.Features.Settings
 
                     if (updatableItems.Count > 0)
                     {
-                        var updateEntries = updatableItems.Select(t => t.VM switch
-                        {
-                            PluginItemViewModel p => (p.Name, p.UpdateInfo!.LatestVersionName ?? p.UpdateInfo.LatestVersionId ?? "new version"),
-                            ModItemViewModel m => (m.Name, m.UpdateInfo!.LatestVersionName ?? m.UpdateInfo.LatestVersionId ?? "new version"),
-                            _ => (t.Name, "new version")
-                        }).ToList();
-
-                        var allWarnings = updatableItems.SelectMany(t => t.VM switch
-                        {
-                            PluginItemViewModel p => p.UpdateInfo?.Warnings ?? Array.Empty<string>(),
-                            ModItemViewModel m => m.UpdateInfo?.Warnings ?? Array.Empty<string>(),
-                            _ => Array.Empty<string>()
-                        }).ToList();
-
-                        string message = BuildBatchUpdateSummaryMessage(
-                            updatableItems.Count, trackedItems.Count, updateEntries, allWarnings);
-
-                        var dialogResult = await _dialogService.ShowDialogAsync(
-                            "Install All Updates", message, DialogType.Question);
-
-                        if (dialogResult == DialogResult.Yes)
-                        {
-                            int installed = 0;
-                            int installFailed = 0;
-
-                            foreach (var updatable in updatableItems)
-                            {
-                                installed++;
-                                UpdateAllStatusText = $"Installing {installed}/{updatableItems.Count}: {updatable.Name}...";
-                                SetItemStatus(updatable.VM, "Installing update...", true);
-
-                                try
-                                {
-                                    switch (updatable.VM)
-                                    {
-                                        case ModItemViewModel mod:
-                                            await PerformUpdateInstallAsync(
-                                                mod.FileName,
-                                                mod.UpdateInfo!,
-                                                mod.ManifestEntry!.Provider,
-                                                mod.ManifestEntry.ProjectId,
-                                                mod.Name,
-                                                s => mod.UpdateStatusText = s,
-                                                status => mod.UpdateStatus = status);
-                                            break;
-
-                                        case PluginItemViewModel plugin:
-                                            await PerformUpdateInstallAsync(
-                                                plugin.FileName,
-                                                plugin.UpdateInfo!,
-                                                plugin.ManifestEntry!.Provider,
-                                                plugin.ManifestEntry.ProjectId,
-                                                plugin.Name,
-                                                s => plugin.UpdateStatusText = s,
-                                                status => plugin.UpdateStatus = status);
-                                            break;
-                                    }
-                                }
-                                catch
-                                {
-                                    installFailed++;
-                                }
-                                finally
-                                {
-                                    SetItemStatus(updatable.VM, "", false);
-                                }
-                            }
-
-                            UpdateAllStatusText = installFailed > 0
-                                ? $"{installed - installFailed} updated, {installFailed} failed"
-                                : $"All {installed} addon(s) updated successfully";
-                        }
+                        ShowUpdateDialog(updatableItems);
                     }
                 }
             }
@@ -1145,6 +1042,83 @@ namespace PocketMC.Desktop.Features.Settings
             {
                 IsUpdatingAll = false;
             }
+        }
+
+        private void ShowUpdateDialog(List<(string Name, object VM)> updatableItems)
+        {
+            var rows = updatableItems.Select(t =>
+            {
+                return t.VM switch
+                {
+                    ModItemViewModel mod => new AddonUpdateRowViewModel
+                    {
+                        DisplayName = mod.Name,
+                        InstalledVersion = mod.Version ?? "unknown",
+                        LatestVersion = mod.UpdateInfo!.LatestVersionName ?? mod.UpdateInfo.LatestVersionId ?? "new version",
+                        UpdateInfo = mod.UpdateInfo!,
+                        OldFileName = mod.FileName,
+                        Provider = mod.ManifestEntry!.Provider,
+                        ProjectId = mod.ManifestEntry.ProjectId,
+                        OriginalVM = mod
+                    },
+                    PluginItemViewModel plugin => new AddonUpdateRowViewModel
+                    {
+                        DisplayName = plugin.Name,
+                        InstalledVersion = plugin.Version ?? "unknown",
+                        LatestVersion = plugin.UpdateInfo!.LatestVersionName ?? plugin.UpdateInfo.LatestVersionId ?? "new version",
+                        UpdateInfo = plugin.UpdateInfo!,
+                        OldFileName = plugin.FileName,
+                        Provider = plugin.ManifestEntry!.Provider,
+                        ProjectId = plugin.ManifestEntry.ProjectId,
+                        OriginalVM = plugin
+                    },
+                    _ => null!
+                };
+            }).Where(r => r != null).ToList();
+
+            var dialog = new AddonUpdateDialogWindow();
+            dialog.SetItems(rows);
+            dialog.InstallAction = async (row, progress, ct) =>
+            {
+                await PerformUpdateInstallAsync(
+                    row.OldFileName,
+                    row.UpdateInfo,
+                    row.Provider,
+                    row.ProjectId,
+                    row.DisplayName,
+                    s => { }, // status is handled by the dialog
+                    status =>
+                    {
+                        // Update the original VM's status
+                        switch (row.OriginalVM)
+                        {
+                            case ModItemViewModel mod: mod.UpdateStatus = status; break;
+                            case PluginItemViewModel plugin: plugin.UpdateStatus = status; break;
+                        }
+                    },
+                    progress,
+                    ct);
+            };
+            dialog.OnAllUpdatesCompleted = () =>
+            {
+                LoadAddons();
+                _onAddonChanged();
+                UpdateAllStatusText = dialog.FailedCount > 0
+                    ? $"{dialog.InstalledCount} updated, {dialog.FailedCount} failed"
+                    : $"All {dialog.InstalledCount} addon(s) updated successfully";
+            };
+
+            try
+            {
+                var mainWindow = System.Windows.Application.Current?.MainWindow;
+                if (mainWindow != null && mainWindow.IsLoaded && mainWindow.IsVisible)
+                {
+                    dialog.Owner = mainWindow;
+                }
+            }
+            catch { }
+
+            dialog.ShowDialog();
         }
 
         private static void SetItemStatus(object vm, string status, bool isUpdating)

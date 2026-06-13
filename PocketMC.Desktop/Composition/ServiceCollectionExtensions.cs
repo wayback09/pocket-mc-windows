@@ -233,6 +233,7 @@ namespace PocketMC.Desktop.Composition
             services.AddSingleton<AddonInventoryService>();
             services.AddSingleton<AddonToggleService>();
             services.AddSingleton<AddonUpdateCheckService>();
+            services.AddSingleton<AddonAutoUpdateService>();
 
             services.AddSingleton<AddonMigrationPlanner>();
             services.AddSingleton<AddonMigrationStager>();

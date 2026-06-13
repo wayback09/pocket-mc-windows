@@ -171,7 +171,9 @@ namespace PocketMC.Desktop.Features.Marketplace
             AddonUpdateCheckResult updateInfo,
             string providerName,
             string projectId,
-            EngineCompatibility compat)
+            EngineCompatibility compat,
+            IProgress<Instances.Services.DownloadProgress>? progress = null,
+            CancellationToken cancellationToken = default)
         {
             if (updateInfo.LatestDownloadUrl == null || updateInfo.LatestFileName == null)
                 throw new InvalidOperationException("Update info is incomplete — missing download URL or filename.");
@@ -188,7 +190,9 @@ namespace PocketMC.Desktop.Features.Marketplace
                 updateInfo.LatestDownloadUrl,
                 newFilePath,
                 updateInfo.Hash,
-                updateInfo.HashType);
+                updateInfo.HashType,
+                progress,
+                cancellationToken);
 
             // Delete old file if it has a different name
             if (!string.Equals(oldFileName, safeLatestFileName, StringComparison.OrdinalIgnoreCase))

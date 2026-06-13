@@ -53,6 +53,9 @@ namespace PocketMC.Desktop.Models
         // Startup behavior
         public bool AutoStartWithApp { get; set; } = false;
 
+        /// <summary>When true, automatically check and update marketplace addons when the server starts.</summary>
+        public bool AutoUpdateAddons { get; set; } = false;
+
         // Custom backup destination (added for local backup routing)
         public string? CustomBackupDirectory { get; set; } = null;
 
