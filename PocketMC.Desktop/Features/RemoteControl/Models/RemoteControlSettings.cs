@@ -11,4 +11,5 @@ public sealed class RemoteControlSettings
     public string? PlayitTunnelId { get; set; }
     public string? PasswordHash { get; set; }
     public bool RequireAuthentication { get; set; } = true;
+    public string SecurityStamp { get; set; } = Guid.NewGuid().ToString();
 }

@@ -246,12 +246,26 @@
                         </Grid>
                         
                         <Grid Margin="0,16,0,0" Visibility="{Binding RequireAuthentication, Converter={StaticResource BoolToVis}}">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="150"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="Set Password" VerticalAlignment="Center" FontSize="14" FontWeight="Medium" Margin="0,0,12,0"/>
-                            <ui:PasswordBox Grid.Column="1" Password="{Binding Password, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="Enter new password (autosaves)" />
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Set Password" VerticalAlignment="Center" FontSize="14" FontWeight="Medium" Margin="0,0,12,0"/>
+                            <ui:PasswordBox Grid.Row="0" Grid.Column="1" Password="{Binding Password, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="Enter new password (autosaves)" />
+                            
+                            <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Margin="0,8,0,0" Visibility="{Binding IsPasswordSet, Converter={StaticResource BoolToVis}}">
+                                <ui:SymbolIcon Symbol="CheckmarkCircle24" Foreground="{DynamicResource SystemFillColorSuccessBrush}" Margin="0,0,6,0"/>
+                                <TextBlock Text="Password is currently configured and saved." Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" FontSize="12"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Margin="0,8,0,0" Visibility="{Binding IsPasswordNotSet, Converter={StaticResource BoolToVis}}">
+                                <ui:SymbolIcon Symbol="Warning24" Foreground="{DynamicResource SystemFillColorCautionBrush}" Margin="0,0,6,0"/>
+                                <TextBlock Text="No password configured! Dashboard may be vulnerable." Foreground="{DynamicResource SystemFillColorCautionBrush}" VerticalAlignment="Center" FontSize="12"/>
+                            </StackPanel>
                         </Grid>
                     </StackPanel>
                 </ui:CardExpander>

@@ -81,6 +81,9 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
     [ObservableProperty]
     private string _password = "";
 
+    public bool IsPasswordSet => !string.IsNullOrEmpty(_applicationState.Settings.RemoteControl.PasswordHash);
+    public bool IsPasswordNotSet => string.IsNullOrEmpty(_applicationState.Settings.RemoteControl.PasswordHash);
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsDiscordNotLinked))]
     private bool _isDiscordLinked;
@@ -170,7 +173,11 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
 
     partial void OnRequireAuthenticationChanged(bool value)
     {
-        SaveAndRestart();
+        if (value)
+        {
+            _applicationState.Settings.RemoteControl.SecurityStamp = Guid.NewGuid().ToString();
+        }
+        SaveSettings();
     }
 
     partial void OnPasswordChanged(string value)
@@ -179,7 +186,8 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
         // but if bound to property changed, we can save it.
         // Usually better to save when they finish typing. We will save it.
         if (string.IsNullOrEmpty(value)) return;
-        SaveAndRestart();
+        _applicationState.Settings.RemoteControl.SecurityStamp = Guid.NewGuid().ToString();
+        SaveSettings();
     }
 
     partial void OnEnableDiscordNotificationsChanged(bool value)
@@ -243,6 +251,10 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
         settings.EnableDiscordNotifications = EnableDiscordNotifications;
 
         _settingsManager.Save(settings);
+
+        OnPropertyChanged(nameof(IsPasswordSet));
+        OnPropertyChanged(nameof(IsPasswordNotSet));
+
         return true;
     }
 

@@ -104,6 +104,16 @@ public sealed class RemoteDashboardHost
                         context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                         return Task.CompletedTask;
                     };
+                    options.Events.OnValidatePrincipal = context =>
+                    {
+                        var expectedStamp = _applicationState.Settings.RemoteControl.SecurityStamp;
+                        var actualStamp = context.Principal?.FindFirstValue("SecurityStamp");
+                        if (actualStamp != expectedStamp)
+                        {
+                            context.RejectPrincipal();
+                        }
+                        return Task.CompletedTask;
+                    };
                 });
             builder.Services.AddAuthorization();
 
@@ -201,7 +211,11 @@ public sealed class RemoteDashboardHost
             var settings = _applicationState.Settings.RemoteControl;
             if (!settings.RequireAuthentication || _authenticationService.VerifyPassword(request.Password, settings.PasswordHash))
             {
-                var claims = new List<Claim> { new Claim(ClaimTypes.Name, "Admin") };
+                var claims = new List<Claim> 
+                { 
+                    new Claim(ClaimTypes.Name, "Admin"),
+                    new Claim("SecurityStamp", settings.SecurityStamp)
+                };
                 var claimsIdentity = new ClaimsIdentity(claims, "RemoteCookies");
                 var authProperties = new AuthenticationProperties
                 {

@@ -72,6 +72,34 @@ namespace PocketMC.Desktop.Features.Shell
             }
         }
 
+        private void OpenYouTube_Click(object sender, RoutedEventArgs e)
+        {
+            var url = "https://www.youtube.com/@PocketMCApp"; // Standardized handle
+            try
+            {
+                var psi = new ProcessStartInfo(url) { UseShellExecute = true };
+                Process.Start(psi);
+            }
+            catch (Exception ex)
+            {
+                _dialogService.ShowMessage("Unable to open link", ex.Message);
+            }
+        }
+
+        private void OpenReddit_Click(object sender, RoutedEventArgs e)
+        {
+            var url = "https://www.reddit.com/r/pocketmc";
+            try
+            {
+                var psi = new ProcessStartInfo(url) { UseShellExecute = true };
+                Process.Start(psi);
+            }
+            catch (Exception ex)
+            {
+                _dialogService.ShowMessage("Unable to open link", ex.Message);
+            }
+        }
+
         private void OpenGitHub_Click(object sender, RoutedEventArgs e)
         {
             var repoUrl = "https://github.com/PocketMC/pocket-mc-windows";
