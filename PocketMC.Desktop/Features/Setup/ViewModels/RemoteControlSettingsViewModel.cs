@@ -58,6 +58,18 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
         _isDiscordLinked = !string.IsNullOrEmpty(_applicationState.Settings.DiscordUserId);
         _enableDiscordNotifications = _applicationState.Settings.EnableDiscordNotifications;
 
+        if (!string.IsNullOrEmpty(remote.ProtectedPassword))
+        {
+            try
+            {
+                _password = PocketMC.Desktop.Infrastructure.Security.DataProtector.Unprotect(remote.ProtectedPassword) ?? string.Empty;
+            }
+            catch (Exception)
+            {
+                _password = string.Empty;
+            }
+        }
+
         _settingsManager.SettingsSaved += OnSettingsSaved;
 
         UpdateStatus();
@@ -246,6 +258,12 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
         if (!string.IsNullOrEmpty(Password))
         {
             settings.RemoteControl.PasswordHash = _authenticationService.HashPassword(Password);
+            settings.RemoteControl.ProtectedPassword = PocketMC.Desktop.Infrastructure.Security.DataProtector.Protect(Password);
+        }
+        else
+        {
+            settings.RemoteControl.PasswordHash = null;
+            settings.RemoteControl.ProtectedPassword = null;
         }
 
         settings.EnableDiscordNotifications = EnableDiscordNotifications;

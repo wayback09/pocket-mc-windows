@@ -12,4 +12,5 @@ public sealed class RemoteControlSettings
     public string? PasswordHash { get; set; }
     public bool RequireAuthentication { get; set; } = true;
     public string SecurityStamp { get; set; } = Guid.NewGuid().ToString();
+    public string? ProtectedPassword { get; set; }
 }
