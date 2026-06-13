@@ -56,11 +56,27 @@ public sealed class InstanceRollbackService
         
         if (Directory.Exists(serverRoot))
         {
-            await FileUtils.CleanDirectoryAsync(serverRoot, cancellationToken);
-            Directory.Delete(serverRoot, recursive: true);
-        }
+            string tempDeleteDir = serverRoot + "_todelete_" + Guid.NewGuid().ToString("N");
+            Directory.Move(serverRoot, tempDeleteDir);
+            
+            Directory.Move(rollbackDirectory, serverRoot);
 
-        Directory.Move(rollbackDirectory, serverRoot);
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await FileUtils.CleanDirectoryAsync(tempDeleteDir, CancellationToken.None);
+                }
+                catch
+                {
+                    // Ignore background cleanup errors
+                }
+            });
+        }
+        else
+        {
+            Directory.Move(rollbackDirectory, serverRoot);
+        }
     }
 
     public bool HasRollbackBackup(string serverDir)
