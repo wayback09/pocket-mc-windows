@@ -15,8 +15,10 @@ public sealed class SettingsVersionUpdatesVM : ViewModelBase
     private readonly InstanceUpdateService _updateService;
     private readonly InstanceVersionTargetService _versionTargetService;
     private readonly InstanceUpdateJournalStore _journalStore;
+    private readonly InstanceRollbackService _rollbackService;
     private readonly IDialogService _dialogService;
     private readonly Func<bool> _isRunningCheck;
+    private readonly Action _onReloadRequested;
     private string _serverDir;
     private InstanceUpdatePlan? _currentPlan;
 
@@ -45,16 +47,20 @@ public sealed class SettingsVersionUpdatesVM : ViewModelBase
         InstanceUpdateService updateService,
         InstanceVersionTargetService versionTargetService,
         InstanceUpdateJournalStore journalStore,
+        InstanceRollbackService rollbackService,
         IDialogService dialogService,
-        Func<bool> isRunningCheck)
+        Func<bool> isRunningCheck,
+        Action onReloadRequested)
     {
         _metadata = metadata;
         _serverDir = serverDir;
         _updateService = updateService;
         _versionTargetService = versionTargetService;
         _journalStore = journalStore;
+        _rollbackService = rollbackService;
         _dialogService = dialogService;
         _isRunningCheck = isRunningCheck;
+        _onReloadRequested = onReloadRequested;
         int currentJava = JavaRuntimeResolver.GetRequiredJavaVersion(metadata.MinecraftVersion);
         _requiredJavaVersionChange = $"Java {currentJava} remains required";
         _targetVersionStatusText = "Checking for available updates...";
@@ -72,7 +78,8 @@ public sealed class SettingsVersionUpdatesVM : ViewModelBase
         LoadTargetVersionsCommand = new AsyncRelayCommand(_ => LoadTargetVersionsAsync(), _ => !IsBusy && !IsLoadingTargetVersions);
         PlanCommand = new AsyncRelayCommand(_ => RefreshPlanAsync(), _ => CanPreviewUpdate);
         ApplyCommand = new AsyncRelayCommand(_ => ApplyAsync(), _ => CanApplyUpdate);
-        RollbackCommand = new AsyncRelayCommand(_ => RollbackAsync(), _ => !IsBusy && !_isRunningCheck());
+        RollbackCommand = new AsyncRelayCommand(_ => RollbackAsync(), _ => !IsBusy && !_isRunningCheck() && HasRollbackBackup);
+        DeleteRollbackCommand = new AsyncRelayCommand(_ => DeleteRollbackBackupAsync(), _ => !IsBusy && HasRollbackBackup);
 
         _ = LoadTargetVersionsAsync();
         _ = RefreshRollbackAvailabilityAsync();
@@ -86,6 +93,7 @@ public sealed class SettingsVersionUpdatesVM : ViewModelBase
     public ICommand PlanCommand { get; }
     public ICommand ApplyCommand { get; }
     public ICommand RollbackCommand { get; }
+    public ICommand DeleteRollbackCommand { get; }
 
     public string CurrentServerVersion => _metadata.MinecraftVersion;
     public string CurrentServerType => _metadata.ServerType;
@@ -162,6 +170,9 @@ public sealed class SettingsVersionUpdatesVM : ViewModelBase
         !_isRunningCheck() &&
         _currentPlan != null &&
         !string.Equals(CurrentServerVersion, TargetMinecraftVersion, StringComparison.OrdinalIgnoreCase);
+
+    private bool _hasRollbackBackup;
+    public bool HasRollbackBackup { get => _hasRollbackBackup; set => SetProperty(ref _hasRollbackBackup, value); }
 
     public bool IsUpdateProgressVisible { get => _isUpdateProgressVisible; set => SetProperty(ref _isUpdateProgressVisible, value); }
     public bool IsUpdateProgressIndeterminate { get => _isUpdateProgressIndeterminate; set => SetProperty(ref _isUpdateProgressIndeterminate, value); }
@@ -368,7 +379,7 @@ public sealed class SettingsVersionUpdatesVM : ViewModelBase
     {
         DialogResult confirm = await _dialogService.ShowDialogAsync(
             "Rollback Update",
-            "Rollback the latest incomplete update snapshot for this server?",
+            "Rollback the server to the pre-upgrade backup?",
             DialogType.Question);
         if (confirm != DialogResult.Yes)
         {
@@ -378,15 +389,21 @@ public sealed class SettingsVersionUpdatesVM : ViewModelBase
         IsBusy = true;
         IsUpdateProgressVisible = true;
         IsUpdateProgressIndeterminate = true;
-        ProgressDetailText = "Restoring latest update snapshot.";
+        ProgressDetailText = "Restoring rollback backup.";
         try
         {
-            bool rolledBack = await _updateService.RollbackLatestAsync(_serverDir);
-            StatusText = rolledBack ? "Rollback completed." : "No rollback snapshot was found.";
+            bool rolledBack = await _updateService.RollbackLatestAsync(_metadata.Id, _serverDir);
+            StatusText = rolledBack ? "Rollback completed." : "No rollback backup was found.";
             ProgressDetailText = StatusText;
             IsUpdateProgressIndeterminate = false;
             UpdateProgressValue = rolledBack ? 100 : 0;
             await RefreshRollbackAvailabilityAsync();
+            
+            if (rolledBack)
+            {
+                _dialogService.ShowMessage("Rollback Successful", "The server has been rolled back. The settings page will now reload to reflect the restored configuration.", DialogType.Information);
+                _onReloadRequested?.Invoke();
+            }
         }
         catch (Exception ex)
         {
@@ -401,12 +418,47 @@ public sealed class SettingsVersionUpdatesVM : ViewModelBase
         }
     }
 
+    private async Task DeleteRollbackBackupAsync()
+    {
+        DialogResult confirm = await _dialogService.ShowDialogAsync(
+            "Delete Rollback Backup",
+            "Are you sure you want to permanently delete the rollback backup to free disk space? This cannot be undone.",
+            DialogType.Warning);
+        
+        if (confirm != DialogResult.Yes)
+        {
+            return;
+        }
+
+        IsBusy = true;
+        StatusText = "Deleting rollback backup...";
+        try
+        {
+            await _rollbackService.DeleteRollbackBackupAsync(_serverDir);
+            StatusText = "Rollback backup deleted.";
+            await RefreshRollbackAvailabilityAsync();
+        }
+        catch (Exception ex)
+        {
+            StatusText = "Failed to delete rollback backup.";
+            _dialogService.ShowMessage("Delete Failed", ex.Message, DialogType.Error);
+        }
+        finally
+        {
+            IsBusy = false;
+            CommandManager.InvalidateRequerySuggested();
+        }
+    }
+
     private async Task RefreshRollbackAvailabilityAsync()
     {
-        InstanceUpdateJournal? journal = await _journalStore.GetLatestRecoverableJournalAsync(_serverDir);
-        RollbackAvailabilityText = journal == null
-            ? "No pending rollback is available."
-            : $"Rollback available from update {journal.OperationId:N}.";
+        HasRollbackBackup = _rollbackService.HasRollbackBackup(_serverDir);
+        RollbackAvailabilityText = HasRollbackBackup
+            ? "Rollback backup is available."
+            : "No rollback backup exists.";
+            
+        CommandManager.InvalidateRequerySuggested();
+        await Task.CompletedTask;
     }
 
     private static string FormatMegabytes(long bytes)

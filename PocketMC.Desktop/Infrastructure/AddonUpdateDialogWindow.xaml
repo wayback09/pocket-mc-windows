@@ -14,6 +14,10 @@
         WindowBackdropType="None"
         Background="{DynamicResource ApplicationBackgroundBrush}">
 
+    <ui:FluentWindow.Resources>
+        <BooleanToVisibilityConverter x:Key="VisibleIfTrue"/>
+    </ui:FluentWindow.Resources>
+
     <Grid Margin="20" MaxWidth="600">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>

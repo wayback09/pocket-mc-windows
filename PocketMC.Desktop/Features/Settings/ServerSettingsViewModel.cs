@@ -150,8 +150,10 @@ namespace PocketMC.Desktop.Features.Settings
                 serviceProvider.GetRequiredService<InstanceUpdateService>(),
                 serviceProvider.GetRequiredService<InstanceVersionTargetService>(),
                 serviceProvider.GetRequiredService<InstanceUpdateJournalStore>(),
+                serviceProvider.GetRequiredService<InstanceRollbackService>(),
                 dialogService,
-                () => IsRunning);
+                () => IsRunning,
+                () => ReloadCurrentInstance(serviceProvider));
             Advanced = new SettingsAdvancedVM(ServerDir, serverConfigurationService, MarkChanged);
 
             var summaryStorage = (SummaryStorageService)serviceProvider.GetService(typeof(SummaryStorageService))!;
@@ -173,6 +175,19 @@ namespace PocketMC.Desktop.Features.Settings
             ResolvePlayitCommand = new RelayCommand(_ => _ = ResolveTunnelAddressAsync(playitApiClient));
 
             LoadAll(playitApiClient);
+        }
+
+        private void ReloadCurrentInstance(IServiceProvider serviceProvider)
+        {
+            _registry.Refresh();
+            var updatedMetadata = _registry.GetById(Metadata.Id);
+            if (updatedMetadata == null) return;
+            
+            var settingsViewModel = Microsoft.Extensions.DependencyInjection.ActivatorUtilities.CreateInstance<ServerSettingsViewModel>(serviceProvider, updatedMetadata);
+            settingsViewModel.InitialTabIndex = 6;
+            
+            var settingsPage = Microsoft.Extensions.DependencyInjection.ActivatorUtilities.CreateInstance<ServerSettingsPage>(serviceProvider, settingsViewModel);
+            _navigationService.NavigateToDetailPage(settingsPage, $"Settings: {updatedMetadata.Name}", DetailRouteKind.ServerSettings, DetailBackNavigation.Dashboard, true);
         }
 
         public void LoadAll(PlayitApiClient playitApiClient)

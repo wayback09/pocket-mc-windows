@@ -366,24 +366,16 @@ public sealed class InstanceUpdateServiceTests : IDisposable
         Directory.CreateDirectory(Path.Combine(serverDir, "mods"));
         File.WriteAllText(Path.Combine(serverDir, "mods", "tracked.jar"), "new-addon");
 
-        string snapshotDir = Path.Combine(serverDir, ".pocketmc-updates", "snapshots", "operation");
+        string snapshotDir = serverDir + "-rollback";
+        Directory.CreateDirectory(snapshotDir);
         Directory.CreateDirectory(Path.Combine(snapshotDir, "mods"));
         File.WriteAllText(Path.Combine(snapshotDir, "server.jar"), "old-server");
         File.WriteAllText(Path.Combine(snapshotDir, "mods", "tracked.jar"), "old-addon");
 
-        var journal = new InstanceUpdateJournal
-        {
-            OperationId = Guid.NewGuid(),
-            InstanceId = Guid.NewGuid(),
-            ServerDir = serverDir,
-            SnapshotDirectory = snapshotDir,
-            State = InstanceUpdateJournalState.ApplyingAddons
-        };
-
         var rollback = new InstanceRollbackService(new InstanceUpdateJournalStore());
 
-        await rollback.RollbackAsync(journal);
-        await rollback.RollbackAsync(journal);
+        await rollback.RollbackAsync(serverDir);
+        await rollback.RollbackAsync(serverDir);
 
         Assert.Equal("old-server", File.ReadAllText(Path.Combine(serverDir, "server.jar")));
         Assert.Equal("old-addon", File.ReadAllText(Path.Combine(serverDir, "mods", "tracked.jar")));

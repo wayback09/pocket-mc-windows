@@ -145,9 +145,9 @@ public sealed class InstanceUpdateApplier
             journal.FailureMessage = ex.Message;
             await _journalStore.SaveAsync(journal, CancellationToken.None);
 
-            if (!string.IsNullOrWhiteSpace(journal.SnapshotDirectory))
+            if (_rollbackService.HasRollbackBackup(plan.ServerDir))
             {
-                await _rollbackService.RollbackAsync(journal, restoreWorldBackup: false, CancellationToken.None);
+                await _rollbackService.RollbackAsync(plan.ServerDir, restoreWorldBackup: false, CancellationToken.None);
             }
 
             throw;

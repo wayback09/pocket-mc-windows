@@ -90,19 +90,19 @@ public sealed class InstanceUpdateService
     }
 
     public async Task<bool> RollbackLatestAsync(
+        Guid instanceId,
         string serverDir,
         bool restoreWorldBackup = false,
         CancellationToken cancellationToken = default)
     {
-        InstanceUpdateJournal? journal = await _journalStore.GetLatestRecoverableJournalAsync(serverDir, cancellationToken);
-        if (journal == null)
+        if (!_rollbackService.HasRollbackBackup(serverDir))
         {
             return false;
         }
 
-        using IDisposable updateLock = await _lockService.AcquireAsync(journal.InstanceId, cancellationToken);
-        _logger.LogInformation("Rolling back incomplete update {OperationId} for {ServerDir}.", journal.OperationId, serverDir);
-        await _rollbackService.RollbackAsync(journal, restoreWorldBackup, cancellationToken);
+        using IDisposable updateLock = await _lockService.AcquireAsync(instanceId, cancellationToken);
+        _logger.LogInformation("Rolling back update for {ServerDir}.", serverDir);
+        await _rollbackService.RollbackAsync(serverDir, restoreWorldBackup, cancellationToken);
         return true;
     }
 }

@@ -490,11 +490,26 @@
                                                     <TextBlock Text="Dependency additions" Style="{StaticResource SettingsSubtext}"/>
                                                     <TextBlock Text="{Binding VersionUpdates.DependencyAdditionCount}" FontSize="20" FontWeight="SemiBold"/>
                                                 </StackPanel>
-                                                <StackPanel Margin="0,0,16,12">
-                                                    <TextBlock Text="Rollback availability" Style="{StaticResource SettingsSubtext}"/>
-                                                    <TextBlock Text="{Binding VersionUpdates.RollbackAvailabilityText}" FontSize="12" TextWrapping="Wrap"/>
-                                                </StackPanel>
                                             </UniformGrid>
+                                        </StackPanel>
+                                    </ui:Card>
+
+                                    <ui:Card Padding="24" Margin="0,0,0,16">
+                                        <StackPanel>
+                                            <TextBlock Text="Rollback Recovery" Style="{StaticResource SettingsHeader}" FontSize="16"/>
+                                            <TextBlock Text="{Binding VersionUpdates.RollbackAvailabilityText}" FontSize="13" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,4,0,16"/>
+                                            
+                                            <StackPanel Orientation="Horizontal">
+                                                <ui:Button Content="Rollback Server"
+                                                           Command="{Binding VersionUpdates.RollbackCommand}"
+                                                           Icon="{ui:SymbolIcon ArrowUndo24}"
+                                                           Appearance="Primary"
+                                                           Margin="0,0,8,0" />
+                                                <ui:Button Content="Delete Rollback Backup"
+                                                           Command="{Binding VersionUpdates.DeleteRollbackCommand}"
+                                                           Icon="{ui:SymbolIcon Delete24}"
+                                                           Appearance="Danger" />
+                                            </StackPanel>
                                         </StackPanel>
                                     </ui:Card>
 
