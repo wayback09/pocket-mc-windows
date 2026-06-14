@@ -6,6 +6,7 @@
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
       xmlns:intel="clr-namespace:PocketMC.Desktop.Features.Intelligence"
       xmlns:infra="clr-namespace:PocketMC.Desktop.Infrastructure"
+      xmlns:helpers="clr-namespace:PocketMC.Desktop.Helpers"
       mc:Ignorable="d"
       d:DesignHeight="1200" d:DesignWidth="950"
       Title="Server Settings"
@@ -150,6 +151,7 @@
 
                 <ui:NavigationView Grid.Column="0"
                                    x:Name="SidebarList"
+                                   helpers:AnimatedNavIndicatorBehavior.IsEnabled="True"
                                    PaneDisplayMode="Left"
                                    IsPaneToggleVisible="False"
                                    IsBackButtonVisible="Collapsed">

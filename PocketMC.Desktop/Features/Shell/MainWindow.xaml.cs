@@ -245,6 +245,8 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
         SetNavigationItemActiveState(NavAbout, ReferenceEquals(targetItem, NavAbout));
         SetNavigationItemActiveState(NavSettings, ReferenceEquals(targetItem, NavSettings));
         SetNavigationItemActiveState(NavRemoteControl, ReferenceEquals(targetItem, NavRemoteControl));
+
+        PocketMC.Desktop.Helpers.AnimatedNavIndicatorBehavior.AnimateToActiveItem(RootNavigation);
     }
 
     private NavigationViewItem? GetShellNavigationItem(Type? pageType)

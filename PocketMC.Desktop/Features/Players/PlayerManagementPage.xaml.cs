@@ -103,6 +103,7 @@ public partial class PlayerManagementPage : Page, IDisposable, ITitleBarContextS
                         navItem.IsActive = false;
                 }
                 clickedItem.IsActive = true;
+                PocketMC.Desktop.Helpers.AnimatedNavIndicatorBehavior.AnimateToActiveItem(SidebarList);
             }
         }
     }
@@ -134,6 +135,7 @@ public partial class PlayerManagementPage : Page, IDisposable, ITitleBarContextS
                 if (SidebarList.MenuItems[MainTabControl.SelectedIndex] is Wpf.Ui.Controls.NavigationViewItem targetItem)
                 {
                     targetItem.IsActive = true;
+                    PocketMC.Desktop.Helpers.AnimatedNavIndicatorBehavior.AnimateToActiveItem(SidebarList);
                 }
             }
             _isSynchronizingTabSelection = false;
