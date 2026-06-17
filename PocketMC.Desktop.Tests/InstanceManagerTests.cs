@@ -83,6 +83,11 @@ public sealed class InstanceManagerTests : IDisposable
             public Stream? GetAssetStream(string assetName) => null;
         }
 
+        private sealed class EmptyServiceProvider : IServiceProvider
+        {
+            public object? GetService(Type serviceType) => null;
+        }
+
         private InstanceManager CreateManager(out InstanceRegistry registry, out InstancePathService pathService)
         {
             var state = new ApplicationState();
@@ -91,7 +96,7 @@ public sealed class InstanceManagerTests : IDisposable
             pathService = new InstancePathService(state);
             registry = new InstanceRegistry(pathService, NullLogger<InstanceRegistry>.Instance);
 
-            return new InstanceManager(registry, pathService, state, new MockAssetProvider(), NullLogger<InstanceManager>.Instance);
+            return new InstanceManager(registry, pathService, state, new MockAssetProvider(), NullLogger<InstanceManager>.Instance, new EmptyServiceProvider());
         }
 
     public void Dispose()

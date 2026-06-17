@@ -10,6 +10,7 @@ using PocketMC.Desktop.Models;
 using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Infrastructure.FileSystem;
 using PocketMC.Desktop.Core.Interfaces;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace PocketMC.Desktop.Features.Instances.Services;
     /// <summary>
@@ -23,6 +24,7 @@ namespace PocketMC.Desktop.Features.Instances.Services;
         private readonly ApplicationState _applicationState;
         private readonly IAssetProvider _assetProvider;
         private readonly ILogger<InstanceManager> _logger;
+        private readonly IServiceProvider _serviceProvider;
 
         private static readonly JsonSerializerOptions MetadataJsonOptions = new() { WriteIndented = true };
 
@@ -31,13 +33,15 @@ namespace PocketMC.Desktop.Features.Instances.Services;
             InstancePathService pathService,
             ApplicationState applicationState,
             IAssetProvider assetProvider,
-            ILogger<InstanceManager> logger)
+            ILogger<InstanceManager> logger,
+            IServiceProvider serviceProvider)
         {
             _registry = registry;
             _pathService = pathService;
             _applicationState = applicationState;
             _assetProvider = assetProvider;
             _logger = logger;
+            _serviceProvider = serviceProvider;
         }
 
         public InstanceMetadata CreateInstance(string name, string description, string serverType = "Vanilla", string minecraftVersion = "1.20.4")
@@ -71,6 +75,7 @@ namespace PocketMC.Desktop.Features.Instances.Services;
             };
 
             SaveMetadata(metadata, newInstancePath);
+            _ = _serviceProvider.GetService<PocketMC.Desktop.Features.Settings.ITelemetryService>()?.ReportServerActionAsync("create");
             return metadata;
         }
 
@@ -181,6 +186,7 @@ namespace PocketMC.Desktop.Features.Instances.Services;
             if (deleted)
             {
                 _registry.Unregister(instanceId);
+                _ = _serviceProvider.GetService<PocketMC.Desktop.Features.Settings.ITelemetryService>()?.ReportServerActionAsync("delete");
             }
 
             return deleted;
@@ -189,7 +195,12 @@ namespace PocketMC.Desktop.Features.Instances.Services;
         public async Task<bool> DeleteInstanceAsync(string folderName, CancellationToken cancellationToken = default)
         {
             string folderPath = _pathService.GetInstancePath(folderName);
-            return await DeleteDirectoryWithRetryAsync(folderPath, cancellationToken);
+            bool deleted = await DeleteDirectoryWithRetryAsync(folderPath, cancellationToken);
+            if (deleted)
+            {
+                _ = _serviceProvider.GetService<PocketMC.Desktop.Features.Settings.ITelemetryService>()?.ReportServerActionAsync("delete");
+            }
+            return deleted;
         }
 
         public void SaveMetadata(InstanceMetadata metadata, string instancePath)

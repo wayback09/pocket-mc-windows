@@ -16,6 +16,7 @@ public interface ITelemetryService
 {
     void Initialize();
     void Shutdown();
+    Task ReportServerActionAsync(string action);
 }
 
 public sealed class TelemetryService : ITelemetryService, IDisposable
@@ -30,7 +31,7 @@ public sealed class TelemetryService : ITelemetryService, IDisposable
     private Task? _backgroundTask;
     private bool _disposed;
     
-    private string ProxyBaseUrl => _settingsManager.GetPlayitPartnerBackendUrl();
+    private const string ProxyBaseUrl = "http://localhost:5000/";
 
     public TelemetryService(
         SettingsManager settingsManager,
@@ -227,6 +228,34 @@ public sealed class TelemetryService : ITelemetryService, IDisposable
         catch (Exception ex)
         {
             _logger.LogDebug(ex, "Error posting telemetry heartbeat.");
+        }
+    }
+
+    public async Task ReportServerActionAsync(string action)
+    {
+        try
+        {
+            var settings = _settingsManager.Load();
+            if (!settings.EnableTelemetry) return;
+
+            var payload = new
+            {
+                clientId = settings.TelemetryClientId.ToString(),
+                action = action
+            };
+
+            using var client = _httpClientFactory.CreateClient();
+            client.Timeout = TimeSpan.FromSeconds(15);
+
+            var response = await client.PostAsJsonAsync($"{ProxyBaseUrl.TrimEnd('/')}/api/telemetry/server-action", payload, _cts.Token);
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogDebug("Failed to post telemetry server action. Status code: {StatusCode}", response.StatusCode);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Error posting telemetry server action.");
         }
     }
 

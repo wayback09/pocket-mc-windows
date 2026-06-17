@@ -40,7 +40,7 @@ internal sealed class PortReliabilityTestWorkspace : IDisposable
 
         PathService = new InstancePathService(AppState);
         Registry = new InstanceRegistry(PathService, NullLogger<InstanceRegistry>.Instance);
-        InstanceManager = new InstanceManager(Registry, PathService, AppState, new EmptyAssetProvider(), NullLogger<InstanceManager>.Instance);
+        InstanceManager = new InstanceManager(Registry, PathService, AppState, new EmptyAssetProvider(), NullLogger<InstanceManager>.Instance, new EmptyServiceProvider());
         ConfigurationService = new ServerConfigurationService(InstanceManager);
         SettingsManager = new SettingsManager();
     }
@@ -369,6 +369,11 @@ internal sealed class PortReliabilityTestWorkspace : IDisposable
     private sealed class EmptyAssetProvider : IAssetProvider
     {
         public Stream? GetAssetStream(string assetName) => null;
+    }
+
+    private sealed class EmptyServiceProvider : IServiceProvider
+    {
+        public object? GetService(Type serviceType) => null;
     }
 }
 
