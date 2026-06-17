@@ -30,6 +30,8 @@ public sealed class TelemetryService : ITelemetryService, IDisposable
     private readonly CancellationTokenSource _cts = new();
     private Task? _backgroundTask;
     private bool _disposed;
+    private string _cachedCountry = "Unknown";
+    private bool _hasFetchedCountry = false;
     
     private const string ProxyBaseUrl = "https://pocket-mc-proxy.onrender.com/";
 
@@ -102,6 +104,26 @@ public sealed class TelemetryService : ITelemetryService, IDisposable
 
     private async Task ReportingLoopAsync()
     {
+        // 0. Fetch Country Location once
+        if (!_hasFetchedCountry)
+        {
+            try
+            {
+                using var client = _httpClientFactory.CreateClient();
+                client.Timeout = TimeSpan.FromSeconds(5);
+                var res = await client.GetFromJsonAsync<System.Text.Json.JsonElement>("http://ip-api.com/json/?fields=country");
+                if (res.TryGetProperty("country", out var cc) && cc.ValueKind == System.Text.Json.JsonValueKind.String)
+                {
+                    _cachedCountry = cc.GetString() ?? "Unknown";
+                }
+                _hasFetchedCountry = true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Failed to fetch country from ip-api.");
+            }
+        }
+
         // 1. Check/Report one-time installation
         await EnsureInstallReportedAsync();
 
@@ -163,7 +185,8 @@ public sealed class TelemetryService : ITelemetryService, IDisposable
             var payload = new
             {
                 clientId = settings.TelemetryClientId.ToString(),
-                isUpgrade = isUpgrade
+                isUpgrade = isUpgrade,
+                country = _cachedCountry
             };
 
             using var client = _httpClientFactory.CreateClient();
@@ -213,7 +236,8 @@ public sealed class TelemetryService : ITelemetryService, IDisposable
                 isServerRunning = activeProcesses.Count > 0,
                 activeServerCount = activeProcesses.Count,
                 activeServerTypes = activeServerTypes,
-                appVersion = version
+                appVersion = version,
+                country = _cachedCountry
             };
 
             using var client = _httpClientFactory.CreateClient();
