@@ -82,7 +82,8 @@ const els = {
   serverIpAddress: document.querySelector("#serverIpAddress"),
   cpuProgressBar: document.querySelector("#cpuProgressBar"),
   ramProgressBar: document.querySelector("#ramProgressBar"),
-  playersAvatarList: document.querySelector("#playersAvatarList")
+  playersAvatarList: document.querySelector("#playersAvatarList"),
+  themeToggle: document.querySelector("#themeToggle")
 };
 
 let selectedInstanceId = localStorage.getItem(instanceKey);
@@ -891,6 +892,41 @@ if (els.loginForm) {
     }
   });
 }
+
+// Theme management
+const themeKey = "pocketmc.remote.theme";
+function applyTheme(theme) {
+  document.documentElement.setAttribute("data-theme", theme);
+  localStorage.setItem(themeKey, theme);
+  const sunIcon = els.themeToggle?.querySelector(".sun-icon");
+  const moonIcon = els.themeToggle?.querySelector(".moon-icon");
+  if (sunIcon && moonIcon) {
+    if (theme === "light") {
+      sunIcon.setAttribute("hidden", "true");
+      moonIcon.removeAttribute("hidden");
+    } else {
+      sunIcon.removeAttribute("hidden");
+      moonIcon.setAttribute("hidden", "true");
+    }
+  }
+}
+
+function initTheme() {
+  const savedTheme = localStorage.getItem(themeKey);
+  const systemPrefersLight = window.matchMedia("(prefers-color-scheme: light)").matches;
+  const initialTheme = savedTheme || (systemPrefersLight ? "light" : "dark");
+  applyTheme(initialTheme);
+
+  if (els.themeToggle) {
+    els.themeToggle.addEventListener("click", () => {
+      const currentTheme = document.documentElement.getAttribute("data-theme") || "dark";
+      const nextTheme = currentTheme === "light" ? "dark" : "light";
+      applyTheme(nextTheme);
+    });
+  }
+}
+
+initTheme();
 
 // Init
 start();
