@@ -66,14 +66,12 @@ Your servers live on your machine, in the app root you choose. PocketMC is not a
     <td><sub><b>Vanilla Java</b></sub></td>
     <td><sub><b>Paper</b></sub></td>
     <td><sub><b>Fabric</b></sub></td>
-    <td><sub><b>Forge ⚠ beta</b></sub></td>
-    <td><sub><b>NeoForge ⚠ beta</b></sub></td>
+    <td><sub><b>Forge</b></sub></td>
+    <td><sub><b>NeoForge</b></sub></td>
     <td><sub><b>Bedrock (BDS)</b></sub></td>
     <td><sub><b>PocketMine-MP</b></sub></td>
   </tr>
 </table>
-
-> **Note:** Forge and NeoForge support is in beta — expect instability.
 
 <br>
 
@@ -218,7 +216,7 @@ Your servers live on your machine, in the app root you choose. PocketMC is not a
 <summary><b>🖱️ &nbsp;Remote Control Dashboard</b></summary>
 <br>
 
-- Browser-based dashboard for managing servers from any device.
+- Browser-based dashboard for managing servers from any device with light and dark mode support.
 - Start, stop, restart, view the live console, send commands, and manage players remotely.
 - Secure internet exposure via built-in **Cloudflare Quick Tunnels** or **Playit.gg HTTPS tunnels**, or restrict to LAN only.
 - QR code generated for both local and public URLs — scan to open on mobile instantly.
@@ -262,7 +260,7 @@ Logs are preprocessed and sanitized (IPs, emails) before being sent. You own the
 - `pocketmc://` custom URI protocol for deep linking (e.g., Discord bot integration).
 - Velopack update integration with automatic updates.
 - Windows UWP loopback helper for Minecraft Bedrock local access via `CheckNetIsolation.exe`.
-- Mica, Acrylic, Wallpaper Blur, custom background image, and theme settings.
+- Mica, Acrylic, Wallpaper Blur, custom background images, custom accent colors, and theme settings.
 - Discord Rich Presence: server type, version, player count, uptime, download button.
 
 </details>
