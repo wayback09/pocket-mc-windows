@@ -477,6 +477,11 @@ namespace PocketMC.Desktop.Features.Setup
                 _accentColorService.ApplyCustomAccent(color);
                 UpdateAccentPreview(color);
                 UpdateAccentSelection(normalizedHex);
+
+                _dialogService.ShowMessage(
+                    "Accent Color Applied",
+                    $"Successfully applied custom accent color {normalizedHex}.",
+                    DialogType.Information);
             }
             else
             {
@@ -486,6 +491,11 @@ namespace PocketMC.Desktop.Features.Setup
                 _accentColorService.ApplySystemAccent();
                 UpdateAccentPreview(_accentColorService.GetCurrentAccentColor());
                 UpdateAccentSelection(null);
+
+                _dialogService.ShowMessage(
+                    "Accent Color Applied",
+                    "Successfully applied Windows system accent color.",
+                    DialogType.Information);
             }
 
             UpdateCustomAccentPanelVisibility();
@@ -550,6 +560,11 @@ namespace PocketMC.Desktop.Features.Setup
             UpdateCustomAccentPanelVisibility();
             UpdateAccentPreview(color);
             UpdateAccentSelection(normalizedHex);
+
+            _dialogService.ShowMessage(
+                "Accent Color Applied",
+                $"Successfully applied custom accent color {normalizedHex}.",
+                DialogType.Information);
         }
 
         private string GetCurrentCustomAccentHex()

@@ -151,7 +151,9 @@ namespace PocketMC.Desktop.Features.Shell
                 Wpf.Ui.Appearance.ApplicationThemeManager.Apply(
                     explicitLightMode
                         ? Wpf.Ui.Appearance.ApplicationTheme.Light
-                        : Wpf.Ui.Appearance.ApplicationTheme.Dark);
+                        : Wpf.Ui.Appearance.ApplicationTheme.Dark,
+                    Wpf.Ui.Controls.WindowBackdropType.None,
+                    updateAccent: false);
 
                 _accentColorService.ApplyCurrentAccent();
             }

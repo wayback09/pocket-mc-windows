@@ -49,8 +49,28 @@ public sealed class AccentColorService : IDisposable
 
     public void ApplySystemAccent()
     {
-        ApplicationAccentColorManager.ApplySystemAccent();
-        NotifyAccentChanged(GetSystemAccentColor());
+        Color systemColor = GetSystemAccentColor();
+        ApplicationAccentColorManager.Apply(systemColor, GetCurrentTheme(), false);
+        NotifyAccentChanged(systemColor);
+    }
+
+    /// <summary>
+    /// Re-applies the current accent to application resources.
+    /// Call this after any operation that may have reset the accent resources
+    /// (e.g., new FluentWindow initialization, theme dictionary reload).
+    /// </summary>
+    public void ReassertAccent()
+    {
+        var settings = _applicationState.Settings;
+        if (IsCustomMode(settings.AccentColorMode) &&
+            TryParseHexColor(settings.CustomAccentColor, out Color customColor, out _))
+        {
+            ApplicationAccentColorManager.Apply(customColor, GetCurrentTheme(), false);
+            return;
+        }
+
+        Color systemColor = GetSystemAccentColor();
+        ApplicationAccentColorManager.Apply(systemColor, GetCurrentTheme(), false);
     }
 
     public Color GetCurrentAccentColor()

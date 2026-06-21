@@ -15,11 +15,52 @@ public sealed class AccentColorSourceTests
         Assert.Contains("_accentColorService.ApplyCurrentAccent();", source);
         Assert.DoesNotContain("ApplyTheme(string theme", source);
         Assert.DoesNotContain("SystemThemeWatcher.UnWatch", source);
+        Assert.Contains("updateAccent: false", source);
 
         int themeApply = source.IndexOf("ApplicationThemeManager.Apply", StringComparison.Ordinal);
         int accentApply = source.IndexOf("_accentColorService.ApplyCurrentAccent();", StringComparison.Ordinal);
         Assert.True(themeApply >= 0);
         Assert.True(accentApply > themeApply);
+    }
+
+    [Fact]
+    public void AccentColorService_ExposesReassertAccentMethod()
+    {
+        string source = File.ReadAllText(TestSourceFileResolver.Resolve(
+            "PocketMC.Desktop",
+            "Features",
+            "Shell",
+            "AccentColorService.cs"));
+
+        Assert.Contains("public void ReassertAccent()", source);
+        Assert.Contains("ApplicationAccentColorManager.Apply(", source);
+    }
+
+    [Fact]
+    public void AppDialogWindow_ReassertAccentAfterInitialization()
+    {
+        string source = File.ReadAllText(TestSourceFileResolver.Resolve(
+            "PocketMC.Desktop",
+            "Infrastructure",
+            "AppDialogWindow.xaml.cs"));
+
+        Assert.Contains("ReassertAccent", source);
+    }
+
+    [Fact]
+    public void MainWindow_WindowLoaded_NoRedundantThemeApply()
+    {
+        string source = File.ReadAllText(TestSourceFileResolver.Resolve(
+            "PocketMC.Desktop",
+            "Features",
+            "Shell",
+            "MainWindow.xaml.cs"));
+
+        // Window_Loaded should call RequestMicaUpdate (which internally calls ApplyTheme)
+        // but should not call ApplyTheme directly — that's a redundant double-apply
+        var windowLoadedStart = source.IndexOf("Window_Loaded", StringComparison.Ordinal);
+        var windowLoadedBody = source.Substring(windowLoadedStart, 300);
+        Assert.DoesNotContain("_visualService.ApplyTheme()", windowLoadedBody);
     }
 
     [Fact]
