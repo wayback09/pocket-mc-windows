@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
-using System.Xml.Linq;
+using System.Net.Http.Json;
+using System.Text.Json.Nodes;
 using PocketMC.Desktop.Models;
 using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Features.Instances.Services;
@@ -26,37 +27,47 @@ public class NeoForgeProvider : IServerSoftwareProvider
 
     public async Task<List<MinecraftVersion>> GetAvailableVersionsAsync()
     {
-        const string metadataUrl = "https://maven.neoforged.net/releases/net/neoforged/neoforge/maven-metadata.xml";
-        var response = await _httpClient.GetStringAsync(metadataUrl);
-        var doc = XDocument.Parse(response);
-
-        var versions = doc.Descendants("version")
-            .Select(v => v.Value)
-            .ToList();
+        const string metadataUrl = "https://meta.prismlauncher.org/v1/net.neoforged/";
+        var response = await _httpClient.GetFromJsonAsync<JsonObject>(metadataUrl);
 
         var mcToLoaders = new Dictionary<string, List<ModLoaderVersion>>();
 
-        foreach (var v in versions)
+        if (response != null && response.TryGetPropertyValue("versions", out var versionsNode) && versionsNode is JsonArray versionsArray)
         {
-            // NeoForge versioning: XX.YY.ZZ maps to MC 1.XX.YY
-            // Examples: 20.4.127 -> 1.20.4, 21.1.65 -> 1.21.1
-            var parts = v.Split('.');
-            if (parts.Length < 3) continue;
-
-            if (!int.TryParse(parts[0], out int major) || !int.TryParse(parts[1], out int minor))
-                continue;
-
-            string mcVersion = $"1.{major}.{minor}";
-            bool isBeta = v.Contains("-beta");
-
-            if (!mcToLoaders.ContainsKey(mcVersion))
-                mcToLoaders[mcVersion] = new List<ModLoaderVersion>();
-
-            mcToLoaders[mcVersion].Add(new ModLoaderVersion
+            foreach (var node in versionsArray)
             {
-                Version = v,
-                IsStable = !isBeta
-            });
+                if (node is JsonObject vObj)
+                {
+                    string? version = vObj["version"]?.ToString();
+                    bool isRecommended = vObj["recommended"]?.GetValue<bool>() ?? false;
+
+                    if (string.IsNullOrEmpty(version)) continue;
+
+                    string mcVersion = "";
+                    if (vObj.TryGetPropertyValue("requires", out var requiresNode) && requiresNode is JsonArray requiresArray)
+                    {
+                        foreach (var req in requiresArray)
+                        {
+                            if (req is JsonObject reqObj && reqObj["uid"]?.ToString() == "net.minecraft")
+                            {
+                                mcVersion = reqObj["equals"]?.ToString() ?? "";
+                                break;
+                            }
+                        }
+                    }
+
+                    if (string.IsNullOrEmpty(mcVersion)) continue;
+
+                    if (!mcToLoaders.ContainsKey(mcVersion))
+                        mcToLoaders[mcVersion] = new List<ModLoaderVersion>();
+
+                    mcToLoaders[mcVersion].Add(new ModLoaderVersion
+                    {
+                        Version = version,
+                        IsStable = isRecommended || !version.Contains("-beta")
+                    });
+                }
+            }
         }
 
         var result = new List<MinecraftVersion>();

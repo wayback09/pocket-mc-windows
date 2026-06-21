@@ -14,6 +14,26 @@ public static class JavaRuntimeResolver
 
     public static IReadOnlyList<int> GetBundledJavaVersions() => BundledJavaVersions;
 
+    public static int GetRequiredJavaVersion(InstanceMetadata meta)
+    {
+        int baseVersion = GetRequiredJavaVersion(meta.MinecraftVersion);
+
+        // Strict mapping for Forge/NeoForge
+        if (meta.ServerType == "Forge" || meta.ServerType == "NeoForge")
+        {
+            if (TryParseVersion(meta.MinecraftVersion, out var version))
+            {
+                // Forge 1.16.5 crashes on Java 17+. Force Java 11 or 8.
+                if (IsVersionInRange(version, "1.16.5", "1.16.5"))
+                {
+                    return 11;
+                }
+            }
+        }
+
+        return baseVersion;
+    }
+
     public static int GetRequiredJavaVersion(string? minecraftVersion)
     {
         if (!TryParseVersion(minecraftVersion, out var version))
@@ -26,9 +46,14 @@ public static class JavaRuntimeResolver
             return 8;
         }
 
-        if (IsVersionInRange(version, "1.16.5", "1.17.1"))
+        if (IsVersionInRange(version, "1.16.5", "1.16.5"))
         {
             return 11;
+        }
+
+        if (IsVersionInRange(version, "1.17", "1.17.1"))
+        {
+            return 17;
         }
 
         if (IsVersionInRange(version, "1.18", "1.20.4"))

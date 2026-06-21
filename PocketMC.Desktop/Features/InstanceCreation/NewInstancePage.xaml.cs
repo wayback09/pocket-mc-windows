@@ -191,16 +191,6 @@ namespace PocketMC.Desktop.Features.InstanceCreation
             }
 
             string serverType = GetSelectedServerType();
-            if (serverType == "Forge" || serverType == "NeoForge")
-            {
-                TxtForgeWarning.Text = $"⚠ {serverType} support is in beta - expect instability.";
-                TxtForgeWarning.Visibility = Visibility.Visible;
-            }
-            else
-            {
-                TxtForgeWarning.Visibility = Visibility.Collapsed;
-            }
-
             UpdateAddonPanelVisibility(serverType);
 
             await LoadVersionsAsync(serverType);
@@ -211,8 +201,7 @@ namespace PocketMC.Desktop.Features.InstanceCreation
             if (serverType.StartsWith("Bedrock", StringComparison.OrdinalIgnoreCase) || 
                 serverType.StartsWith("Pocketmine", StringComparison.OrdinalIgnoreCase) ||
                 serverType.StartsWith("Vanilla", StringComparison.OrdinalIgnoreCase) ||
-                serverType.StartsWith("Forge", StringComparison.OrdinalIgnoreCase) ||
-                serverType.StartsWith("NeoForge", StringComparison.OrdinalIgnoreCase))
+                serverType.StartsWith("Forge", StringComparison.OrdinalIgnoreCase))
             {
                 AddonPanel.Visibility = Visibility.Collapsed;
                 ChkEnableGeyser.IsChecked = false;

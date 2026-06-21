@@ -751,6 +751,12 @@ public sealed class InstanceImportService : IInstanceImportService
         else
         {
             finalFileName = enabledFileName;
+            // Auto-disable client-only mods during import
+            if (MarketplaceArchiveInspector.IsClientOnlyAddon(sourceFilePath))
+            {
+                finalFileName = AddonFileNamePolicy.GetDisabledFileName(enabledFileName);
+                addon.IsDisabled = true;
+            }
         }
 
         string destinationPath = Path.Combine(destinationDirectory, finalFileName);

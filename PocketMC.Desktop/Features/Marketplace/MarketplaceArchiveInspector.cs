@@ -42,6 +42,33 @@ public static class MarketplaceArchiveInspector
         }
     }
 
+    public static bool IsClientOnlyAddon(string filePath)
+    {
+        string extension = Path.GetExtension(filePath);
+        if (!extension.Equals(".jar", StringComparison.OrdinalIgnoreCase) &&
+            !extension.Equals(".zip", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        try
+        {
+            using ZipArchive archive = ZipFile.OpenRead(filePath);
+            var warnings = new List<string>();
+
+            InspectFabricLikeManifest(archive, "fabric.mod.json", "Fabric", warnings);
+            InspectFabricLikeManifest(archive, "quilt.mod.json", "Quilt", warnings);
+            InspectForgeLikeManifest(archive, warnings);
+
+            return warnings.Any(w => w.Contains("client-only", StringComparison.OrdinalIgnoreCase));
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+
     private static void InspectFabricLikeManifest(
         ZipArchive archive,
         string manifestName,
@@ -78,9 +105,8 @@ public static class MarketplaceArchiveInspector
             string content = reader.ReadToEnd();
 
             bool isClientOnly = Regex.IsMatch(content, @"clientSideOnly\s*=\s*true", RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(100));
-            bool isDisplayTestClient = Regex.IsMatch(content, @"displayTest\s*=\s*['""]?(IGNORE_SERVER_VERSION|IGNORE_ALL_VERSION|NONE)['""]?", RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(100));
 
-            if (isClientOnly || isDisplayTestClient)
+            if (isClientOnly)
             {
                 warnings.Add("Forge/NeoForge metadata suggests this add-on is client-only or not required on the server.");
             }

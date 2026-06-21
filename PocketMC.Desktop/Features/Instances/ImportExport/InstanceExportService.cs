@@ -217,7 +217,7 @@ public sealed class InstanceExportService : IInstanceExportService
             return new InstanceRuntimeManifest { Type = InstanceRuntimeType.Native };
         }
 
-        int javaVersion = JavaRuntimeResolver.GetRequiredJavaVersion(metadata.MinecraftVersion);
+        int javaVersion = JavaRuntimeResolver.GetRequiredJavaVersion(metadata);
         return new InstanceRuntimeManifest
         {
             Type = InstanceRuntimeType.Java,

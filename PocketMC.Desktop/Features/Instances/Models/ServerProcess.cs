@@ -35,6 +35,7 @@ public class ServerProcess : IDisposable
     private readonly PlayerListParser _playerListParser;
     private readonly ConsoleLogHistoryService _consoleLogHistoryService;
     private readonly ILogger<ServerProcess> _logger;
+    private CancellationTokenSource? _startupCts;
     private bool _disposed;
     private volatile bool _intentionalStop;
     private readonly ConcurrentDictionary<TaskCompletionSource<bool>, Regex> _outputWaiters = new();
@@ -46,6 +47,10 @@ public class ServerProcess : IDisposable
     private int? _pendingMultilinePlayerCount;
     private PlayerListContinuationStyle _pendingMultilineStyle = PlayerListContinuationStyle.None;
     private string _serverType = "Vanilla";
+
+    // Health Check Flags
+    private bool _hasLoggedMixinWarning;
+    private bool _hasLoggedFmlWarning;
 
     // ── List-command console suppression ──────────────────────────────
     // Programmatic "list" commands flood the console with player-count
@@ -116,11 +121,13 @@ public class ServerProcess : IDisposable
         {
             SetState(ServerState.SettingUp);
             _intentionalStop = false;
+            _startupCts = new CancellationTokenSource();
 
             var psi = await _launchConfigurator.ConfigureAsync(
                 meta, workingDir, appRootPath,
                 l => AppendOutput(l),
-                onStateChange: s => SetState(s));
+                onStateChange: s => SetState(s),
+                cancellationToken: _startupCts.Token);
 
             // After ConfigureAsync returns (installer and downloads done), transition to Starting
             SetState(ServerState.Starting);
@@ -135,6 +142,11 @@ public class ServerProcess : IDisposable
 
             _ = Task.Run(() => ReadStreamAsync(_process.StandardOutput, false));
             _ = Task.Run(() => ReadStreamAsync(_process.StandardError, true));
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation("Server startup was cancelled.");
+            SetState(ServerState.Stopped);
         }
         catch
         {
@@ -194,9 +206,16 @@ public class ServerProcess : IDisposable
 
     public async Task StopAsync(int timeoutMs = 15000)
     {
-        if (_process == null || _process.HasExited) return;
+        if (State == ServerState.Stopped || State == ServerState.Stopping) return;
         _intentionalStop = true;
         SetState(ServerState.Stopping);
+        _startupCts?.Cancel();
+
+        if (_process == null || _process.HasExited)
+        {
+            SetState(ServerState.Stopped);
+            return;
+        }
 
         bool rconSuccess = await TryStopViaRconAsync(WorkingDirectory);
         if (!rconSuccess)
@@ -307,7 +326,24 @@ public class ServerProcess : IDisposable
         else
         {
             // Player-count processing ALWAYS runs regardless of suppression.
-            if (State == ServerState.Starting && (sanitizedLine.Contains("Done (") || sanitizedLine.Contains("Server started."))) SetState(ServerState.Online);
+            if (State == ServerState.Starting)
+            {
+                if (sanitizedLine.Contains("Done (") || sanitizedLine.Contains("Server started."))
+                {
+                    SetState(ServerState.Online);
+                }
+                else if ((sanitizedLine.Contains("org.spongepowered.asm.mixin.") || sanitizedLine.Contains("cpw.mods.modlauncher") || sanitizedLine.Contains("Found mod file")) && !_hasLoggedMixinWarning)
+                {
+                    _hasLoggedMixinWarning = true;
+                    OnOutputLine?.Invoke("[PocketMC Health Check] Forge is injecting Mixins and discovering mods. This is a CPU intensive phase and may take several minutes. The server is NOT frozen.");
+                }
+                else if ((sanitizedLine.Contains("Forge Mod Loader") || sanitizedLine.Contains("FML")) && sanitizedLine.Contains("preinitialization") && !_hasLoggedFmlWarning)
+                {
+                    _hasLoggedFmlWarning = true;
+                    OnOutputLine?.Invoke("[PocketMC Health Check] FML Pre-Initialization started. Mod loading can take a significant amount of time depending on the modpack size...");
+                }
+            }
+            
             UpdatePlayerCount(sanitizedLine);
 
             // Determine if this line should be hidden from the console UI.

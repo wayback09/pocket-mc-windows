@@ -807,8 +807,9 @@
                                                 </StackPanel>
                                                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center"
                                                             Visibility="{Binding Addons.IsPocketmine, Converter={StaticResource InvertedVisibilityConverter}}">
+                                                    <TextBlock Text="Auto-Update" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                                     <ui:ToggleSwitch IsChecked="{Binding Addons.AutoUpdateAddons, Mode=TwoWay}" 
-                                                                     Content="Auto-Update" Margin="0,0,12,0" 
+                                                                     Margin="0,0,12,0" 
                                                                      ToolTip="Automatically update on server start"
                                                                      Visibility="{Binding Addons.SupportsModrinth, Converter={StaticResource VisibleIfTrue}}"/>
                                                     <ui:ProgressRing IsIndeterminate="True" Width="16" Height="16" Margin="0,0,8,0">
@@ -997,8 +998,9 @@
                                                                Visibility="{Binding Addons.SupportsModpacks, Converter={StaticResource VisibleIfTrue}}"/>
                                                 </StackPanel>
                                                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <TextBlock Text="Auto-Update" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                                     <ui:ToggleSwitch IsChecked="{Binding Addons.AutoUpdateAddons, Mode=TwoWay}" 
-                                                                     Content="Auto-Update" Margin="0,0,12,0" 
+                                                                     Margin="0,0,12,0" 
                                                                      ToolTip="Automatically update on server start"
                                                                      Visibility="{Binding Addons.SupportsModrinth, Converter={StaticResource VisibleIfTrue}}"/>
                                                     <ui:ProgressRing IsIndeterminate="True" Width="16" Height="16" Margin="0,0,8,0">

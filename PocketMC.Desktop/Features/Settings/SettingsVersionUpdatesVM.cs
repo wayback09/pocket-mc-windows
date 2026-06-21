@@ -61,7 +61,7 @@ public sealed class SettingsVersionUpdatesVM : ViewModelBase
         _dialogService = dialogService;
         _isRunningCheck = isRunningCheck;
         _onReloadRequested = onReloadRequested;
-        int currentJava = JavaRuntimeResolver.GetRequiredJavaVersion(metadata.MinecraftVersion);
+        int currentJava = JavaRuntimeResolver.GetRequiredJavaVersion(metadata);
         _requiredJavaVersionChange = $"Java {currentJava} remains required";
         _targetVersionStatusText = "Checking for available updates...";
         _changelogPreview = $"Current {metadata.ServerType} version is {metadata.MinecraftVersion}. Select an available target version and preview the update.";

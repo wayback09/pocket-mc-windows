@@ -261,7 +261,7 @@ namespace PocketMC.Desktop.Features.Settings
             string? initialJavaPath = cfg.CustomJavaPath;
             if (string.IsNullOrWhiteSpace(initialJavaPath))
             {
-                int requiredVersion = PocketMC.Desktop.Features.Java.JavaRuntimeResolver.GetRequiredJavaVersion(Metadata.MinecraftVersion);
+                int requiredVersion = PocketMC.Desktop.Features.Java.JavaRuntimeResolver.GetRequiredJavaVersion(Metadata);
                 initialJavaPath = PocketMC.Desktop.Features.Java.JavaRuntimeResolver.GetExpectedBundledJavaPath(_appRootPath, requiredVersion);
             }
             Performance.JavaPath = initialJavaPath;
@@ -472,7 +472,7 @@ namespace PocketMC.Desktop.Features.Settings
             string? customJavaPathToSave = Performance.JavaPath;
             if (string.IsNullOrWhiteSpace(customJavaPathToSave))
             {
-                int requiredVersion = PocketMC.Desktop.Features.Java.JavaRuntimeResolver.GetRequiredJavaVersion(Metadata.MinecraftVersion);
+                int requiredVersion = PocketMC.Desktop.Features.Java.JavaRuntimeResolver.GetRequiredJavaVersion(Metadata);
                 customJavaPathToSave = PocketMC.Desktop.Features.Java.JavaRuntimeResolver.GetExpectedBundledJavaPath(_appRootPath, requiredVersion);
             }
 

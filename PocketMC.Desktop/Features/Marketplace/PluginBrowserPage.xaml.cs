@@ -358,6 +358,16 @@ namespace PocketMC.Desktop.Features.Marketplace
                     string.Join(Environment.NewLine + Environment.NewLine, metadataWarnings));
             }
 
+            if (!_isModpackMode && MarketplaceArchiveInspector.IsClientOnlyAddon(destFile))
+            {
+                string disabledDestFile = destFile + ".disabled-by-pocketmc";
+                if (File.Exists(disabledDestFile)) File.Delete(disabledDestFile);
+                File.Move(destFile, disabledDestFile);
+                destFile = disabledDestFile;
+                safeFileName += ".disabled-by-pocketmc";
+            }
+
+
             if (_isModpackMode)
             {
                 OnModpackDownloaded?.Invoke(destFile);

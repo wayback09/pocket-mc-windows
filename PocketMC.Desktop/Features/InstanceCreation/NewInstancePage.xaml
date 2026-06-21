@@ -196,22 +196,8 @@
                             <ComboBoxItem Tag="Vanilla" Content="Vanilla" IsSelected="True"/>
                             <ComboBoxItem Tag="Paper" Content="Paper"/>
                             <ComboBoxItem Tag="Fabric" Content="Fabric"/>
-                            <ComboBoxItem Tag="Forge">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="Forge"/>
-                                    <Border Background="#26FFB300" BorderBrush="#80FFB300" BorderThickness="1" CornerRadius="4" Margin="6,0,0,0" Padding="4,0" VerticalAlignment="Center">
-                                        <TextBlock Text="BETA" FontSize="9" FontWeight="Bold" Foreground="#FFFFD54F" VerticalAlignment="Center"/>
-                                    </Border>
-                                </StackPanel>
-                            </ComboBoxItem>
-                            <ComboBoxItem Tag="NeoForge">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="NeoForge"/>
-                                    <Border Background="#26FFB300" BorderBrush="#80FFB300" BorderThickness="1" CornerRadius="4" Margin="6,0,0,0" Padding="4,0" VerticalAlignment="Center">
-                                        <TextBlock Text="BETA" FontSize="9" FontWeight="Bold" Foreground="#FFFFD54F" VerticalAlignment="Center"/>
-                                    </Border>
-                                </StackPanel>
-                            </ComboBoxItem>
+                            <ComboBoxItem Tag="Forge" Content="Forge"/>
+                            <ComboBoxItem Tag="NeoForge" Content="NeoForge"/>
                             <ComboBoxItem Tag="Bedrock (BDS)" Content="Bedrock (BDS)"/>
                             <ComboBoxItem Tag="Pocketmine (PHP)" Content="Pocketmine (PHP)"/>
                         </ComboBox>
@@ -240,13 +226,6 @@
                                   Checked="ChkShowSnapshots_Changed"
                                   Unchecked="ChkShowSnapshots_Changed"
                                   Margin="0,0,0,8"/>
-                        
-                        <TextBlock x:Name="TxtForgeWarning"
-                                   Visibility="Collapsed"
-                                   Foreground="#F9E2AF"
-                                   FontSize="12"
-                                   TextWrapping="Wrap"
-                                   Margin="0,0,0,16"/>
 
                         <!-- Loader Version -->
                         <StackPanel x:Name="LoaderVersionPanel" Visibility="Collapsed" Margin="0,8,0,16">

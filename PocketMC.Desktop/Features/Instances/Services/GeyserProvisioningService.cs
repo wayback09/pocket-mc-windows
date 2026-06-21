@@ -75,7 +75,7 @@ public class GeyserProvisioningService
                     $"Check https://modrinth.com/mod/geyser for supported versions.");
             }
 
-            var geyserFile = geyserVersion.Files.FirstOrDefault(f => f.IsPrimary) ?? geyserVersion.Files.FirstOrDefault();
+            var geyserFile = ModrinthService.SelectCompatibleFile(geyserVersion, loader);
             if (geyserFile == null)
                 throw new InvalidOperationException("Modrinth returned a Geyser version with no downloadable files.");
 
@@ -92,7 +92,7 @@ public class GeyserProvisioningService
 
                 if (fabricApiVersion != null)
                 {
-                    var fabricApiFile = fabricApiVersion.Files.FirstOrDefault(f => f.IsPrimary) ?? fabricApiVersion.Files.FirstOrDefault();
+                    var fabricApiFile = ModrinthService.SelectCompatibleFile(fabricApiVersion, loader);
                     if (fabricApiFile != null)
                     {
                         string fabricApiPath = Path.Combine(dirPath, "Fabric-API.jar");
@@ -137,7 +137,7 @@ public class GeyserProvisioningService
                 }
                 else
                 {
-                    var floodgateFile = floodgateVersion.Files.FirstOrDefault(f => f.IsPrimary) ?? floodgateVersion.Files.FirstOrDefault();
+                    var floodgateFile = ModrinthService.SelectCompatibleFile(floodgateVersion, loader);
                     if (floodgateFile == null)
                     {
                         _logger.LogWarning("Modrinth returned a Floodgate version with no files. Skipping Floodgate.");

@@ -90,7 +90,7 @@ namespace PocketMC.Desktop.Models
                 Family = EngineFamily.NeoForge;
                 SupportsMods = true;
                 SupportsModpacks = false;
-                SupportsModrinth = false;
+                SupportsModrinth = true;
                 SupportsCurseForge = false;
                 PrimaryAddonSubDir = "mods";
                 LoaderName = "neoforge";

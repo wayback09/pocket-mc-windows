@@ -29,59 +29,66 @@ public class ForgeProvider : IServerSoftwareProvider
 
     public async Task<List<MinecraftVersion>> GetAvailableVersionsAsync()
     {
-        // Fetch the official Forge versions JSON (slim promotions)
-        var response = await _httpClient.GetFromJsonAsync<JsonObject>("https://files.minecraftforge.net/net/minecraftforge/forge/promotions_slim.json");
-        var versions = new List<MinecraftVersion>();
+        const string metadataUrl = "https://meta.prismlauncher.org/v1/net.minecraftforge/";
+        var response = await _httpClient.GetFromJsonAsync<JsonObject>(metadataUrl);
 
-        if (response != null && response.TryGetPropertyValue("promos", out var promosNode) && promosNode is JsonObject promos)
+        var mcToLoaders = new Dictionary<string, List<ModLoaderVersion>>();
+        var minVersion = new Version(1, 8, 8);
+
+        if (response != null && response.TryGetPropertyValue("versions", out var versionsNode) && versionsNode is JsonArray versionsArray)
         {
-            // We extract unique MC versions from the keys
-            // Format of keys: "1.20.1-recommended", "1.20.1-latest"
-            var mcToLoaders = new Dictionary<string, List<ModLoaderVersion>>();
-
-            var minVersion = new Version(1, 8, 8);
-            foreach (var entry in promos)
+            foreach (var node in versionsArray)
             {
-                var parts = entry.Key.Split('-');
-                if (parts.Length < 2) continue;
-
-                string mcVersion = parts[0];
-                if (!mcVersion.StartsWith("1.")) continue;
-
-                if (!JavaRuntimeResolver.TryParseVersion(mcVersion, out var version) || version < minVersion)
-                    continue;
-
-                string promoType = parts[1];
-                string forgeVersion = entry.Value?.ToString() ?? "";
-
-                if (!mcToLoaders.ContainsKey(mcVersion))
-                    mcToLoaders[mcVersion] = new List<ModLoaderVersion>();
-
-                // Add this version if not already present
-                if (!mcToLoaders[mcVersion].Any(l => l.Version == forgeVersion))
+                if (node is JsonObject vObj)
                 {
+                    string? version = vObj["version"]?.ToString();
+                    bool isRecommended = vObj["recommended"]?.GetValue<bool>() ?? false;
+
+                    if (string.IsNullOrEmpty(version)) continue;
+
+                    string mcVersion = "";
+                    if (vObj.TryGetPropertyValue("requires", out var requiresNode) && requiresNode is JsonArray requiresArray)
+                    {
+                        foreach (var req in requiresArray)
+                        {
+                            if (req is JsonObject reqObj && reqObj["uid"]?.ToString() == "net.minecraft")
+                            {
+                                mcVersion = reqObj["equals"]?.ToString() ?? "";
+                                break;
+                            }
+                        }
+                    }
+
+                    if (string.IsNullOrEmpty(mcVersion)) continue;
+                    if (!mcVersion.StartsWith("1.")) continue;
+                    if (!JavaRuntimeResolver.TryParseVersion(mcVersion, out var parsedVersion) || parsedVersion < minVersion)
+                        continue;
+
+                    if (!mcToLoaders.ContainsKey(mcVersion))
+                        mcToLoaders[mcVersion] = new List<ModLoaderVersion>();
+
                     mcToLoaders[mcVersion].Add(new ModLoaderVersion
                     {
-                        Version = forgeVersion,
-                        IsStable = promoType == "recommended"
+                        Version = version,
+                        IsStable = isRecommended || !version.Contains("-beta")
                     });
                 }
             }
-
-            foreach (var kvp in mcToLoaders)
-            {
-                versions.Add(new GameVersionWithLoaders
-                {
-                    Id = kvp.Key,
-                    Type = "release",
-                    ReleaseTime = DateTime.MinValue,
-                    LoaderVersions = kvp.Value.OrderByDescending(l => l.IsStable).ThenByDescending(l => l.Version).ToList()
-                });
-            }
         }
 
-        // Numerical sort by MC version segments
-        return versions
+        var result = new List<MinecraftVersion>();
+        foreach (var kvp in mcToLoaders)
+        {
+            result.Add(new GameVersionWithLoaders
+            {
+                Id = kvp.Key,
+                Type = "release",
+                ReleaseTime = DateTime.MinValue,
+                LoaderVersions = kvp.Value.OrderByDescending(l => l.IsStable).ThenByDescending(l => l.Version).ToList()
+            });
+        }
+
+        return result
             .OrderByDescending(v =>
             {
                 var parts = v.Id.Split('.');

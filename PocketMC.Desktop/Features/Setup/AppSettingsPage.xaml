@@ -259,7 +259,7 @@
                                                    Click="BrowseCustomBackground_Click"
                                                    Margin="0,0,8,0"/>
                                         <ui:Button x:Name="BtnRestoreDefaultBg"
-                                                   Content="Restore Official"
+                                                   Content="PocketMC Official Wallpaper"
                                                    Icon="{ui:SymbolIcon ImageArrowBack24}"
                                                    Appearance="Secondary"
                                                    Click="RestoreDefaultBackground_Click"

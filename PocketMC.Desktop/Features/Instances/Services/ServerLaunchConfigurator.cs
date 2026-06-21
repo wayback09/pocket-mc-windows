@@ -55,7 +55,7 @@ namespace PocketMC.Desktop.Features.Instances.Services;
             _logger = logger;
         }
 
-        public async Task<ProcessStartInfo> ConfigureAsync(InstanceMetadata meta, string workingDir, string appRootPath, Action<string> onLog, Action<ServerState>? onStateChange = null)
+        public async Task<ProcessStartInfo> ConfigureAsync(InstanceMetadata meta, string workingDir, string appRootPath, Action<string> onLog, Action<ServerState>? onStateChange = null, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(workingDir))
             {
@@ -73,11 +73,11 @@ namespace PocketMC.Desktop.Features.Instances.Services;
             }
 
             // Java servers
-            int requiredJavaVersion = JavaRuntimeResolver.GetRequiredJavaVersion(meta.MinecraftVersion);
+            int requiredJavaVersion = JavaRuntimeResolver.GetRequiredJavaVersion(meta);
             string javaPath = await EnsureAndResolveJavaPathAsync(meta, requiredJavaVersion, appRootPath, onLog);
 
             // Forge/NeoForge auto-installation
-            await HandleInstallerBasedSetupAsync(meta, workingDir, javaPath, onLog, onStateChange);
+            await HandleInstallerBasedSetupAsync(meta, workingDir, javaPath, onLog, onStateChange, cancellationToken);
 
             var psi = new ProcessStartInfo
             {
@@ -268,7 +268,7 @@ namespace PocketMC.Desktop.Features.Instances.Services;
             return javaPath;
         }
 
-        private async Task HandleInstallerBasedSetupAsync(InstanceMetadata meta, string workingDir, string javaPath, Action<string> onLog, Action<ServerState>? onStateChange = null)
+        private async Task HandleInstallerBasedSetupAsync(InstanceMetadata meta, string workingDir, string javaPath, Action<string> onLog, Action<ServerState>? onStateChange = null, CancellationToken cancellationToken = default)
         {
             string installerPath = Path.Combine(workingDir, "installer.jar");
             bool isForgeOrNeo = meta.ServerType == "Forge" || meta.ServerType == "NeoForge";
@@ -348,9 +348,9 @@ namespace PocketMC.Desktop.Features.Instances.Services;
                                 }
 
                                 var elapsed = Stopwatch.GetElapsedTime(lastReportTicks);
-                                if (elapsed.TotalSeconds >= 3)
+                                if (elapsed.TotalMilliseconds >= 250)
                                 {
-                                    onLog?.Invoke($"[PocketMC] Still installing {meta.ServerType}... (Processed {downloadCount} libraries / {lineCount} total operations)");
+                                    onLog?.Invoke($"[Installer] {line.Trim()}");
                                     lastReportTicks = Stopwatch.GetTimestamp();
                                 }
                             }
@@ -365,7 +365,16 @@ namespace PocketMC.Desktop.Features.Instances.Services;
                             }
                         });
 
-                        await proc.WaitForExitAsync();
+                        try
+                        {
+                            await proc.WaitForExitAsync(cancellationToken);
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            onLog?.Invoke($"[PocketMC] Installer cancelled. Cleaning up...");
+                            try { proc.Kill(true); } catch { }
+                            throw;
+                        }
                         await Task.WhenAll(outputTask, errorTask);
 
                         if (proc.ExitCode == 0)
@@ -400,6 +409,11 @@ namespace PocketMC.Desktop.Features.Instances.Services;
             if (Directory.Exists(libDir))
             {
                 try { Directory.Delete(libDir, true); } catch { }
+            }
+            string verDir = Path.Combine(workingDir, "versions");
+            if (Directory.Exists(verDir))
+            {
+                try { Directory.Delete(verDir, true); } catch { }
             }
         }
 

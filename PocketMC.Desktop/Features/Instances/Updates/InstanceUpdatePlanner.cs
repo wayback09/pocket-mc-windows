@@ -40,8 +40,8 @@ public sealed class InstanceUpdatePlanner
         }
 
         var targetCompatibility = new EngineCompatibility(targetMetadata.ServerType);
-        int currentJava = JavaRuntimeResolver.GetRequiredJavaVersion(currentMetadata.MinecraftVersion);
-        int targetJava = JavaRuntimeResolver.GetRequiredJavaVersion(targetMetadata.MinecraftVersion);
+        int currentJava = JavaRuntimeResolver.GetRequiredJavaVersion(currentMetadata);
+        int targetJava = JavaRuntimeResolver.GetRequiredJavaVersion(targetMetadata);
 
         AddonMigrationPlan addonPlan = await _addonMigrationPlanner.BuildPlanAsync(
             serverDir,
