@@ -247,6 +247,7 @@ jobs:
           if ($body.Length -gt 1000) { $body = $body.Substring(0, 1000) + "..." }
 
           $payload = @{
+            content = "<@&1493922983742537819>"
             embeds = @(@{
               title       = "🚀 New PocketMC Release: v${{ env.VERSION }}!"
               description = "Version **${{ env.VERSION }}** is now live!"
