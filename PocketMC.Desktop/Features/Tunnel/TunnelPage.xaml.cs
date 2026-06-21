@@ -80,14 +80,14 @@ namespace PocketMC.Desktop.Features.Tunnel
 
         private async void OnLoaded(object sender, RoutedEventArgs e)
         {
-            ScrollViewerHelper.EnableMouseWheelScrolling(TunnelListScrollViewer, TunnelListScrollViewer);
+
             SubscribeToAgent();
             await RefreshStatusAsync();
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
-            ScrollViewerHelper.DisableMouseWheelScrolling(TunnelListScrollViewer);
+
             UnsubscribeFromAgent();
             // Important: we no longer cancel download on unload,
             // as it runs statefully in the background and can complete while another tab is active.

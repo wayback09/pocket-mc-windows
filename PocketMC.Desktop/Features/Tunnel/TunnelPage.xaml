@@ -2,19 +2,18 @@
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-      ScrollViewer.VerticalScrollBarVisibility="Disabled"
-      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
       Title="Tunnel">
 
     <Page.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
     </Page.Resources>
 
-    <Grid Margin="36,24,36,24">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <Grid Margin="36,24,36,24">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <Grid Grid.Row="0" Margin="0,0,0,16">
@@ -196,7 +195,7 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
                 <!-- Active Tunnels header row -->
@@ -232,16 +231,9 @@
                            TextWrapping="Wrap"/>
 
                 <!-- Tunnel cards with management controls -->
-                <ScrollViewer x:Name="TunnelListScrollViewer"
+                <ItemsControl x:Name="TunnelList"
                               Grid.Row="2"
-                              VerticalScrollBarVisibility="Auto"
-                              HorizontalScrollBarVisibility="Disabled"
-                              CanContentScroll="False"
-                              PanningMode="VerticalOnly"
-                              Padding="0,0,12,0"
-                              Margin="0,0,-12,0">
-                    <ItemsControl x:Name="TunnelList"
-                                  Visibility="Collapsed">
+                              Visibility="Collapsed">
                         <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <Border Background="{DynamicResource CardBackgroundFillColorSecondaryBrush}"
@@ -504,8 +496,8 @@
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
-                </ScrollViewer>
             </Grid>
         </Border>
-    </Grid>
+        </Grid>
+    </ScrollViewer>
 </Page>
