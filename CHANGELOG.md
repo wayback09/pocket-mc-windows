@@ -4,6 +4,7 @@ This changelog is organized from newest to oldest and rewritten from release-to-
 
 ## Diff Analysis Summary
 
+- `v1.9.3...v1.9.4`: 27 commits focused on custom accent colors, animated navigation, remote dashboard dark mode, Forge/NeoForge stabilization, and UI polish.
 - `v1.9.2...v1.9.3`: 58 commits focused on Forge and NeoForge server support, Remote Control web dashboard implementation, automated add-on updates, server update rollback safety, telemetry, and desktop shell polish.
 - `v1.9.1...v1.9.2`: 12 commits focused on desktop notifications, Discord linking polish, Remote Control permissions, Playit setup simplification, scroll reliability, export completeness, and release workflow stability.
 - `v1.9.0...v1.9.1`: 5 commits focused on Discord integration, single-instance enforcement, QR code generation, and clipboard reliability.
@@ -14,6 +15,59 @@ This changelog is organized from newest to oldest and rewritten from release-to-
 - `v1.6.2...v1.6.9`: 53 commits focused on player management, server settings profiles, Bedrock/PocketMine parity, add-on update workflows, runtime download gating, console intelligence, Playit agent stability, and production workflow cleanup.
 - `v1.4.0...v1.5.4`: 120 commits focused on NeoForge support, marketplace dependency resolution, port reliability, cross-play networking, automated Playit setup, Java runtime lifecycle management, and release infrastructure.
 - `v1.0.0...v1.4.0`: 39 commits focused on turning the early desktop shell into a broader multi-protocol server manager with Bedrock, PocketMine, diagnostics, graceful lifecycle handling, Velopack packaging, and stronger infrastructure.
+
+---
+
+## v1.9.4 - Custom Accent Colors, UI Polish & Web Dashboard Enhancements
+
+### Summary
+
+v1.9.4 introduces custom accent colors, animated navigation indicators, and multiple visual refinements across the application. It brings dark/light mode support to the Remote Control web dashboard, promotes Forge and NeoForge out of Beta, and improves instance import flexibility by supporting JSON comments and trailing commas.
+
+### Diff Basis
+
+The `v1.9.3...v1.9.4` diff contains 27 commits. The largest changes are in the custom accent color support, the animated navigation indicator for the sidebar, remote control web dashboard theme support, and the Forge/NeoForge stabilization.
+
+### Added
+
+- **UI & Personalization**
+  - Added support for custom accent colors throughout the app.
+  - Added an animated navigation indicator for sidebar lists to improve feedback.
+  - Added a new default image wallpaper along with a restore button to easily revert to it.
+  - The default accent color has been migrated to green.
+- **Remote Control Dashboard**
+  - Added theme toggle and support for light/dark mode in the web dashboard.
+  - Improved caching by adding cache-control headers to static files and using a local favicon.
+- **Discord**
+  - Added a confirmation dialog before linking a Discord account.
+  - Added Discord role mentions to release notifications in CI.
+
+### Changed
+
+- **Forge & NeoForge Support**
+  - Removed the Beta badge from Forge and NeoForge server options as they are now stable.
+  - Enabled the Addons panel for NeoForge servers.
+- **UX Refinements**
+  - Moved the "Auto-Update Addons" toggle directly to the addons toolbar for easier access.
+  - Updated the application logo, icons, and branding images across the app, documentation, and web dashboard.
+  - Improved the description text for telemetry settings to be more clear.
+- **Instance Management**
+  - The instance import parser now allows JSON comments and trailing commas for better resilience with manual backups.
+
+### Fixed
+
+- Resolved nested `ScrollViewer` issues in the Tunnel page that caused scrolling glitches.
+- Fixed an issue where the second row height in `AppDialogWindow` wasn't sizing correctly.
+- Updated the telemetry proxy base URL to point to the correct production endpoint.
+
+### Reasoning
+
+This release focuses on personalization and user experience. Custom accent colors and new navigation animations make the app feel more native and polished. Promoting Forge and NeoForge out of beta recognizes their stability, while the dark mode addition to the remote control dashboard brings it to parity with modern web expectations.
+
+### Upgrade Impact
+
+- **Appearance:** The default accent color will switch to green, but users can now fully customize it in settings.
+- **Remote Dashboard:** Users will see a new theme toggle and updated branding on the web interface.
 
 ---
 
