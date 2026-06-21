@@ -21,7 +21,19 @@ public static class Program
         // This handles squirrel-style install/uninstall hooks and
         // delta-patch application on startup.
         VelopackApp.Build()
-            .WithVersionApplied((v) => 
+            .OnAfterInstallFastCallback((v) => 
+            {
+                // Re-create shortcuts to point to the new icon
+                try 
+                {
+                    new Shortcuts().CreateShortcutForThisExe(ShortcutLocation.Desktop | ShortcutLocation.StartMenu);
+                } 
+                catch { /* Ignore errors */ }
+
+                // Tell the Windows Shell to flush and reload its icon caches
+                SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, IntPtr.Zero, IntPtr.Zero);
+            })
+            .OnAfterUpdateFastCallback((v) => 
             {
                 // Re-create shortcuts to point to the new icon
                 try 

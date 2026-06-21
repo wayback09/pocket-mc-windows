@@ -277,15 +277,19 @@ Logs are preprocessed and sanitized (IPs, emails) before being sent. You own the
 | :---: | :---: |
 | **Dashboard**<br><img src="docs/assets/screenshots/screenshot-dashboard.png" width="420" alt="Dashboard" /> | **Console**<br><img src="docs/assets/screenshots/screenshot-console.png" width="420" alt="Console" /> |
 | **Server Settings**<br><img src="docs/assets/screenshots/server-settings.png" width="420" alt="Server Settings" /> | **Backups**<br><img src="docs/assets/screenshots/screenshot-backups.png" width="420" alt="Backups" /> |
-| **Mod Marketplace**<br><img src="docs/assets/screenshots/mod-marketplace.png" width="420" alt="Mod Marketplace" /> | **Public Tunnels**<br><img src="docs/assets/screenshots/tunnels.png" width="420" alt="Public Tunnels" /> |
-| **Interactive Ports Map**<br><img src="docs/assets/screenshots/ports-map.png" width="420" alt="Interactive Ports Map" /> | **Java Runtimes**<br><img src="docs/assets/screenshots/java-runtimes.png" width="420" alt="Java Runtimes" /> |
+| **Mod Marketplace**<br><img src="docs/assets/screenshots/mod-marketplace.png" width="420" alt="Mod Marketplace" /> | **Mod Management**<br><img src="docs/assets/screenshots/screenshot-mod-management.png" width="420" alt="Mod Management" /> |
+| **Plugin Management**<br><img src="docs/assets/screenshots/screenshot-plugins.png" width="420" alt="Plugin Management" /> | **Java Runtimes**<br><img src="docs/assets/screenshots/java-runtimes.png" width="420" alt="Java Runtimes" /> |
+| **Public Tunnels**<br><img src="docs/assets/screenshots/tunnels.png" width="420" alt="Public Tunnels" /> | **Interactive Ports Map**<br><img src="docs/assets/screenshots/ports-map.png" width="420" alt="Interactive Ports Map" /> |
 | **Remote Control**<br><img src="docs/assets/screenshots/remote-control.png" width="420" alt="Remote Control" /> | **App Settings**<br><img src="docs/assets/screenshots/app-settings.png" width="420" alt="App Settings" /> |
+| **About Page**<br><img src="docs/assets/screenshots/about.png" width="420" alt="About Page" /> | |
 
 ### Remote Web Dashboard
 
-| Dashboard | Home | Console | Players |
-| :---: | :---: | :---: | :---: |
-| <img src="docs/assets/screenshots/mobile-instances.png" width="280" alt="Web Dashboard - Instances" /> | <img src="docs/assets/screenshots/mobile-home.png" width="280" alt="Web Dashboard - Home" /> | <img src="docs/assets/screenshots/mobile-console.png" width="280" alt="Web Dashboard - Console" /> | <img src="docs/assets/screenshots/mobile-players.png" width="280" alt="Web Dashboard - Players" /> |
+| Welcome | Login | Instances |
+| :---: | :---: | :---: |
+| <img src="docs/assets/screenshots/mobile-welcome.png" width="280" alt="Web Dashboard - Welcome" /> | <img src="docs/assets/screenshots/mobile-login.png" width="280" alt="Web Dashboard - Login" /> | <img src="docs/assets/screenshots/mobile-instances.png" width="280" alt="Web Dashboard - Instances" /> |
+| **Home** | **Console** | **Players** |
+| <img src="docs/assets/screenshots/mobile-home.png" width="280" alt="Web Dashboard - Home" /> | <img src="docs/assets/screenshots/mobile-console.png" width="280" alt="Web Dashboard - Console" /> | <img src="docs/assets/screenshots/mobile-players.png" width="280" alt="Web Dashboard - Players" /> |
 
 <br>
 
