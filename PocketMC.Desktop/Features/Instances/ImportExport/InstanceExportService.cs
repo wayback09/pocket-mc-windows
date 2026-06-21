@@ -521,7 +521,13 @@ public sealed class InstanceExportService : IInstanceExportService
             Options = FileOptions.Asynchronous | FileOptions.SequentialScan
         });
 
-        using JsonDocument document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken)
+        var options = new JsonDocumentOptions
+        {
+            CommentHandling = JsonCommentHandling.Skip,
+            AllowTrailingCommas = true
+        };
+
+        using JsonDocument document = await JsonDocument.ParseAsync(stream, options, cancellationToken: cancellationToken)
             .ConfigureAwait(false);
         JsonElement header = document.RootElement.TryGetProperty("header", out JsonElement value)
             ? value
